@@ -1,0 +1,42 @@
+name: vittaxia
+description: "侠 - 武侠文字挂机游戏"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  # 状态管理
+  flutter_riverpod: ^2.6.1
+  # 路由
+  go_router: ^14.8.1
+  # 本地存储
+  drift: ^2.22.1
+  sqlite3_flutter_libs: ^0.5.28
+  shared_preferences: ^2.3.4
+  # 数据模型
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+  # 工具
+  uuid: ^4.5.1
+  intl: ^0.20.2
+  collection: ^1.19.1
+  path_provider: ^2.1.5
+  path: ^1.9.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  # 代码生成
+  build_runner: ^2.4.14
+  freezed: ^2.5.7
+  json_serializable: ^6.9.4
+  drift_dev: ^2.22.1
+
+flutter:
+  uses-material-design: true

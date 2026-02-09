@@ -1,0 +1,625 @@
+import '../models/enums.dart';
+import '../models/game_event_data.dart';
+
+/// 所有随机事件数据
+final gameEvents = <String, GameEventData>{
+  // ===== 青云村 =====
+  'qy_herb_picking': const GameEventData(
+    id: 'qy_herb_picking',
+    name: '采药',
+    description: '你在村后的山坡上发现了一丛草药，看起来品相不错。',
+    type: GameEventType.treasure,
+    weight: 15,
+    rewardExp: 5,
+    choices: [
+      EventChoice(
+        text: '小心采集',
+        resultText: '你仔细辨认后采下几株，是常见的金银花。',
+        rewardExp: 5,
+      ),
+      EventChoice(
+        text: '大把薅走',
+        resultText: '你连根拔起，结果惊动了旁边的马蜂窝！',
+        hpChange: -10,
+        rewardExp: 2,
+      ),
+    ],
+  ),
+  'qy_old_man_story': const GameEventData(
+    id: 'qy_old_man_story',
+    name: '老人的故事',
+    description: '老槐树下，一位白发老者正在给孩童们讲江湖故事。你驻足倾听。',
+    type: GameEventType.scenery,
+    weight: 10,
+    rewardExp: 8,
+    choices: [
+      EventChoice(
+        text: '认真听讲',
+        resultText: '老者讲述了一段关于"天剑门"的传奇，你若有所悟。',
+        rewardExp: 10,
+      ),
+      EventChoice(
+        text: '随意听听',
+        resultText: '你心不在焉，只记住了些零碎片段。',
+        rewardExp: 3,
+      ),
+    ],
+  ),
+  'qy_chicken_chase': const GameEventData(
+    id: 'qy_chicken_chase',
+    name: '追鸡',
+    description: '张大婶家的鸡跑了出来，她急得团团转。',
+    type: GameEventType.npcEncounter,
+    weight: 8,
+    choices: [
+      EventChoice(
+        text: '帮忙抓鸡',
+        resultText: '你费了一番功夫终于抓住了那只鸡，张大婶感激地给了你几文钱。',
+        rewardSilver: 5,
+        rewardExp: 3,
+      ),
+      EventChoice(
+        text: '视而不见',
+        resultText: '你从旁边走过，装作没看见。',
+      ),
+    ],
+  ),
+  'qy_mysterious_traveler': const GameEventData(
+    id: 'qy_mysterious_traveler',
+    name: '神秘旅人',
+    description: '一个蒙面旅人在村口歇脚，身上气息非同一般。',
+    type: GameEventType.adventure,
+    weight: 5,
+    choices: [
+      EventChoice(
+        text: '上前搭话',
+        resultText: '旅人打量了你一眼，指点了你几招基本拳法，你受益良多。',
+        rewardExp: 20,
+      ),
+      EventChoice(
+        text: '远远观察',
+        resultText: '旅人喝完水后便离去了，你隐约看见他衣襟上绣着一把剑。',
+        rewardExp: 5,
+      ),
+    ],
+  ),
+  'qy_wild_dog': const GameEventData(
+    id: 'qy_wild_dog',
+    name: '野狗袭击',
+    description: '一条凶猛的野狗从草丛中窜出，龇牙咧嘴朝你扑来！',
+    type: GameEventType.battle,
+    weight: 8,
+    choices: [
+      EventChoice(
+        text: '挥拳驱赶',
+        resultText: '野狗不退反进，看来非打不可了。',
+        triggerBattle: true,
+        enemyId: 'wild_dog',
+      ),
+      EventChoice(
+        text: '捡石头吓走',
+        resultText: '你抄起一块石头扔过去，野狗嗷了一声跑开了。',
+        rewardExp: 3,
+      ),
+    ],
+  ),
+
+  // ===== 清风镇 =====
+  'qf_street_fight': const GameEventData(
+    id: 'qf_street_fight',
+    name: '街头斗殴',
+    description: '两个醉汉在酒楼门口争吵，眼看就要动手。',
+    type: GameEventType.battle,
+    weight: 15,
+    choices: [
+      EventChoice(
+        text: '上前劝架',
+        resultText: '你好言相劝，其中一人却朝你挥拳！',
+        triggerBattle: true,
+        enemyId: 'drunkard',
+      ),
+      EventChoice(
+        text: '绕道走开',
+        resultText: '你摇摇头，不想惹麻烦。',
+        rewardExp: 2,
+      ),
+    ],
+  ),
+  'qf_merchant_deal': const GameEventData(
+    id: 'qf_merchant_deal',
+    name: '行商交易',
+    description: '一个外地商人正在街边摆摊，有些稀奇玩意。',
+    type: GameEventType.merchant,
+    weight: 8,
+    choices: [
+      EventChoice(
+        text: '看看货物',
+        resultText: '你翻看了一番，发现了一瓶还不错的金创药。',
+        rewardItemId: 'healing_pill',
+      ),
+      EventChoice(
+        text: '不感兴趣',
+        resultText: '你瞥了一眼便走开了。',
+      ),
+    ],
+  ),
+  'qf_rumor': const GameEventData(
+    id: 'qf_rumor',
+    name: '小道消息',
+    description: '茶馆里几个茶客在窃窃私语，似乎在讨论什么大事。',
+    type: GameEventType.npcEncounter,
+    weight: 12,
+    choices: [
+      EventChoice(
+        text: '凑近偷听',
+        resultText: '你听到他们在谈论落霞山脉的山贼最近活动频繁，据说抢了一批很值钱的货物。',
+        rewardExp: 8,
+      ),
+      EventChoice(
+        text: '自顾喝茶',
+        resultText: '你淡然品茶，不理闲事。',
+        rewardExp: 2,
+      ),
+    ],
+  ),
+  'qf_pickpocket': const GameEventData(
+    id: 'qf_pickpocket',
+    name: '小偷',
+    description: '你感觉有人在碰你的钱袋！',
+    type: GameEventType.trap,
+    weight: 6,
+    choices: [
+      EventChoice(
+        text: '反手擒住',
+        resultText: '你一把抓住那只手，是个小毛贼。他吓得连忙求饶，还掉出了几两碎银。',
+        rewardSilver: 10,
+        rewardExp: 5,
+      ),
+      EventChoice(
+        text: '大喊抓贼',
+        resultText: '小偷撒腿就跑，你追了几步没追上。好在钱袋还在。',
+        rewardExp: 2,
+      ),
+    ],
+  ),
+  'qf_wine_contest': const GameEventData(
+    id: 'qf_wine_contest',
+    name: '醉仙楼斗酒',
+    description: '醉仙楼今日有斗酒大会，胜者可获丰厚奖赏。',
+    type: GameEventType.adventure,
+    weight: 5,
+    choices: [
+      EventChoice(
+        text: '参加比赛',
+        resultText: '你连喝三碗，虽然没拿第一，但也获得了掌柜的赏识。',
+        rewardSilver: 15,
+        rewardExp: 10,
+        hpChange: -5,
+      ),
+      EventChoice(
+        text: '在旁观看',
+        resultText: '你看着几个彪形大汉你来我往，好不热闹。',
+        rewardExp: 3,
+      ),
+    ],
+  ),
+
+  // ===== 青竹林 =====
+  'qz_wild_boar': const GameEventData(
+    id: 'qz_wild_boar',
+    name: '野猪拦路',
+    description: '一头野猪从竹林中冲了出来，气势汹汹地朝你冲来！',
+    type: GameEventType.battle,
+    weight: 18,
+    choices: [
+      EventChoice(
+        text: '迎战',
+        resultText: '你摆好架势，准备和野猪一较高下。',
+        triggerBattle: true,
+        enemyId: 'wild_boar',
+      ),
+      EventChoice(
+        text: '爬上竹子',
+        resultText: '你灵巧地攀上旁边的竹子，野猪在下面转了几圈后愤愤离去。',
+        rewardExp: 5,
+      ),
+    ],
+  ),
+  'qz_herb_find': const GameEventData(
+    id: 'qz_herb_find',
+    name: '珍稀药材',
+    description: '在一棵古竹根部，你发现了一株碧绿的草药，散发着淡淡清香。',
+    type: GameEventType.treasure,
+    weight: 8,
+    rewardItemId: 'bixin_herb',
+    rewardExp: 10,
+    choices: [
+      EventChoice(
+        text: '采集药材',
+        resultText: '你小心翼翼地将这株碧心草收入囊中。',
+        rewardItemId: 'bixin_herb',
+        rewardExp: 10,
+      ),
+      EventChoice(
+        text: '做个标记以后再来',
+        resultText: '你在附近的竹子上刻了个记号。',
+        rewardExp: 3,
+      ),
+    ],
+  ),
+  'qz_bamboo_training': const GameEventData(
+    id: 'qz_bamboo_training',
+    name: '竹林悟剑',
+    description: '风吹竹林沙沙作响，你突然对剑意有了些许感悟。',
+    type: GameEventType.scenery,
+    weight: 10,
+    rewardExp: 15,
+    choices: [
+      EventChoice(
+        text: '静心感悟',
+        resultText: '你闭目凝神，感受竹叶随风起舞的韵律，似有所悟。',
+        rewardExp: 15,
+      ),
+      EventChoice(
+        text: '随手比划几下',
+        resultText: '你挥了挥手中的棍子，感觉好像有点什么，又好像没有。',
+        rewardExp: 5,
+      ),
+    ],
+  ),
+  'qz_hidden_cave': const GameEventData(
+    id: 'qz_hidden_cave',
+    name: '隐蔽洞穴',
+    description: '你推开茂密的竹子，发现了一个被藤蔓遮盖的洞穴入口。',
+    type: GameEventType.adventure,
+    weight: 4,
+    choices: [
+      EventChoice(
+        text: '进去看看',
+        resultText: '洞中有人居住过的痕迹，角落里有个落灰的木箱。你打开一看，里面有些银两和一本泛黄的册子。',
+        rewardSilver: 30,
+        rewardExp: 20,
+      ),
+      EventChoice(
+        text: '太黑了不敢进',
+        resultText: '你犹豫再三，还是退了出来。',
+        rewardExp: 2,
+      ),
+    ],
+  ),
+  'qz_snake_encounter': const GameEventData(
+    id: 'qz_snake_encounter',
+    name: '毒蛇',
+    description: '脚下传来嘶嘶声，一条青蛇正盯着你！',
+    type: GameEventType.trap,
+    weight: 7,
+    choices: [
+      EventChoice(
+        text: '一棍打飞',
+        resultText: '你眼疾手快一棍子将蛇扫开，虚惊一场。',
+        rewardExp: 8,
+      ),
+      EventChoice(
+        text: '缓缓后退',
+        resultText: '你慢慢退开，青蛇也没追来，但你出了一身冷汗。',
+        rewardExp: 3,
+      ),
+    ],
+  ),
+
+  // ===== 望月楼 =====
+  'wy_moonlight_practice': const GameEventData(
+    id: 'wy_moonlight_practice',
+    name: '月下修炼',
+    description: '望月楼上月光皎洁，是个修炼内功的好时机。',
+    type: GameEventType.scenery,
+    weight: 10,
+    rewardExp: 20,
+    choices: [
+      EventChoice(
+        text: '盘膝打坐',
+        resultText: '你在月光下吐纳真气，感觉经脉通畅了许多。',
+        rewardExp: 25,
+      ),
+      EventChoice(
+        text: '欣赏月色',
+        resultText: '月色如水，你心旷神怡。',
+        rewardExp: 5,
+      ),
+    ],
+  ),
+  'wy_ancient_scroll': const GameEventData(
+    id: 'wy_ancient_scroll',
+    name: '古卷残页',
+    description: '你在楼梯角落发现了一张泛黄的纸片，上面写着些看不太懂的文字。',
+    type: GameEventType.treasure,
+    weight: 5,
+    choices: [
+      EventChoice(
+        text: '仔细辨认',
+        resultText: '你费了好大功夫才认出几个字，似乎是某种心法的残篇。虽然不完整，但你也有所收获。',
+        rewardExp: 30,
+      ),
+      EventChoice(
+        text: '收起来以后再看',
+        resultText: '你将纸片小心折好放入怀中。',
+        rewardExp: 5,
+      ),
+    ],
+  ),
+  'wy_spirit_test': const GameEventData(
+    id: 'wy_spirit_test',
+    name: '心魔考验',
+    description: '你突然感到一阵眩晕，眼前出现了各种幻象——金银财宝、绝世武功、倾国倾城……',
+    type: GameEventType.adventure,
+    weight: 3,
+    choices: [
+      EventChoice(
+        text: '坚守本心',
+        resultText: '你咬紧牙关闭上双眼，心中默念"万法皆空"。幻象渐渐消散，你感到心境提升了一层。',
+        rewardExp: 40,
+      ),
+      EventChoice(
+        text: '沉浸其中',
+        resultText: '你被幻象迷惑，等回过神来已经过了许久，而且头痛欲裂。',
+        hpChange: -20,
+        rewardExp: 10,
+      ),
+    ],
+  ),
+  'wy_shadow_duel': const GameEventData(
+    id: 'wy_shadow_duel',
+    name: '暗影来袭',
+    description: '月色中一道黑影从楼顶掠下，手持短刃直奔你而来！',
+    type: GameEventType.battle,
+    weight: 6,
+    choices: [
+      EventChoice(
+        text: '拔刀迎敌',
+        resultText: '你侧身闪过第一击，拉开架势准备迎战。',
+        triggerBattle: true,
+        enemyId: 'shadow_assassin',
+      ),
+      EventChoice(
+        text: '翻窗逃离',
+        resultText: '你跃出窗外，黑影追了几步便放弃了，但你摔伤了腿。',
+        hpChange: -15,
+        rewardExp: 8,
+      ),
+    ],
+  ),
+
+  // ===== 落霞山脉 =====
+  'lx_bandit_ambush': const GameEventData(
+    id: 'lx_bandit_ambush',
+    name: '山贼伏击',
+    description: '前方山路突然跳出几个蒙面人，为首的嚷道："此路是我开，留下买路财！"',
+    type: GameEventType.battle,
+    weight: 22,
+    choices: [
+      EventChoice(
+        text: '拔刀相迎',
+        resultText: '你握紧兵器，准备和山贼决一死战。',
+        triggerBattle: true,
+        enemyId: 'bandit',
+      ),
+      EventChoice(
+        text: '给点银子打发',
+        resultText: '你掏出一些碎银递过去，山贼们嘿嘿笑着收下，放你过去了。',
+        rewardExp: 5,
+      ),
+    ],
+  ),
+  'lx_cliff_treasure': const GameEventData(
+    id: 'lx_cliff_treasure',
+    name: '悬崖宝箱',
+    description: '你在一处悬崖边发现了一个半露的箱子，似乎是被人藏在这里的。',
+    type: GameEventType.treasure,
+    weight: 5,
+    choices: [
+      EventChoice(
+        text: '冒险取箱',
+        resultText: '你小心翼翼地攀到悬崖边，打开箱子发现了一些银两和一颗回春丹。',
+        rewardSilver: 50,
+        rewardItemId: 'healing_pill',
+        rewardExp: 15,
+      ),
+      EventChoice(
+        text: '太危险了',
+        resultText: '你看了看脚下万丈深渊，理智战胜了贪念。',
+        rewardExp: 3,
+      ),
+    ],
+  ),
+  'lx_eagle_encounter': const GameEventData(
+    id: 'lx_eagle_encounter',
+    name: '雄鹰翱翔',
+    description: '一只苍鹰在山巅盘旋，它的飞行姿态竟让你联想到了某种轻功身法。',
+    type: GameEventType.scenery,
+    weight: 8,
+    rewardExp: 12,
+    choices: [
+      EventChoice(
+        text: '模仿鹰姿',
+        resultText: '你张开双臂模仿苍鹰的姿态，竟对身法有了新的理解。',
+        rewardExp: 18,
+      ),
+      EventChoice(
+        text: '驻足观赏',
+        resultText: '苍鹰振翅高飞，消失在云端。壮哉！',
+        rewardExp: 5,
+      ),
+    ],
+  ),
+  'lx_hermit_hut': const GameEventData(
+    id: 'lx_hermit_hut',
+    name: '山中小屋',
+    description: '在一处偏僻的山坳里，你发现了一间破旧的茅屋。',
+    type: GameEventType.adventure,
+    weight: 4,
+    choices: [
+      EventChoice(
+        text: '敲门拜访',
+        resultText: '无人应答。你推门进去，发现墙上刻着几招剑法的图示。你仔细研究，受益匪浅。',
+        rewardExp: 25,
+      ),
+      EventChoice(
+        text: '不打扰',
+        resultText: '你在门外行了一礼便离开了。',
+        rewardExp: 3,
+      ),
+    ],
+  ),
+  'lx_bandit_camp': const GameEventData(
+    id: 'lx_bandit_camp',
+    name: '山贼营地',
+    description: '你远远望见几顶帐篷和升起的炊烟，那是山贼的营地。',
+    type: GameEventType.battle,
+    weight: 12,
+    choices: [
+      EventChoice(
+        text: '夜袭营地',
+        resultText: '你趁夜色摸进营地，却被放哨的发现了！',
+        triggerBattle: true,
+        enemyId: 'bandit_leader',
+      ),
+      EventChoice(
+        text: '绕路走',
+        resultText: '你谨慎地选择了另一条路，多花了些时间但平安无事。',
+        rewardExp: 5,
+      ),
+    ],
+  ),
+
+  // ===== 迷雾谷 =====
+  'mw_fog_illusion': const GameEventData(
+    id: 'mw_fog_illusion',
+    name: '迷雾幻象',
+    description: '浓雾中你看到了一个熟悉的身影，但你知道那不可能是真的。',
+    type: GameEventType.trap,
+    weight: 10,
+    choices: [
+      EventChoice(
+        text: '闭目前行',
+        resultText: '你闭上眼睛凭借感知前进，幻象消散了。',
+        rewardExp: 20,
+      ),
+      EventChoice(
+        text: '追上去看看',
+        resultText: '你追了上去，却一脚踩空摔了一跤。',
+        hpChange: -15,
+        rewardExp: 5,
+      ),
+    ],
+  ),
+  'mw_ghost_encounter': const GameEventData(
+    id: 'mw_ghost_encounter',
+    name: '幽魂',
+    description: '雾中传来低沉的哭声，你感到一股寒意袭来。',
+    type: GameEventType.battle,
+    weight: 12,
+    choices: [
+      EventChoice(
+        text: '运功驱邪',
+        resultText: '你催动体内真气，形成一道气墙。哭声渐渐远去。',
+        rewardExp: 25,
+      ),
+      EventChoice(
+        text: '拔刀迎战',
+        resultText: '一团幽绿的雾气凝聚成人形，向你扑来！',
+        triggerBattle: true,
+        enemyId: 'ghost',
+      ),
+      EventChoice(
+        text: '快步逃离',
+        resultText: '你撒腿就跑，也不知跑了多远才停下来，气喘吁吁。',
+        hpChange: -10,
+        rewardExp: 8,
+      ),
+    ],
+  ),
+  'mw_ancient_tomb': const GameEventData(
+    id: 'mw_ancient_tomb',
+    name: '古墓入口',
+    description: '雾气散开的一瞬间，你看到了一座布满青苔的石门。',
+    type: GameEventType.adventure,
+    weight: 3,
+    choices: [
+      EventChoice(
+        text: '推门进入',
+        resultText: '墓中机关重重，你好不容易才找到一间石室。石壁上刻着一套上乘内功心法！',
+        rewardExp: 50,
+        hpChange: -20,
+      ),
+      EventChoice(
+        text: '记下位置',
+        resultText: '你在地上做了标记，打算日后准备充分再来。',
+        rewardExp: 5,
+      ),
+    ],
+  ),
+  'mw_poison_trap': const GameEventData(
+    id: 'mw_poison_trap',
+    name: '毒雾陷阱',
+    description: '你踩到了一处暗板，四周突然涌出一股紫色的烟雾！',
+    type: GameEventType.trap,
+    weight: 7,
+    choices: [
+      EventChoice(
+        text: '屏息突围',
+        resultText: '你深吸一口气闭住呼吸冲了出去，好在中毒不深。',
+        hpChange: -10,
+        rewardExp: 15,
+      ),
+      EventChoice(
+        text: '用衣袖捂住口鼻',
+        resultText: '紫雾渗透力极强，你还是吸入了不少。头晕目眩了好一阵才恢复。',
+        hpChange: -25,
+        rewardExp: 10,
+      ),
+    ],
+  ),
+
+  // ===== 天剑门外 =====
+  'tj_disciple_challenge': const GameEventData(
+    id: 'tj_disciple_challenge',
+    name: '弟子挑战',
+    description: '一名天剑门外门弟子拦住你的去路："来者何人？先过我这一关再说！"',
+    type: GameEventType.battle,
+    weight: 15,
+    choices: [
+      EventChoice(
+        text: '应战',
+        resultText: '你拔出兵器，准备和天剑门弟子过招。',
+        triggerBattle: true,
+        enemyId: 'tianjian_disciple',
+      ),
+      EventChoice(
+        text: '说明来意',
+        resultText: '"我是来求见掌门的。"弟子打量了你一番，半信半疑地让你先等着。',
+        rewardExp: 10,
+      ),
+    ],
+  ),
+  'tj_sword_intent': const GameEventData(
+    id: 'tj_sword_intent',
+    name: '剑意洗礼',
+    description: '走在通往天剑门的石阶上，一股凌厉的剑意扑面而来。这是前辈们留下的剑意残留。',
+    type: GameEventType.scenery,
+    weight: 8,
+    rewardExp: 30,
+    choices: [
+      EventChoice(
+        text: '感悟剑意',
+        resultText: '你在剑意中沉浸了许久，虽然只领悟了一丝皮毛，但也收获颇丰。',
+        rewardExp: 35,
+      ),
+      EventChoice(
+        text: '快步通过',
+        resultText: '剑意如刀割般拂过你的面颊，你咬牙快步走过。',
+        hpChange: -10,
+        rewardExp: 10,
+      ),
+    ],
+  ),
+};
