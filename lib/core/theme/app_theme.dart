@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
 
-/// 武侠风格主题配色
+/// 武侠风格主题配色 — 水墨暖灰
 class AppColors {
-  // 主色调：深靛蓝（夜空江湖）
-  static const primary = Color(0xFF1A237E);
-  static const primaryLight = Color(0xFF3949AB);
-  static const primaryDark = Color(0xFF0D1642);
+  // 主色调：墨色暖灰
+  static const primary = Color(0xFF3A3632);
+  static const primaryLight = Color(0xFF5A5550);
+  static const primaryDark = Color(0xFF1C1A18);
 
   // 强调色：金色（江湖气质）
-  static const accent = Color(0xFFFFD54F);
-  static const accentDark = Color(0xFFC9A825);
+  static const accent = Color(0xFFE8C36A);
+  static const accentDark = Color(0xFFBFA04A);
 
   // 背景
-  static const background = Color(0xFF121832);
-  static const surface = Color(0xFF1A2040);
-  static const surfaceLight = Color(0xFF252B55);
+  static const background = Color(0xFF1A1816);
+  static const surface = Color(0xFF242220);
+  static const surfaceLight = Color(0xFF33302D);
 
   // 进度条轨道
-  static const progressTrack = Color(0xFF2E3560);
+  static const progressTrack = Color(0xFF3D3A36);
 
   // 文字
-  static const textPrimary = Color(0xFFE8E6E3);
-  static const textSecondary = Color(0xFFB0B0B0);
-  static const textAccent = Color(0xFFFFD54F);
+  static const textPrimary = Color(0xFFE8E4DF);
+  static const textSecondary = Color(0xFFA8A29E);
+  static const textAccent = Color(0xFFE8C36A);
 
   // 功能色
   static const hp = Color(0xFFE53935);
@@ -120,6 +120,11 @@ class AppTheme {
       dividerTheme: const DividerThemeData(
         color: AppColors.primaryLight,
         thickness: 0.5,
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.accent,
+        ),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.primaryDark,

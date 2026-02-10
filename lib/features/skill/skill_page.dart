@@ -5,7 +5,10 @@ import '../../core/constants/game_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/skill_data.dart';
 import '../../models/enums.dart';
+import '../../models/game_event.dart';
 import '../../models/skill.dart';
+import '../character/character_provider.dart';
+import '../explore/explore_provider.dart';
 import 'skill_provider.dart';
 
 class SkillPage extends ConsumerWidget {
@@ -64,56 +67,126 @@ class SkillPage extends ConsumerWidget {
     final equipped = ref.read(equippedSkillsProvider);
 
     return Card(
-      child: ListTile(
-        leading: Icon(
-          _skillTypeIcon(skill.type),
-          color: _qualityColor(skill.quality),
-        ),
-        title: Row(
-          children: [
-            Text(
-              skill.name,
-              style: TextStyle(color: _qualityColor(skill.quality)),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              'Lv.${ls.level}',
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
+      child: InkWell(
+        onTap: () => _showPracticeSheet(context, ref, ls, skill),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    _skillTypeIcon(skill.type),
+                    color: _qualityColor(skill.quality),
+                    size: 22,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              skill.name,
+                              style: TextStyle(
+                                color: _qualityColor(skill.quality),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Lv.${ls.level}',
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          skill.description,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  isEquipped
+                      ? TextButton(
+                          onPressed: () => ref
+                              .read(skillNotifierProvider.notifier)
+                              .unequipSkill(ls.id),
+                          child:
+                              const Text('卸下', style: TextStyle(fontSize: 12)),
+                        )
+                      : TextButton(
+                          onPressed:
+                              equipped.length < GameConstants.maxEquippedSkills
+                                  ? () => ref
+                                      .read(skillNotifierProvider.notifier)
+                                      .equipSkill(ls.id, equipped)
+                                  : null,
+                          child:
+                              const Text('装备', style: TextStyle(fontSize: 12)),
+                        ),
+                ],
               ),
-            ),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              skill.description,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12),
-            ),
-            const SizedBox(height: 4),
-            _buildSkillStats(skill),
-          ],
-        ),
-        trailing: isEquipped
-            ? TextButton(
-                onPressed: () => ref
-                    .read(skillNotifierProvider.notifier)
-                    .unequipSkill(ls.id),
-                child: const Text('卸下', style: TextStyle(fontSize: 12)),
-              )
-            : TextButton(
-                onPressed: equipped.length < GameConstants.maxEquippedSkills
-                    ? () => ref
-                        .read(skillNotifierProvider.notifier)
-                        .equipSkill(ls.id, equipped)
-                    : null,
-                child: const Text('装备', style: TextStyle(fontSize: 12)),
+              const SizedBox(height: 6),
+              // 熟练度进度条
+              Row(
+                children: [
+                  const Text('熟练',
+                      style: TextStyle(
+                          color: AppColors.textSecondary, fontSize: 10)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: LinearProgressIndicator(
+                        value: ls.proficiency / 100.0,
+                        backgroundColor: AppColors.progressTrack,
+                        color: AppColors.exp,
+                        minHeight: 4,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${ls.proficiency}/100',
+                    style: const TextStyle(
+                        color: AppColors.textSecondary, fontSize: 10),
+                  ),
+                ],
               ),
+              const SizedBox(height: 4),
+              _buildSkillStats(skill),
+            ],
+          ),
+        ),
       ),
+    );
+  }
+
+  void _showPracticeSheet(
+      BuildContext context, WidgetRef ref, dynamic ls, Skill skill) {
+    // 被动技能不能修炼
+    if (skill.type == SkillType.passive) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('被动技能无法修炼')),
+      );
+      return;
+    }
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _PracticeSheet(learnedSkill: ls, skill: skill),
     );
   }
 
@@ -153,5 +226,137 @@ class SkillPage extends ConsumerWidget {
       SkillType.hidden => Icons.visibility_off,
       SkillType.passive => Icons.auto_fix_high,
     };
+  }
+}
+
+/// 技能修炼面板
+class _PracticeSheet extends ConsumerStatefulWidget {
+  final dynamic learnedSkill;
+  final Skill skill;
+
+  const _PracticeSheet({required this.learnedSkill, required this.skill});
+
+  @override
+  ConsumerState<_PracticeSheet> createState() => _PracticeSheetState();
+}
+
+class _PracticeSheetState extends ConsumerState<_PracticeSheet> {
+  String? _resultMsg;
+
+  // 每次修炼消耗 10 点内力，获得 15 点熟练度
+  static const _mpCost = 10;
+  static const _profGain = 15;
+
+  void _doPractice() {
+    final character = ref.read(currentCharacterProvider).valueOrNull;
+    if (character == null) return;
+
+    if (character.currentMp < _mpCost) {
+      setState(() => _resultMsg = '内力不足，无法修炼。');
+      return;
+    }
+
+    // 扣内力
+    ref.read(characterNotifierProvider.notifier).updateStats(
+          characterId: character.id,
+          currentMp: character.currentMp - _mpCost,
+        );
+
+    // 加熟练度
+    ref.read(skillNotifierProvider.notifier).upgradeProficiency(
+          widget.learnedSkill.id,
+          _profGain,
+        );
+
+    ref.read(gameLogProvider.notifier).addLog(
+          '修炼【${widget.skill.name}】，熟练度 +$_profGain',
+          type: LogType.system,
+        );
+
+    setState(() => _resultMsg = '你凝神修炼${widget.skill.name}，感觉又精进了几分。');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final character = ref.watch(currentCharacterProvider).valueOrNull;
+    final canPractice = character != null && character.currentMp >= _mpCost;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            '修炼 · ${widget.skill.name}',
+            style: const TextStyle(
+              color: AppColors.accent,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            widget.skill.description,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '当前等级: Lv.${widget.learnedSkill.level}  '
+            '熟练度: ${widget.learnedSkill.proficiency}/100',
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '消耗 $_mpCost 内力 → 熟练度 +$_profGain'
+            '${character != null ? "  (当前内力: ${character.currentMp})" : ""}',
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          if (_resultMsg != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                _resultMsg!,
+                style: const TextStyle(color: AppColors.textPrimary, height: 1.5),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: canPractice ? _doPractice : null,
+                  child: const Text('修炼一次'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.surfaceLight,
+                  ),
+                  child: const Text('关闭'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

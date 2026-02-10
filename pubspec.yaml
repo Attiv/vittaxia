@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   cupertino_icons: ^1.0.8
   # 状态管理
   flutter_riverpod: ^2.6.1
@@ -37,6 +39,18 @@ dev_dependencies:
   freezed: ^2.5.7
   json_serializable: ^6.9.4
   drift_dev: ^2.22.1
+  # 图标生成
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  macos:
+    generate: true
+    image_path: "assets/app_icon.png"
+  image_path: "assets/app_icon.png"
+  adaptive_icon_background: "#1A1816"
+  adaptive_icon_foreground: "assets/app_icon.png"
 
 flutter:
   uses-material-design: true

@@ -11,6 +11,7 @@ import '../character/character_provider.dart';
 import '../dialogue/npc_list_page.dart';
 import '../explore/event_rewards.dart';
 import '../explore/explore_provider.dart';
+import '../guide/guide_page.dart';
 import '../idle/idle_calculator.dart';
 import '../idle/idle_reward_dialog.dart';
 import '../inventory/inventory_page.dart';
@@ -35,7 +36,20 @@ class _HomePageState extends ConsumerState<HomePage> {
     final characterAsync = ref.watch(currentCharacterProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('维 塔 侠')),
+      appBar: AppBar(
+        title: const Text('维 塔 侠'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            tooltip: '新手攻略',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const GuidePage()),
+              );
+            },
+          ),
+        ],
+      ),
       body: characterAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('出错了: $e')),

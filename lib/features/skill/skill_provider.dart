@@ -27,6 +27,13 @@ class SkillNotifier extends StateNotifier<AsyncValue<void>> {
   SkillNotifier(this._db) : super(const AsyncValue.data(null));
 
   Future<void> learnSkill(String characterId, String skillId) async {
+    // 已学过则跳过
+    final existing = await (_db.select(_db.learnedSkills)
+          ..where((t) =>
+              t.characterId.equals(characterId) & t.skillId.equals(skillId)))
+        .getSingleOrNull();
+    if (existing != null) return;
+
     await _db.upsertLearnedSkill(LearnedSkillsCompanion.insert(
       id: const Uuid().v4(),
       characterId: characterId,

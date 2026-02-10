@@ -183,50 +183,109 @@ class BattleEngine {
 
     // 消耗内力
     attacker.mp = (attacker.mp - skill.mpCost).clamp(0, attacker.maxMp);
+    if (skill.mpCost > 0) {
+      log.add(BattleLogEntry(
+        '${attacker.name}运起内力，消耗${skill.mpCost}点真气。',
+        isPlayerAction: isPlayer,
+      ));
+    }
 
     // 回复技能
     if (skill.healAmount > 0) {
       final heal = skill.healAmount;
+      final before = attacker.hp;
       attacker.hp = (attacker.hp + heal).clamp(0, attacker.maxHp);
+      final actual = attacker.hp - before;
       log.add(BattleLogEntry(
-        '${attacker.name}使用【${skill.name}】，恢复了$heal点气血',
+        '${attacker.name}施展【${skill.name}】调息运气，恢复了$actual点气血。'
+        '（${attacker.hp}/${attacker.maxHp}）',
         isPlayerAction: isPlayer,
       ));
     }
 
     // 攻击伤害
     if (skill.baseDamage > 0) {
-      final isCrit = _rollCrit(attacker, defender);
-      var damage = (skill.baseDamage +
-              attacker.effectiveAtk * skill.damageMultiplier -
-              defender.effectiveDef * GameConstants.defenseMultiplier)
-          .round();
-      damage = damage.clamp(1, 9999);
-
-      if (isCrit) {
-        damage = (damage * GameConstants.critDamageMultiplier).round();
+      // 闪避判定：基于速度差
+      final dodgeRate = (defender.effectiveSpeed - attacker.effectiveSpeed) * 0.008
+          + defender.luck * 0.002;
+      if (_random.nextDouble() < dodgeRate.clamp(0.0, 0.25)) {
         log.add(BattleLogEntry(
-          '${attacker.name}使用【${skill.name}】！暴击！造成$damage点伤害',
+          '${attacker.name}使用【${skill.name}】攻向${defender.name}——'
+          '${defender.name}身形一闪，巧妙躲开了！',
           isPlayerAction: isPlayer,
         ));
       } else {
-        log.add(BattleLogEntry(
-          '${attacker.name}使用【${skill.name}】，造成$damage点伤害',
-          isPlayerAction: isPlayer,
-        ));
+        final isCrit = _rollCrit(attacker, defender);
+        var damage = (skill.baseDamage +
+                attacker.effectiveAtk * skill.damageMultiplier -
+                defender.effectiveDef * GameConstants.defenseMultiplier)
+            .round();
+        damage = damage.clamp(1, 9999);
+
+        final defReduction = (defender.effectiveDef * GameConstants.defenseMultiplier).round();
+
+        if (isCrit) {
+          damage = (damage * GameConstants.critDamageMultiplier).round();
+          log.add(BattleLogEntry(
+            '${attacker.name}使用【${skill.name}】攻向${defender.name}——'
+            '击中要害！暴击！造成$damage点伤害！',
+            isPlayerAction: isPlayer,
+          ));
+        } else if (defReduction > skill.baseDamage ~/ 2) {
+          log.add(BattleLogEntry(
+            '${attacker.name}使用【${skill.name}】攻向${defender.name}，'
+            '${defender.name}硬扛了一击，防御抵消了$defReduction点，'
+            '受到$damage点伤害。',
+            isPlayerAction: isPlayer,
+          ));
+        } else {
+          log.add(BattleLogEntry(
+            '${attacker.name}使用【${skill.name}】攻向${defender.name}，'
+            '造成$damage点伤害。',
+            isPlayerAction: isPlayer,
+          ));
+        }
+        defender.hp = (defender.hp - damage).clamp(0, defender.maxHp);
+
+        // HP 状态播报
+        if (!defender.isDead) {
+          final hpRatio = defender.hp / defender.maxHp;
+          if (hpRatio < 0.15) {
+            log.add(BattleLogEntry(
+              '${defender.name}摇摇欲坠，已经快撑不住了！'
+              '（${defender.hp}/${defender.maxHp}）',
+              isPlayerAction: isPlayer,
+            ));
+          } else if (hpRatio < 0.3) {
+            log.add(BattleLogEntry(
+              '${defender.name}气息紊乱，伤势不轻。'
+              '（${defender.hp}/${defender.maxHp}）',
+              isPlayerAction: isPlayer,
+            ));
+          }
+        }
       }
-      defender.hp = (defender.hp - damage).clamp(0, defender.maxHp);
     }
 
     // buff 效果
+    final buffParts = <String>[];
     if (skill.buffAtk > 0) {
       attacker.buffs['atk'] = skill.buffDuration;
+      buffParts.add('攻击力提升');
     }
     if (skill.buffDef > 0) {
       attacker.buffs['def'] = skill.buffDuration;
+      buffParts.add('防御力提升');
     }
     if (skill.buffSpeed > 0) {
       attacker.buffs['speed'] = skill.buffDuration;
+      buffParts.add('身法提升');
+    }
+    if (buffParts.isNotEmpty) {
+      log.add(BattleLogEntry(
+        '${attacker.name}${buffParts.join("、")}，持续${skill.buffDuration}回合！',
+        isPlayerAction: isPlayer,
+      ));
     }
 
     _checkBattleEnd();

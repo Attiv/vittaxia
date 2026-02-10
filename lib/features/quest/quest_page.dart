@@ -132,20 +132,28 @@ class QuestPage extends ConsumerWidget {
                 // 完成按钮
                 if (isActive) ...[
                   const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final character =
-                            ref.read(currentCharacterProvider).valueOrNull;
-                        if (character == null) return;
-                        await ref
-                            .read(questNotifierProvider.notifier)
-                            .tryCompleteQuest(character.id, quest.id);
-                      },
-                      child: const Text('交付'),
-                    ),
-                  ),
+                  Builder(builder: (_) {
+                    final allDone = quest.objectives.every((obj) {
+                      final current = objectives[obj.id] ?? 0;
+                      return current >= obj.requiredCount;
+                    });
+                    return Align(
+                      alignment: Alignment.centerRight,
+                      child: ElevatedButton(
+                        onPressed: allDone
+                            ? () async {
+                                final character =
+                                    ref.read(currentCharacterProvider).valueOrNull;
+                                if (character == null) return;
+                                await ref
+                                    .read(questNotifierProvider.notifier)
+                                    .tryCompleteQuest(character.id, quest.id);
+                              }
+                            : null,
+                        child: const Text('交付'),
+                      ),
+                    );
+                  }),
                 ],
               ],
             ),
