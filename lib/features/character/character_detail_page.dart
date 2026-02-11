@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/constants/game_constants.dart';
 import '../../core/database/app_database.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/enums.dart';
@@ -42,10 +43,22 @@ class CharacterDetailPage extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    '经验: ${c.exp}',
-                    style: theme.textTheme.bodyMedium,
-                  ),
+                  Builder(builder: (_) {
+                    final isMaxRealm = tier == RealmTier.zhuJi &&
+                        stage == RealmStage.peak;
+                    if (isMaxRealm) {
+                      return Text(
+                        '经验: ${c.exp}（已达最高境界）',
+                        style: theme.textTheme.bodyMedium,
+                      );
+                    }
+                    final required =
+                        tier.rank * stage.rank * GameConstants.realmExpBase;
+                    return Text(
+                      '经验: ${c.exp} / $required',
+                      style: theme.textTheme.bodyMedium,
+                    );
+                  }),
                 ],
               ),
             ),

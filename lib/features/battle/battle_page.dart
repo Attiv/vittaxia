@@ -45,10 +45,9 @@ class _BattlePageState extends ConsumerState<BattlePage> {
     final template = enemies[widget.enemyId];
     if (character == null || template == null) return;
 
-    final equippedSkillIds = ref
-        .read(equippedSkillsProvider)
-        .map((ls) => ls.skillId)
-        .toList();
+    final equipped = ref.read(equippedSkillsProvider);
+    final equippedSkillIds = equipped.map((ls) => ls.skillId).toList();
+    final skillLevels = {for (final ls in equipped) ls.skillId: ls.level};
 
     final player = BattleEngine.createPlayerFighter(
       name: character.name,
@@ -61,6 +60,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
       speed: totalSpeed(character),
       luck: character.baseLuck,
       equippedSkillIds: equippedSkillIds,
+      skillLevels: skillLevels,
     );
     final enemy = BattleEngine.createEnemyFighter(template);
 
@@ -93,7 +93,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
     }
   }
 
-  void _resolveBattle() {
+  Future<void> _resolveBattle() async {
     final engine = _engine;
     if (engine == null) return;
 
@@ -114,13 +114,16 @@ class _BattlePageState extends ConsumerState<BattlePage> {
       final template = enemies[widget.enemyId]!;
       charNotifier.updateStats(
         characterId: character.id,
-        exp: character.exp + template.expReward,
         silver: character.silver + template.silverReward,
       );
+      final newRealm = await charNotifier.addExp(character.id, template.expReward);
       logNotifier.addLog(
         '击败了${template.name}！获得${template.expReward}经验、${template.silverReward}银两',
         type: LogType.combat,
       );
+      if (newRealm != null) {
+        logNotifier.addLog('突破！境界提升至$newRealm', type: LogType.system);
+      }
 
       // 掉落判定
       if (template.dropItemId != null) {

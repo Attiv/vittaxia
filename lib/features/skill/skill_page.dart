@@ -163,7 +163,7 @@ class SkillPage extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 4),
-              _buildSkillStats(skill),
+              _buildSkillStats(skill, ls.level),
             ],
           ),
         ),
@@ -190,11 +190,26 @@ class SkillPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildSkillStats(Skill skill) {
+  Widget _buildSkillStats(Skill skill, int level) {
+    final mult = GameConstants.skillLevelMultiplier(level);
     final parts = <String>[];
-    if (skill.baseDamage > 0) parts.add('伤害${skill.baseDamage}');
+    if (skill.baseDamage > 0) {
+      final effective = (skill.baseDamage * mult).round();
+      if (effective > skill.baseDamage) {
+        parts.add('伤害$effective(+${effective - skill.baseDamage})');
+      } else {
+        parts.add('伤害${skill.baseDamage}');
+      }
+    }
     if (skill.mpCost > 0) parts.add('耗内${skill.mpCost}');
-    if (skill.healAmount > 0) parts.add('回复${skill.healAmount}');
+    if (skill.healAmount > 0) {
+      final effective = (skill.healAmount * mult).round();
+      if (effective > skill.healAmount) {
+        parts.add('回复$effective(+${effective - skill.healAmount})');
+      } else {
+        parts.add('回复${skill.healAmount}');
+      }
+    }
     if (skill.buffAtk > 0) parts.add('攻+${skill.buffAtk}');
     if (skill.buffDef > 0) parts.add('防+${skill.buffDef}');
     if (skill.buffSpeed > 0) parts.add('速+${skill.buffSpeed}');

@@ -17,6 +17,7 @@ class BattleFighter {
   int speed;
   int luck;
   final List<Skill> skills;
+  final Map<String, int> skillLevels; // skillId -> 等级
   final Map<String, int> buffs; // buffName -> 剩余回合
 
   BattleFighter({
@@ -30,7 +31,11 @@ class BattleFighter {
     required this.speed,
     this.luck = 5,
     required this.skills,
-  }) : buffs = {};
+    Map<String, int>? skillLevels,
+  })  : skillLevels = skillLevels ?? {},
+        buffs = {};
+
+  int getSkillLevel(String skillId) => skillLevels[skillId] ?? 1;
 
   bool get isDead => hp <= 0;
 
@@ -88,6 +93,7 @@ class BattleEngine {
     required int speed,
     required int luck,
     required List<String> equippedSkillIds,
+    Map<String, int> skillLevels = const {},
   }) {
     final playerSkills = <Skill>[];
     for (final id in equippedSkillIds) {
@@ -109,6 +115,7 @@ class BattleEngine {
       speed: speed,
       luck: luck,
       skills: playerSkills,
+      skillLevels: Map.of(skillLevels),
     );
   }
 
@@ -190,9 +197,12 @@ class BattleEngine {
       ));
     }
 
+    final skillLevel = attacker.getSkillLevel(skill.id);
+    final levelMult = GameConstants.skillLevelMultiplier(skillLevel);
+
     // 回复技能
     if (skill.healAmount > 0) {
-      final heal = skill.healAmount;
+      final heal = (skill.healAmount * levelMult).round();
       final before = attacker.hp;
       attacker.hp = (attacker.hp + heal).clamp(0, attacker.maxHp);
       final actual = attacker.hp - before;
@@ -216,8 +226,9 @@ class BattleEngine {
         ));
       } else {
         final isCrit = _rollCrit(attacker, defender);
-        var damage = (skill.baseDamage +
-                attacker.effectiveAtk * skill.damageMultiplier -
+        var damage = ((skill.baseDamage +
+                    attacker.effectiveAtk * skill.damageMultiplier) *
+                levelMult -
                 defender.effectiveDef * GameConstants.defenseMultiplier)
             .round();
         damage = damage.clamp(1, 9999);

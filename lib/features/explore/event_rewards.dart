@@ -21,7 +21,6 @@ void applyEventRewards(
   final logNotifier = ref.read(gameLogProvider.notifier);
   final charNotifier = ref.read(characterNotifierProvider.notifier);
 
-  int? newExp = exp > 0 ? character.exp + exp : null;
   int? newSilver = silver > 0 ? character.silver + silver : null;
   int? newHp;
   if (hpChange != null) {
@@ -30,12 +29,18 @@ void applyEventRewards(
 
   charNotifier.updateStats(
     characterId: character.id,
-    exp: newExp,
     silver: newSilver,
     currentHp: newHp,
   );
 
-  if (exp > 0) logNotifier.addLog('获得 $exp 经验', type: LogType.explore);
+  if (exp > 0) {
+    charNotifier.addExp(character.id, exp).then((newRealm) {
+      if (newRealm != null) {
+        logNotifier.addLog('突破！境界提升至$newRealm', type: LogType.system);
+      }
+    });
+    logNotifier.addLog('获得 $exp 经验', type: LogType.explore);
+  }
   if (silver > 0) logNotifier.addLog('获得 $silver 银两', type: LogType.item);
   if (hpChange != null && hpChange != 0) {
     logNotifier.addLog(

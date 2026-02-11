@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/constants/game_constants.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
 import '../../models/enums.dart';
@@ -81,6 +82,11 @@ class CharacterNotifier extends StateNotifier<AsyncValue<void>> {
     int? reputation,
     int? stamina,
     int? maxStamina,
+    int? baseHp,
+    int? baseMp,
+    int? baseAtk,
+    int? baseDef,
+    int? baseSpeed,
     DateTime? lastStaminaRegenTime,
     RealmTier? realmTier,
     RealmStage? realmStage,
@@ -101,6 +107,11 @@ class CharacterNotifier extends StateNotifier<AsyncValue<void>> {
       stamina: stamina != null ? Value(stamina) : const Value.absent(),
       maxStamina:
           maxStamina != null ? Value(maxStamina) : const Value.absent(),
+      baseHp: baseHp != null ? Value(baseHp) : const Value.absent(),
+      baseMp: baseMp != null ? Value(baseMp) : const Value.absent(),
+      baseAtk: baseAtk != null ? Value(baseAtk) : const Value.absent(),
+      baseDef: baseDef != null ? Value(baseDef) : const Value.absent(),
+      baseSpeed: baseSpeed != null ? Value(baseSpeed) : const Value.absent(),
       lastStaminaRegenTime: lastStaminaRegenTime != null
           ? Value(lastStaminaRegenTime)
           : const Value.absent(),
@@ -120,6 +131,66 @@ class CharacterNotifier extends StateNotifier<AsyncValue<void>> {
       lastOnlineTime: Value(DateTime.now()),
     );
     await _db.updateCharacter(companion);
+  }
+
+  /// 增加经验并自动检查境界突破，返回突破后的境界名（未突破返回 null）
+  Future<String?> addExp(String characterId, int amount) async {
+    final character = await _db.getCharacter(characterId);
+    if (character == null) return null;
+
+    var exp = character.exp + amount;
+    var tierIndex = character.realmTierIndex;
+    var stageIndex = character.realmStageIndex;
+    var upgraded = false;
+    var hpGain = 0, mpGain = 0, atkGain = 0, defGain = 0, speedGain = 0;
+
+    // 循环处理连续突破
+    while (true) {
+      final tier = RealmTier.values[tierIndex];
+      final stage = RealmStage.values[stageIndex];
+      if (tier == RealmTier.zhuJi && stage == RealmStage.peak) break;
+
+      final required = tier.rank * stage.rank * GameConstants.realmExpBase;
+      if (exp < required) break;
+
+      exp -= required;
+      upgraded = true;
+
+      if (stage == RealmStage.peak) {
+        tierIndex++;
+        stageIndex = 0;
+      } else {
+        stageIndex++;
+      }
+
+      hpGain += GameConstants.realmUpgradeHp;
+      mpGain += GameConstants.realmUpgradeMp;
+      atkGain += GameConstants.realmUpgradeAtk;
+      defGain += GameConstants.realmUpgradeDef;
+      speedGain += GameConstants.realmUpgradeSpeed;
+    }
+
+    if (upgraded) {
+      final newTier = RealmTier.values[tierIndex];
+      final newStage = RealmStage.values[stageIndex];
+      await updateStats(
+        characterId: characterId,
+        exp: exp,
+        realmTier: newTier,
+        realmStage: newStage,
+        baseHp: character.baseHp + hpGain,
+        baseMp: character.baseMp + mpGain,
+        baseAtk: character.baseAtk + atkGain,
+        baseDef: character.baseDef + defGain,
+        baseSpeed: character.baseSpeed + speedGain,
+        currentHp: character.baseHp + hpGain,
+        currentMp: character.baseMp + mpGain,
+      );
+      return '${newTier.label}${newStage.label}';
+    } else {
+      await updateStats(characterId: characterId, exp: exp);
+      return null;
+    }
   }
 
   /// 消耗体力，返回是否成功
