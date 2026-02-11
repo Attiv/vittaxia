@@ -23,6 +23,9 @@ class Characters extends Table {
   TextColumn get shoesId => text().nullable()();
   TextColumn get accessoryId => text().nullable()();
   TextColumn get locationId => text().withDefault(const Constant('qingyun_village'))();
+  IntColumn get stamina => integer().withDefault(const Constant(100))();
+  IntColumn get maxStamina => integer().withDefault(const Constant(100))();
+  DateTimeColumn get lastStaminaRegenTime => dateTime().nullable()();
   DateTimeColumn get lastOnlineTime => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
@@ -73,6 +76,20 @@ class QuestProgress extends Table {
   IntColumn get status => integer().withDefault(const Constant(0))(); // 0=未接 1=进行中 2=完成
   TextColumn get objectivesJson => text().withDefault(const Constant('{}'))();
   IntColumn get selectedBranch => integer().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// 洞府探索进度表
+class DungeonProgress extends Table {
+  TextColumn get id => text()();
+  TextColumn get characterId => text().references(Characters, #id)();
+  TextColumn get dungeonId => text()();
+  IntColumn get currentFloor => integer().withDefault(const Constant(0))();
+  IntColumn get bestFloor => integer().withDefault(const Constant(0))();
+  IntColumn get status => integer().withDefault(const Constant(0))(); // 0=未开始 1=进行中 2=已通关
+  DateTimeColumn get lastAttemptTime => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

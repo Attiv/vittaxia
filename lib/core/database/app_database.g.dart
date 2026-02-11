@@ -247,6 +247,41 @@ class $CharactersTable extends Characters
     requiredDuringInsert: false,
     defaultValue: const Constant('qingyun_village'),
   );
+  static const VerificationMeta _staminaMeta = const VerificationMeta(
+    'stamina',
+  );
+  @override
+  late final GeneratedColumn<int> stamina = GeneratedColumn<int>(
+    'stamina',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(100),
+  );
+  static const VerificationMeta _maxStaminaMeta = const VerificationMeta(
+    'maxStamina',
+  );
+  @override
+  late final GeneratedColumn<int> maxStamina = GeneratedColumn<int>(
+    'max_stamina',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(100),
+  );
+  static const VerificationMeta _lastStaminaRegenTimeMeta =
+      const VerificationMeta('lastStaminaRegenTime');
+  @override
+  late final GeneratedColumn<DateTime> lastStaminaRegenTime =
+      GeneratedColumn<DateTime>(
+        'last_stamina_regen_time',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _lastOnlineTimeMeta = const VerificationMeta(
     'lastOnlineTime',
   );
@@ -294,6 +329,9 @@ class $CharactersTable extends Characters
     shoesId,
     accessoryId,
     locationId,
+    stamina,
+    maxStamina,
+    lastStaminaRegenTime,
     lastOnlineTime,
     createdAt,
   ];
@@ -448,6 +486,27 @@ class $CharactersTable extends Characters
         locationId.isAcceptableOrUnknown(data['location_id']!, _locationIdMeta),
       );
     }
+    if (data.containsKey('stamina')) {
+      context.handle(
+        _staminaMeta,
+        stamina.isAcceptableOrUnknown(data['stamina']!, _staminaMeta),
+      );
+    }
+    if (data.containsKey('max_stamina')) {
+      context.handle(
+        _maxStaminaMeta,
+        maxStamina.isAcceptableOrUnknown(data['max_stamina']!, _maxStaminaMeta),
+      );
+    }
+    if (data.containsKey('last_stamina_regen_time')) {
+      context.handle(
+        _lastStaminaRegenTimeMeta,
+        lastStaminaRegenTime.isAcceptableOrUnknown(
+          data['last_stamina_regen_time']!,
+          _lastStaminaRegenTimeMeta,
+        ),
+      );
+    }
     if (data.containsKey('last_online_time')) {
       context.handle(
         _lastOnlineTimeMeta,
@@ -556,6 +615,18 @@ class $CharactersTable extends Characters
         DriftSqlType.string,
         data['${effectivePrefix}location_id'],
       )!,
+      stamina: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}stamina'],
+      )!,
+      maxStamina: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}max_stamina'],
+      )!,
+      lastStaminaRegenTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_stamina_regen_time'],
+      ),
       lastOnlineTime: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}last_online_time'],
@@ -595,6 +666,9 @@ class Character extends DataClass implements Insertable<Character> {
   final String? shoesId;
   final String? accessoryId;
   final String locationId;
+  final int stamina;
+  final int maxStamina;
+  final DateTime? lastStaminaRegenTime;
   final DateTime? lastOnlineTime;
   final DateTime createdAt;
   const Character({
@@ -619,6 +693,9 @@ class Character extends DataClass implements Insertable<Character> {
     this.shoesId,
     this.accessoryId,
     required this.locationId,
+    required this.stamina,
+    required this.maxStamina,
+    this.lastStaminaRegenTime,
     this.lastOnlineTime,
     required this.createdAt,
   });
@@ -654,6 +731,11 @@ class Character extends DataClass implements Insertable<Character> {
       map['accessory_id'] = Variable<String>(accessoryId);
     }
     map['location_id'] = Variable<String>(locationId);
+    map['stamina'] = Variable<int>(stamina);
+    map['max_stamina'] = Variable<int>(maxStamina);
+    if (!nullToAbsent || lastStaminaRegenTime != null) {
+      map['last_stamina_regen_time'] = Variable<DateTime>(lastStaminaRegenTime);
+    }
     if (!nullToAbsent || lastOnlineTime != null) {
       map['last_online_time'] = Variable<DateTime>(lastOnlineTime);
     }
@@ -692,6 +774,11 @@ class Character extends DataClass implements Insertable<Character> {
           ? const Value.absent()
           : Value(accessoryId),
       locationId: Value(locationId),
+      stamina: Value(stamina),
+      maxStamina: Value(maxStamina),
+      lastStaminaRegenTime: lastStaminaRegenTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastStaminaRegenTime),
       lastOnlineTime: lastOnlineTime == null && nullToAbsent
           ? const Value.absent()
           : Value(lastOnlineTime),
@@ -726,6 +813,11 @@ class Character extends DataClass implements Insertable<Character> {
       shoesId: serializer.fromJson<String?>(json['shoesId']),
       accessoryId: serializer.fromJson<String?>(json['accessoryId']),
       locationId: serializer.fromJson<String>(json['locationId']),
+      stamina: serializer.fromJson<int>(json['stamina']),
+      maxStamina: serializer.fromJson<int>(json['maxStamina']),
+      lastStaminaRegenTime: serializer.fromJson<DateTime?>(
+        json['lastStaminaRegenTime'],
+      ),
       lastOnlineTime: serializer.fromJson<DateTime?>(json['lastOnlineTime']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -755,6 +847,11 @@ class Character extends DataClass implements Insertable<Character> {
       'shoesId': serializer.toJson<String?>(shoesId),
       'accessoryId': serializer.toJson<String?>(accessoryId),
       'locationId': serializer.toJson<String>(locationId),
+      'stamina': serializer.toJson<int>(stamina),
+      'maxStamina': serializer.toJson<int>(maxStamina),
+      'lastStaminaRegenTime': serializer.toJson<DateTime?>(
+        lastStaminaRegenTime,
+      ),
       'lastOnlineTime': serializer.toJson<DateTime?>(lastOnlineTime),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
@@ -782,6 +879,9 @@ class Character extends DataClass implements Insertable<Character> {
     Value<String?> shoesId = const Value.absent(),
     Value<String?> accessoryId = const Value.absent(),
     String? locationId,
+    int? stamina,
+    int? maxStamina,
+    Value<DateTime?> lastStaminaRegenTime = const Value.absent(),
     Value<DateTime?> lastOnlineTime = const Value.absent(),
     DateTime? createdAt,
   }) => Character(
@@ -806,6 +906,11 @@ class Character extends DataClass implements Insertable<Character> {
     shoesId: shoesId.present ? shoesId.value : this.shoesId,
     accessoryId: accessoryId.present ? accessoryId.value : this.accessoryId,
     locationId: locationId ?? this.locationId,
+    stamina: stamina ?? this.stamina,
+    maxStamina: maxStamina ?? this.maxStamina,
+    lastStaminaRegenTime: lastStaminaRegenTime.present
+        ? lastStaminaRegenTime.value
+        : this.lastStaminaRegenTime,
     lastOnlineTime: lastOnlineTime.present
         ? lastOnlineTime.value
         : this.lastOnlineTime,
@@ -846,6 +951,13 @@ class Character extends DataClass implements Insertable<Character> {
       locationId: data.locationId.present
           ? data.locationId.value
           : this.locationId,
+      stamina: data.stamina.present ? data.stamina.value : this.stamina,
+      maxStamina: data.maxStamina.present
+          ? data.maxStamina.value
+          : this.maxStamina,
+      lastStaminaRegenTime: data.lastStaminaRegenTime.present
+          ? data.lastStaminaRegenTime.value
+          : this.lastStaminaRegenTime,
       lastOnlineTime: data.lastOnlineTime.present
           ? data.lastOnlineTime.value
           : this.lastOnlineTime,
@@ -877,6 +989,9 @@ class Character extends DataClass implements Insertable<Character> {
           ..write('shoesId: $shoesId, ')
           ..write('accessoryId: $accessoryId, ')
           ..write('locationId: $locationId, ')
+          ..write('stamina: $stamina, ')
+          ..write('maxStamina: $maxStamina, ')
+          ..write('lastStaminaRegenTime: $lastStaminaRegenTime, ')
           ..write('lastOnlineTime: $lastOnlineTime, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -906,6 +1021,9 @@ class Character extends DataClass implements Insertable<Character> {
     shoesId,
     accessoryId,
     locationId,
+    stamina,
+    maxStamina,
+    lastStaminaRegenTime,
     lastOnlineTime,
     createdAt,
   ]);
@@ -934,6 +1052,9 @@ class Character extends DataClass implements Insertable<Character> {
           other.shoesId == this.shoesId &&
           other.accessoryId == this.accessoryId &&
           other.locationId == this.locationId &&
+          other.stamina == this.stamina &&
+          other.maxStamina == this.maxStamina &&
+          other.lastStaminaRegenTime == this.lastStaminaRegenTime &&
           other.lastOnlineTime == this.lastOnlineTime &&
           other.createdAt == this.createdAt);
 }
@@ -960,6 +1081,9 @@ class CharactersCompanion extends UpdateCompanion<Character> {
   final Value<String?> shoesId;
   final Value<String?> accessoryId;
   final Value<String> locationId;
+  final Value<int> stamina;
+  final Value<int> maxStamina;
+  final Value<DateTime?> lastStaminaRegenTime;
   final Value<DateTime?> lastOnlineTime;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
@@ -985,6 +1109,9 @@ class CharactersCompanion extends UpdateCompanion<Character> {
     this.shoesId = const Value.absent(),
     this.accessoryId = const Value.absent(),
     this.locationId = const Value.absent(),
+    this.stamina = const Value.absent(),
+    this.maxStamina = const Value.absent(),
+    this.lastStaminaRegenTime = const Value.absent(),
     this.lastOnlineTime = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1011,6 +1138,9 @@ class CharactersCompanion extends UpdateCompanion<Character> {
     this.shoesId = const Value.absent(),
     this.accessoryId = const Value.absent(),
     this.locationId = const Value.absent(),
+    this.stamina = const Value.absent(),
+    this.maxStamina = const Value.absent(),
+    this.lastStaminaRegenTime = const Value.absent(),
     this.lastOnlineTime = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1038,6 +1168,9 @@ class CharactersCompanion extends UpdateCompanion<Character> {
     Expression<String>? shoesId,
     Expression<String>? accessoryId,
     Expression<String>? locationId,
+    Expression<int>? stamina,
+    Expression<int>? maxStamina,
+    Expression<DateTime>? lastStaminaRegenTime,
     Expression<DateTime>? lastOnlineTime,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
@@ -1064,6 +1197,10 @@ class CharactersCompanion extends UpdateCompanion<Character> {
       if (shoesId != null) 'shoes_id': shoesId,
       if (accessoryId != null) 'accessory_id': accessoryId,
       if (locationId != null) 'location_id': locationId,
+      if (stamina != null) 'stamina': stamina,
+      if (maxStamina != null) 'max_stamina': maxStamina,
+      if (lastStaminaRegenTime != null)
+        'last_stamina_regen_time': lastStaminaRegenTime,
       if (lastOnlineTime != null) 'last_online_time': lastOnlineTime,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
@@ -1092,6 +1229,9 @@ class CharactersCompanion extends UpdateCompanion<Character> {
     Value<String?>? shoesId,
     Value<String?>? accessoryId,
     Value<String>? locationId,
+    Value<int>? stamina,
+    Value<int>? maxStamina,
+    Value<DateTime?>? lastStaminaRegenTime,
     Value<DateTime?>? lastOnlineTime,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
@@ -1118,6 +1258,9 @@ class CharactersCompanion extends UpdateCompanion<Character> {
       shoesId: shoesId ?? this.shoesId,
       accessoryId: accessoryId ?? this.accessoryId,
       locationId: locationId ?? this.locationId,
+      stamina: stamina ?? this.stamina,
+      maxStamina: maxStamina ?? this.maxStamina,
+      lastStaminaRegenTime: lastStaminaRegenTime ?? this.lastStaminaRegenTime,
       lastOnlineTime: lastOnlineTime ?? this.lastOnlineTime,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
@@ -1190,6 +1333,17 @@ class CharactersCompanion extends UpdateCompanion<Character> {
     if (locationId.present) {
       map['location_id'] = Variable<String>(locationId.value);
     }
+    if (stamina.present) {
+      map['stamina'] = Variable<int>(stamina.value);
+    }
+    if (maxStamina.present) {
+      map['max_stamina'] = Variable<int>(maxStamina.value);
+    }
+    if (lastStaminaRegenTime.present) {
+      map['last_stamina_regen_time'] = Variable<DateTime>(
+        lastStaminaRegenTime.value,
+      );
+    }
     if (lastOnlineTime.present) {
       map['last_online_time'] = Variable<DateTime>(lastOnlineTime.value);
     }
@@ -1226,6 +1380,9 @@ class CharactersCompanion extends UpdateCompanion<Character> {
           ..write('shoesId: $shoesId, ')
           ..write('accessoryId: $accessoryId, ')
           ..write('locationId: $locationId, ')
+          ..write('stamina: $stamina, ')
+          ..write('maxStamina: $maxStamina, ')
+          ..write('lastStaminaRegenTime: $lastStaminaRegenTime, ')
           ..write('lastOnlineTime: $lastOnlineTime, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
@@ -2726,6 +2883,485 @@ class QuestProgressCompanion extends UpdateCompanion<QuestProgressData> {
   }
 }
 
+class $DungeonProgressTable extends DungeonProgress
+    with TableInfo<$DungeonProgressTable, DungeonProgressData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DungeonProgressTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _characterIdMeta = const VerificationMeta(
+    'characterId',
+  );
+  @override
+  late final GeneratedColumn<String> characterId = GeneratedColumn<String>(
+    'character_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES characters (id)',
+    ),
+  );
+  static const VerificationMeta _dungeonIdMeta = const VerificationMeta(
+    'dungeonId',
+  );
+  @override
+  late final GeneratedColumn<String> dungeonId = GeneratedColumn<String>(
+    'dungeon_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _currentFloorMeta = const VerificationMeta(
+    'currentFloor',
+  );
+  @override
+  late final GeneratedColumn<int> currentFloor = GeneratedColumn<int>(
+    'current_floor',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _bestFloorMeta = const VerificationMeta(
+    'bestFloor',
+  );
+  @override
+  late final GeneratedColumn<int> bestFloor = GeneratedColumn<int>(
+    'best_floor',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<int> status = GeneratedColumn<int>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastAttemptTimeMeta = const VerificationMeta(
+    'lastAttemptTime',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastAttemptTime =
+      GeneratedColumn<DateTime>(
+        'last_attempt_time',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    characterId,
+    dungeonId,
+    currentFloor,
+    bestFloor,
+    status,
+    lastAttemptTime,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'dungeon_progress';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DungeonProgressData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('character_id')) {
+      context.handle(
+        _characterIdMeta,
+        characterId.isAcceptableOrUnknown(
+          data['character_id']!,
+          _characterIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_characterIdMeta);
+    }
+    if (data.containsKey('dungeon_id')) {
+      context.handle(
+        _dungeonIdMeta,
+        dungeonId.isAcceptableOrUnknown(data['dungeon_id']!, _dungeonIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dungeonIdMeta);
+    }
+    if (data.containsKey('current_floor')) {
+      context.handle(
+        _currentFloorMeta,
+        currentFloor.isAcceptableOrUnknown(
+          data['current_floor']!,
+          _currentFloorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('best_floor')) {
+      context.handle(
+        _bestFloorMeta,
+        bestFloor.isAcceptableOrUnknown(data['best_floor']!, _bestFloorMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('last_attempt_time')) {
+      context.handle(
+        _lastAttemptTimeMeta,
+        lastAttemptTime.isAcceptableOrUnknown(
+          data['last_attempt_time']!,
+          _lastAttemptTimeMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DungeonProgressData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DungeonProgressData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      characterId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}character_id'],
+      )!,
+      dungeonId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}dungeon_id'],
+      )!,
+      currentFloor: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}current_floor'],
+      )!,
+      bestFloor: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}best_floor'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}status'],
+      )!,
+      lastAttemptTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_attempt_time'],
+      ),
+    );
+  }
+
+  @override
+  $DungeonProgressTable createAlias(String alias) {
+    return $DungeonProgressTable(attachedDatabase, alias);
+  }
+}
+
+class DungeonProgressData extends DataClass
+    implements Insertable<DungeonProgressData> {
+  final String id;
+  final String characterId;
+  final String dungeonId;
+  final int currentFloor;
+  final int bestFloor;
+  final int status;
+  final DateTime? lastAttemptTime;
+  const DungeonProgressData({
+    required this.id,
+    required this.characterId,
+    required this.dungeonId,
+    required this.currentFloor,
+    required this.bestFloor,
+    required this.status,
+    this.lastAttemptTime,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['character_id'] = Variable<String>(characterId);
+    map['dungeon_id'] = Variable<String>(dungeonId);
+    map['current_floor'] = Variable<int>(currentFloor);
+    map['best_floor'] = Variable<int>(bestFloor);
+    map['status'] = Variable<int>(status);
+    if (!nullToAbsent || lastAttemptTime != null) {
+      map['last_attempt_time'] = Variable<DateTime>(lastAttemptTime);
+    }
+    return map;
+  }
+
+  DungeonProgressCompanion toCompanion(bool nullToAbsent) {
+    return DungeonProgressCompanion(
+      id: Value(id),
+      characterId: Value(characterId),
+      dungeonId: Value(dungeonId),
+      currentFloor: Value(currentFloor),
+      bestFloor: Value(bestFloor),
+      status: Value(status),
+      lastAttemptTime: lastAttemptTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastAttemptTime),
+    );
+  }
+
+  factory DungeonProgressData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DungeonProgressData(
+      id: serializer.fromJson<String>(json['id']),
+      characterId: serializer.fromJson<String>(json['characterId']),
+      dungeonId: serializer.fromJson<String>(json['dungeonId']),
+      currentFloor: serializer.fromJson<int>(json['currentFloor']),
+      bestFloor: serializer.fromJson<int>(json['bestFloor']),
+      status: serializer.fromJson<int>(json['status']),
+      lastAttemptTime: serializer.fromJson<DateTime?>(json['lastAttemptTime']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'characterId': serializer.toJson<String>(characterId),
+      'dungeonId': serializer.toJson<String>(dungeonId),
+      'currentFloor': serializer.toJson<int>(currentFloor),
+      'bestFloor': serializer.toJson<int>(bestFloor),
+      'status': serializer.toJson<int>(status),
+      'lastAttemptTime': serializer.toJson<DateTime?>(lastAttemptTime),
+    };
+  }
+
+  DungeonProgressData copyWith({
+    String? id,
+    String? characterId,
+    String? dungeonId,
+    int? currentFloor,
+    int? bestFloor,
+    int? status,
+    Value<DateTime?> lastAttemptTime = const Value.absent(),
+  }) => DungeonProgressData(
+    id: id ?? this.id,
+    characterId: characterId ?? this.characterId,
+    dungeonId: dungeonId ?? this.dungeonId,
+    currentFloor: currentFloor ?? this.currentFloor,
+    bestFloor: bestFloor ?? this.bestFloor,
+    status: status ?? this.status,
+    lastAttemptTime: lastAttemptTime.present
+        ? lastAttemptTime.value
+        : this.lastAttemptTime,
+  );
+  DungeonProgressData copyWithCompanion(DungeonProgressCompanion data) {
+    return DungeonProgressData(
+      id: data.id.present ? data.id.value : this.id,
+      characterId: data.characterId.present
+          ? data.characterId.value
+          : this.characterId,
+      dungeonId: data.dungeonId.present ? data.dungeonId.value : this.dungeonId,
+      currentFloor: data.currentFloor.present
+          ? data.currentFloor.value
+          : this.currentFloor,
+      bestFloor: data.bestFloor.present ? data.bestFloor.value : this.bestFloor,
+      status: data.status.present ? data.status.value : this.status,
+      lastAttemptTime: data.lastAttemptTime.present
+          ? data.lastAttemptTime.value
+          : this.lastAttemptTime,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DungeonProgressData(')
+          ..write('id: $id, ')
+          ..write('characterId: $characterId, ')
+          ..write('dungeonId: $dungeonId, ')
+          ..write('currentFloor: $currentFloor, ')
+          ..write('bestFloor: $bestFloor, ')
+          ..write('status: $status, ')
+          ..write('lastAttemptTime: $lastAttemptTime')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    characterId,
+    dungeonId,
+    currentFloor,
+    bestFloor,
+    status,
+    lastAttemptTime,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DungeonProgressData &&
+          other.id == this.id &&
+          other.characterId == this.characterId &&
+          other.dungeonId == this.dungeonId &&
+          other.currentFloor == this.currentFloor &&
+          other.bestFloor == this.bestFloor &&
+          other.status == this.status &&
+          other.lastAttemptTime == this.lastAttemptTime);
+}
+
+class DungeonProgressCompanion extends UpdateCompanion<DungeonProgressData> {
+  final Value<String> id;
+  final Value<String> characterId;
+  final Value<String> dungeonId;
+  final Value<int> currentFloor;
+  final Value<int> bestFloor;
+  final Value<int> status;
+  final Value<DateTime?> lastAttemptTime;
+  final Value<int> rowid;
+  const DungeonProgressCompanion({
+    this.id = const Value.absent(),
+    this.characterId = const Value.absent(),
+    this.dungeonId = const Value.absent(),
+    this.currentFloor = const Value.absent(),
+    this.bestFloor = const Value.absent(),
+    this.status = const Value.absent(),
+    this.lastAttemptTime = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DungeonProgressCompanion.insert({
+    required String id,
+    required String characterId,
+    required String dungeonId,
+    this.currentFloor = const Value.absent(),
+    this.bestFloor = const Value.absent(),
+    this.status = const Value.absent(),
+    this.lastAttemptTime = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       characterId = Value(characterId),
+       dungeonId = Value(dungeonId);
+  static Insertable<DungeonProgressData> custom({
+    Expression<String>? id,
+    Expression<String>? characterId,
+    Expression<String>? dungeonId,
+    Expression<int>? currentFloor,
+    Expression<int>? bestFloor,
+    Expression<int>? status,
+    Expression<DateTime>? lastAttemptTime,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (characterId != null) 'character_id': characterId,
+      if (dungeonId != null) 'dungeon_id': dungeonId,
+      if (currentFloor != null) 'current_floor': currentFloor,
+      if (bestFloor != null) 'best_floor': bestFloor,
+      if (status != null) 'status': status,
+      if (lastAttemptTime != null) 'last_attempt_time': lastAttemptTime,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DungeonProgressCompanion copyWith({
+    Value<String>? id,
+    Value<String>? characterId,
+    Value<String>? dungeonId,
+    Value<int>? currentFloor,
+    Value<int>? bestFloor,
+    Value<int>? status,
+    Value<DateTime?>? lastAttemptTime,
+    Value<int>? rowid,
+  }) {
+    return DungeonProgressCompanion(
+      id: id ?? this.id,
+      characterId: characterId ?? this.characterId,
+      dungeonId: dungeonId ?? this.dungeonId,
+      currentFloor: currentFloor ?? this.currentFloor,
+      bestFloor: bestFloor ?? this.bestFloor,
+      status: status ?? this.status,
+      lastAttemptTime: lastAttemptTime ?? this.lastAttemptTime,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (characterId.present) {
+      map['character_id'] = Variable<String>(characterId.value);
+    }
+    if (dungeonId.present) {
+      map['dungeon_id'] = Variable<String>(dungeonId.value);
+    }
+    if (currentFloor.present) {
+      map['current_floor'] = Variable<int>(currentFloor.value);
+    }
+    if (bestFloor.present) {
+      map['best_floor'] = Variable<int>(bestFloor.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<int>(status.value);
+    }
+    if (lastAttemptTime.present) {
+      map['last_attempt_time'] = Variable<DateTime>(lastAttemptTime.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DungeonProgressCompanion(')
+          ..write('id: $id, ')
+          ..write('characterId: $characterId, ')
+          ..write('dungeonId: $dungeonId, ')
+          ..write('currentFloor: $currentFloor, ')
+          ..write('bestFloor: $bestFloor, ')
+          ..write('status: $status, ')
+          ..write('lastAttemptTime: $lastAttemptTime, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2734,6 +3370,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LearnedSkillsTable learnedSkills = $LearnedSkillsTable(this);
   late final $NpcRelationsTable npcRelations = $NpcRelationsTable(this);
   late final $QuestProgressTable questProgress = $QuestProgressTable(this);
+  late final $DungeonProgressTable dungeonProgress = $DungeonProgressTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2744,6 +3383,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     learnedSkills,
     npcRelations,
     questProgress,
+    dungeonProgress,
   ];
 }
 
@@ -2770,6 +3410,9 @@ typedef $$CharactersTableCreateCompanionBuilder =
       Value<String?> shoesId,
       Value<String?> accessoryId,
       Value<String> locationId,
+      Value<int> stamina,
+      Value<int> maxStamina,
+      Value<DateTime?> lastStaminaRegenTime,
       Value<DateTime?> lastOnlineTime,
       Value<DateTime> createdAt,
       Value<int> rowid,
@@ -2797,6 +3440,9 @@ typedef $$CharactersTableUpdateCompanionBuilder =
       Value<String?> shoesId,
       Value<String?> accessoryId,
       Value<String> locationId,
+      Value<int> stamina,
+      Value<int> maxStamina,
+      Value<DateTime?> lastStaminaRegenTime,
       Value<DateTime?> lastOnlineTime,
       Value<DateTime> createdAt,
       Value<int> rowid,
@@ -2885,6 +3531,29 @@ final class $$CharactersTableReferences
     ).filter((f) => f.characterId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_questProgressRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$DungeonProgressTable, List<DungeonProgressData>>
+  _dungeonProgressRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.dungeonProgress,
+    aliasName: $_aliasNameGenerator(
+      db.characters.id,
+      db.dungeonProgress.characterId,
+    ),
+  );
+
+  $$DungeonProgressTableProcessedTableManager get dungeonProgressRefs {
+    final manager = $$DungeonProgressTableTableManager(
+      $_db,
+      $_db.dungeonProgress,
+    ).filter((f) => f.characterId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _dungeonProgressRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -3005,6 +3674,21 @@ class $$CharactersTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get stamina => $composableBuilder(
+    column: $table.stamina,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get maxStamina => $composableBuilder(
+    column: $table.maxStamina,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastStaminaRegenTime => $composableBuilder(
+    column: $table.lastStaminaRegenTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get lastOnlineTime => $composableBuilder(
     column: $table.lastOnlineTime,
     builder: (column) => ColumnFilters(column),
@@ -3106,6 +3790,31 @@ class $$CharactersTableFilterComposer
           }) => $$QuestProgressTableFilterComposer(
             $db: $db,
             $table: $db.questProgress,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> dungeonProgressRefs(
+    Expression<bool> Function($$DungeonProgressTableFilterComposer f) f,
+  ) {
+    final $$DungeonProgressTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.dungeonProgress,
+      getReferencedColumn: (t) => t.characterId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DungeonProgressTableFilterComposer(
+            $db: $db,
+            $table: $db.dungeonProgress,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -3230,6 +3939,21 @@ class $$CharactersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get stamina => $composableBuilder(
+    column: $table.stamina,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get maxStamina => $composableBuilder(
+    column: $table.maxStamina,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastStaminaRegenTime => $composableBuilder(
+    column: $table.lastStaminaRegenTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get lastOnlineTime => $composableBuilder(
     column: $table.lastOnlineTime,
     builder: (column) => ColumnOrderings(column),
@@ -3322,6 +4046,19 @@ class $$CharactersTableAnnotationComposer
 
   GeneratedColumn<String> get locationId => $composableBuilder(
     column: $table.locationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get stamina =>
+      $composableBuilder(column: $table.stamina, builder: (column) => column);
+
+  GeneratedColumn<int> get maxStamina => $composableBuilder(
+    column: $table.maxStamina,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastStaminaRegenTime => $composableBuilder(
+    column: $table.lastStaminaRegenTime,
     builder: (column) => column,
   );
 
@@ -3432,6 +4169,31 @@ class $$CharactersTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> dungeonProgressRefs<T extends Object>(
+    Expression<T> Function($$DungeonProgressTableAnnotationComposer a) f,
+  ) {
+    final $$DungeonProgressTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.dungeonProgress,
+      getReferencedColumn: (t) => t.characterId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DungeonProgressTableAnnotationComposer(
+            $db: $db,
+            $table: $db.dungeonProgress,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$CharactersTableTableManager
@@ -3452,6 +4214,7 @@ class $$CharactersTableTableManager
             bool learnedSkillsRefs,
             bool npcRelationsRefs,
             bool questProgressRefs,
+            bool dungeonProgressRefs,
           })
         > {
   $$CharactersTableTableManager(_$AppDatabase db, $CharactersTable table)
@@ -3488,6 +4251,9 @@ class $$CharactersTableTableManager
                 Value<String?> shoesId = const Value.absent(),
                 Value<String?> accessoryId = const Value.absent(),
                 Value<String> locationId = const Value.absent(),
+                Value<int> stamina = const Value.absent(),
+                Value<int> maxStamina = const Value.absent(),
+                Value<DateTime?> lastStaminaRegenTime = const Value.absent(),
                 Value<DateTime?> lastOnlineTime = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -3513,6 +4279,9 @@ class $$CharactersTableTableManager
                 shoesId: shoesId,
                 accessoryId: accessoryId,
                 locationId: locationId,
+                stamina: stamina,
+                maxStamina: maxStamina,
+                lastStaminaRegenTime: lastStaminaRegenTime,
                 lastOnlineTime: lastOnlineTime,
                 createdAt: createdAt,
                 rowid: rowid,
@@ -3540,6 +4309,9 @@ class $$CharactersTableTableManager
                 Value<String?> shoesId = const Value.absent(),
                 Value<String?> accessoryId = const Value.absent(),
                 Value<String> locationId = const Value.absent(),
+                Value<int> stamina = const Value.absent(),
+                Value<int> maxStamina = const Value.absent(),
+                Value<DateTime?> lastStaminaRegenTime = const Value.absent(),
                 Value<DateTime?> lastOnlineTime = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -3565,6 +4337,9 @@ class $$CharactersTableTableManager
                 shoesId: shoesId,
                 accessoryId: accessoryId,
                 locationId: locationId,
+                stamina: stamina,
+                maxStamina: maxStamina,
+                lastStaminaRegenTime: lastStaminaRegenTime,
                 lastOnlineTime: lastOnlineTime,
                 createdAt: createdAt,
                 rowid: rowid,
@@ -3583,6 +4358,7 @@ class $$CharactersTableTableManager
                 learnedSkillsRefs = false,
                 npcRelationsRefs = false,
                 questProgressRefs = false,
+                dungeonProgressRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -3591,6 +4367,7 @@ class $$CharactersTableTableManager
                     if (learnedSkillsRefs) db.learnedSkills,
                     if (npcRelationsRefs) db.npcRelations,
                     if (questProgressRefs) db.questProgress,
+                    if (dungeonProgressRefs) db.dungeonProgress,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -3679,6 +4456,27 @@ class $$CharactersTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (dungeonProgressRefs)
+                        await $_getPrefetchedData<
+                          Character,
+                          $CharactersTable,
+                          DungeonProgressData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CharactersTableReferences
+                              ._dungeonProgressRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CharactersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).dungeonProgressRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.characterId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -3704,6 +4502,7 @@ typedef $$CharactersTableProcessedTableManager =
         bool learnedSkillsRefs,
         bool npcRelationsRefs,
         bool questProgressRefs,
+        bool dungeonProgressRefs,
       })
     >;
 typedef $$InventoryItemsTableCreateCompanionBuilder =
@@ -5008,6 +5807,380 @@ typedef $$QuestProgressTableProcessedTableManager =
       QuestProgressData,
       PrefetchHooks Function({bool characterId})
     >;
+typedef $$DungeonProgressTableCreateCompanionBuilder =
+    DungeonProgressCompanion Function({
+      required String id,
+      required String characterId,
+      required String dungeonId,
+      Value<int> currentFloor,
+      Value<int> bestFloor,
+      Value<int> status,
+      Value<DateTime?> lastAttemptTime,
+      Value<int> rowid,
+    });
+typedef $$DungeonProgressTableUpdateCompanionBuilder =
+    DungeonProgressCompanion Function({
+      Value<String> id,
+      Value<String> characterId,
+      Value<String> dungeonId,
+      Value<int> currentFloor,
+      Value<int> bestFloor,
+      Value<int> status,
+      Value<DateTime?> lastAttemptTime,
+      Value<int> rowid,
+    });
+
+final class $$DungeonProgressTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $DungeonProgressTable,
+          DungeonProgressData
+        > {
+  $$DungeonProgressTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $CharactersTable _characterIdTable(_$AppDatabase db) =>
+      db.characters.createAlias(
+        $_aliasNameGenerator(db.dungeonProgress.characterId, db.characters.id),
+      );
+
+  $$CharactersTableProcessedTableManager get characterId {
+    final $_column = $_itemColumn<String>('character_id')!;
+
+    final manager = $$CharactersTableTableManager(
+      $_db,
+      $_db.characters,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_characterIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$DungeonProgressTableFilterComposer
+    extends Composer<_$AppDatabase, $DungeonProgressTable> {
+  $$DungeonProgressTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dungeonId => $composableBuilder(
+    column: $table.dungeonId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get currentFloor => $composableBuilder(
+    column: $table.currentFloor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bestFloor => $composableBuilder(
+    column: $table.bestFloor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastAttemptTime => $composableBuilder(
+    column: $table.lastAttemptTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CharactersTableFilterComposer get characterId {
+    final $$CharactersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.characterId,
+      referencedTable: $db.characters,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CharactersTableFilterComposer(
+            $db: $db,
+            $table: $db.characters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DungeonProgressTableOrderingComposer
+    extends Composer<_$AppDatabase, $DungeonProgressTable> {
+  $$DungeonProgressTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get dungeonId => $composableBuilder(
+    column: $table.dungeonId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get currentFloor => $composableBuilder(
+    column: $table.currentFloor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get bestFloor => $composableBuilder(
+    column: $table.bestFloor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastAttemptTime => $composableBuilder(
+    column: $table.lastAttemptTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CharactersTableOrderingComposer get characterId {
+    final $$CharactersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.characterId,
+      referencedTable: $db.characters,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CharactersTableOrderingComposer(
+            $db: $db,
+            $table: $db.characters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DungeonProgressTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DungeonProgressTable> {
+  $$DungeonProgressTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get dungeonId =>
+      $composableBuilder(column: $table.dungeonId, builder: (column) => column);
+
+  GeneratedColumn<int> get currentFloor => $composableBuilder(
+    column: $table.currentFloor,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get bestFloor =>
+      $composableBuilder(column: $table.bestFloor, builder: (column) => column);
+
+  GeneratedColumn<int> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastAttemptTime => $composableBuilder(
+    column: $table.lastAttemptTime,
+    builder: (column) => column,
+  );
+
+  $$CharactersTableAnnotationComposer get characterId {
+    final $$CharactersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.characterId,
+      referencedTable: $db.characters,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CharactersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.characters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DungeonProgressTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DungeonProgressTable,
+          DungeonProgressData,
+          $$DungeonProgressTableFilterComposer,
+          $$DungeonProgressTableOrderingComposer,
+          $$DungeonProgressTableAnnotationComposer,
+          $$DungeonProgressTableCreateCompanionBuilder,
+          $$DungeonProgressTableUpdateCompanionBuilder,
+          (DungeonProgressData, $$DungeonProgressTableReferences),
+          DungeonProgressData,
+          PrefetchHooks Function({bool characterId})
+        > {
+  $$DungeonProgressTableTableManager(
+    _$AppDatabase db,
+    $DungeonProgressTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DungeonProgressTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DungeonProgressTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DungeonProgressTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> characterId = const Value.absent(),
+                Value<String> dungeonId = const Value.absent(),
+                Value<int> currentFloor = const Value.absent(),
+                Value<int> bestFloor = const Value.absent(),
+                Value<int> status = const Value.absent(),
+                Value<DateTime?> lastAttemptTime = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DungeonProgressCompanion(
+                id: id,
+                characterId: characterId,
+                dungeonId: dungeonId,
+                currentFloor: currentFloor,
+                bestFloor: bestFloor,
+                status: status,
+                lastAttemptTime: lastAttemptTime,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String characterId,
+                required String dungeonId,
+                Value<int> currentFloor = const Value.absent(),
+                Value<int> bestFloor = const Value.absent(),
+                Value<int> status = const Value.absent(),
+                Value<DateTime?> lastAttemptTime = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DungeonProgressCompanion.insert(
+                id: id,
+                characterId: characterId,
+                dungeonId: dungeonId,
+                currentFloor: currentFloor,
+                bestFloor: bestFloor,
+                status: status,
+                lastAttemptTime: lastAttemptTime,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$DungeonProgressTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({characterId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (characterId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.characterId,
+                                referencedTable:
+                                    $$DungeonProgressTableReferences
+                                        ._characterIdTable(db),
+                                referencedColumn:
+                                    $$DungeonProgressTableReferences
+                                        ._characterIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$DungeonProgressTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DungeonProgressTable,
+      DungeonProgressData,
+      $$DungeonProgressTableFilterComposer,
+      $$DungeonProgressTableOrderingComposer,
+      $$DungeonProgressTableAnnotationComposer,
+      $$DungeonProgressTableCreateCompanionBuilder,
+      $$DungeonProgressTableUpdateCompanionBuilder,
+      (DungeonProgressData, $$DungeonProgressTableReferences),
+      DungeonProgressData,
+      PrefetchHooks Function({bool characterId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5022,4 +6195,6 @@ class $AppDatabaseManager {
       $$NpcRelationsTableTableManager(_db, _db.npcRelations);
   $$QuestProgressTableTableManager get questProgress =>
       $$QuestProgressTableTableManager(_db, _db.questProgress);
+  $$DungeonProgressTableTableManager get dungeonProgress =>
+      $$DungeonProgressTableTableManager(_db, _db.dungeonProgress);
 }

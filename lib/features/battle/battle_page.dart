@@ -255,7 +255,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
                   ),
                   const SizedBox(height: 12),
                   ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () => Navigator.of(context).pop(engine.playerWon),
                     child: const Text('返回'),
                   ),
                 ],

@@ -245,4 +245,42 @@ final items = <String, Item>{
     buyPrice: 80,
     sellPrice: 40,
   ),
+
+  // ===== 矿石 (强化材料) =====
+  'rough_iron': const Item(
+    id: 'rough_iron',
+    name: '粗铁矿',
+    description: '常见的铁矿石，可用于基础装备强化。',
+    type: ItemType.material,
+    rarity: ItemRarity.common,
+    buyPrice: 15,
+    sellPrice: 6,
+  ),
+  'fine_iron': const Item(
+    id: 'fine_iron',
+    name: '精铁矿',
+    description: '品质不错的铁矿，经过初步提纯，适合中阶强化。',
+    type: ItemType.material,
+    rarity: ItemRarity.uncommon,
+    buyPrice: 40,
+    sellPrice: 18,
+  ),
+  'mystic_ore': const Item(
+    id: 'mystic_ore',
+    name: '玄铁矿',
+    description: '蕴含灵气的稀有矿石，表面隐隐泛着幽光。',
+    type: ItemType.material,
+    rarity: ItemRarity.rare,
+    buyPrice: 100,
+    sellPrice: 45,
+  ),
+  'star_iron': const Item(
+    id: 'star_iron',
+    name: '星陨铁',
+    description: '天外陨铁，极为罕见。据说以此锻造的兵器可斩金断玉。',
+    type: ItemType.material,
+    rarity: ItemRarity.epic,
+    buyPrice: 300,
+    sellPrice: 130,
+  ),
 };

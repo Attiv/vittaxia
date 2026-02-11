@@ -1,9 +1,12 @@
+import 'dart:math';
+
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
+import '../../data/enhance_data.dart';
 import '../../data/item_data.dart';
 import '../../models/enums.dart';
 import '../character/character_provider.dart';
@@ -135,6 +138,72 @@ class InventoryNotifier extends StateNotifier<AsyncValue<void>> {
       _ => null,
     };
   }
+
+  /// 按 itemId 扣减材料
+  Future<bool> removeItemByItemId(
+      String characterId, String itemId, int count) async {
+    final existing = await (_db.select(_db.inventoryItems)
+          ..where((t) =>
+              t.characterId.equals(characterId) & t.itemId.equals(itemId)))
+        .getSingleOrNull();
+    if (existing == null || existing.quantity < count) return false;
+
+    if (existing.quantity <= count) {
+      await _db.deleteInventoryItem(existing.id);
+    } else {
+      await (_db.update(_db.inventoryItems)
+            ..where((t) => t.id.equals(existing.id)))
+          .write(InventoryItemsCompanion(
+        quantity: Value(existing.quantity - count),
+      ));
+    }
+    return true;
+  }
+
+  /// 强化装备，返回 true=成功 false=失败 null=条件不足
+  Future<bool?> enhanceItem(String characterId, String inventoryId) async {
+    final inv = await (_db.select(_db.inventoryItems)
+          ..where((t) => t.id.equals(inventoryId)))
+        .getSingleOrNull();
+    if (inv == null) return null;
+
+    final nextLevel = inv.enhanceLevel + 1;
+    final recipe = enhanceRecipes[nextLevel];
+    if (recipe == null) return null; // 已满级
+
+    // 检查银两
+    final character = _ref.read(currentCharacterProvider).valueOrNull;
+    if (character == null || character.silver < recipe.silverCost) return null;
+
+    // 检查材料
+    final material = await (_db.select(_db.inventoryItems)
+          ..where((t) =>
+              t.characterId.equals(characterId) &
+              t.itemId.equals(recipe.materialId)))
+        .getSingleOrNull();
+    if (material == null || material.quantity < recipe.materialCount) {
+      return null;
+    }
+
+    // 扣减银两和材料
+    await _ref.read(characterNotifierProvider.notifier).updateStats(
+          characterId: characterId,
+          silver: character.silver - recipe.silverCost,
+        );
+    await removeItemByItemId(
+        characterId, recipe.materialId, recipe.materialCount);
+
+    // 判定成功/失败
+    final success = Random().nextDouble() < recipe.successRate;
+    if (success) {
+      await (_db.update(_db.inventoryItems)
+            ..where((t) => t.id.equals(inventoryId)))
+          .write(InventoryItemsCompanion(
+        enhanceLevel: Value(nextLevel),
+      ));
+    }
+    return success;
+  }
 }
 
 final inventoryNotifierProvider =
@@ -143,52 +212,70 @@ final inventoryNotifierProvider =
   return InventoryNotifier(db, ref);
 });
 
-/// 计算装备加成后的总属性
-int totalAtk(dynamic character) {
+/// 计算装备加成后的总属性（含强化加成）
+int _enhancedBonus(int baseBonus, int enhanceLevel) {
+  if (enhanceLevel <= 0 || baseBonus <= 0) return baseBonus;
+  return baseBonus + (baseBonus * enhanceLevel * 0.1).ceil();
+}
+
+int _getEnhanceLevel(String? equipItemId, List<InventoryItem>? inventory) {
+  if (equipItemId == null || equipItemId.isEmpty || inventory == null) return 0;
+  for (final inv in inventory) {
+    if (inv.itemId == equipItemId) return inv.enhanceLevel;
+  }
+  return 0;
+}
+
+int totalAtk(dynamic character, [List<InventoryItem>? inventory]) {
   int bonus = 0;
   for (final id in [character.weaponId, character.armorId, character.shoesId, character.accessoryId]) {
     if (id != null && id.isNotEmpty) {
-      bonus += items[id]?.atkBonus ?? 0;
+      final base = items[id]?.atkBonus ?? 0;
+      bonus += _enhancedBonus(base, _getEnhanceLevel(id, inventory));
     }
   }
   return character.baseAtk + bonus;
 }
 
-int totalDef(dynamic character) {
+int totalDef(dynamic character, [List<InventoryItem>? inventory]) {
   int bonus = 0;
   for (final id in [character.weaponId, character.armorId, character.shoesId, character.accessoryId]) {
     if (id != null && id.isNotEmpty) {
-      bonus += items[id]?.defBonus ?? 0;
+      final base = items[id]?.defBonus ?? 0;
+      bonus += _enhancedBonus(base, _getEnhanceLevel(id, inventory));
     }
   }
   return character.baseDef + bonus;
 }
 
-int totalSpeed(dynamic character) {
+int totalSpeed(dynamic character, [List<InventoryItem>? inventory]) {
   int bonus = 0;
   for (final id in [character.weaponId, character.armorId, character.shoesId, character.accessoryId]) {
     if (id != null && id.isNotEmpty) {
-      bonus += items[id]?.speedBonus ?? 0;
+      final base = items[id]?.speedBonus ?? 0;
+      bonus += _enhancedBonus(base, _getEnhanceLevel(id, inventory));
     }
   }
   return character.baseSpeed + bonus;
 }
 
-int totalMaxHp(dynamic character) {
+int totalMaxHp(dynamic character, [List<InventoryItem>? inventory]) {
   int bonus = 0;
   for (final id in [character.weaponId, character.armorId, character.shoesId, character.accessoryId]) {
     if (id != null && id.isNotEmpty) {
-      bonus += items[id]?.hpBonus ?? 0;
+      final base = items[id]?.hpBonus ?? 0;
+      bonus += _enhancedBonus(base, _getEnhanceLevel(id, inventory));
     }
   }
   return character.baseHp + bonus;
 }
 
-int totalMaxMp(dynamic character) {
+int totalMaxMp(dynamic character, [List<InventoryItem>? inventory]) {
   int bonus = 0;
   for (final id in [character.weaponId, character.armorId, character.shoesId, character.accessoryId]) {
     if (id != null && id.isNotEmpty) {
-      bonus += items[id]?.mpBonus ?? 0;
+      final base = items[id]?.mpBonus ?? 0;
+      bonus += _enhancedBonus(base, _getEnhanceLevel(id, inventory));
     }
   }
   return character.baseMp + bonus;

@@ -203,6 +203,84 @@ final gameEvents = <String, GameEventData>{
       ),
     ],
   ),
+  'qf_night_patrol': const GameEventData(
+    id: 'qf_night_patrol',
+    name: '夜巡缉闹',
+    description: '夜色渐深，街口又有醉汉拍桌吵闹，几名镇民正愁没人压场。',
+    type: GameEventType.battle,
+    weight: 10,
+    choices: [
+      EventChoice(
+        text: '上前制止',
+        resultText: '你才开口劝阻，对方就抄起酒坛扑了上来！',
+        triggerBattle: true,
+        enemyId: 'drunkard',
+      ),
+      EventChoice(
+        text: '护送镇民离开',
+        resultText: '你先把镇民送到巷口，再折回时闹事者已经散去。',
+        rewardExp: 6,
+      ),
+    ],
+  ),
+  'qf_story_fragment': const GameEventData(
+    id: 'qf_story_fragment',
+    name: '茶馆残页',
+    description: '茶馆角落里压着一页旧抄本，字迹提到了“引路钥”和星铁。',
+    type: GameEventType.npcEncounter,
+    weight: 7,
+    choices: [
+      EventChoice(
+        text: '拿去请白无常辨认',
+        resultText: '白无常看后点头，说这正是旧闻缺页。你顺手记下了几个关键地名。',
+        rewardExp: 12,
+      ),
+      EventChoice(
+        text: '自己揣摩',
+        resultText: '你连猜带蒙读懂了半段话，虽不通透，却也补上了些线索。',
+        rewardExp: 6,
+      ),
+    ],
+  ),
+  'qf_blacksmith_invoice': const GameEventData(
+    id: 'qf_blacksmith_invoice',
+    name: '铁铺催单',
+    description: '铁铺伙计抱着账册一路小跑，嘴里念叨着“寒铁再不到就要误期了”。',
+    type: GameEventType.npcEncounter,
+    weight: 8,
+    choices: [
+      EventChoice(
+        text: '帮他跑一趟',
+        resultText: '你替他把催单送到库房，顺道听明白了缺料原委。',
+        rewardExp: 9,
+        rewardSilver: 6,
+      ),
+      EventChoice(
+        text: '记下需求',
+        resultText: '你默记下“寒铁矿两块”的需求，准备回头去山里碰碰运气。',
+        rewardExp: 7,
+      ),
+    ],
+  ),
+  'qf_gate_rumor_update': const GameEventData(
+    id: 'qf_gate_rumor_update',
+    name: '剑门传闻续篇',
+    description: '两名过路镖师正在谈论天剑门外的新规，言辞间颇多戒备之意。',
+    type: GameEventType.npcEncounter,
+    weight: 6,
+    choices: [
+      EventChoice(
+        text: '细问外门动静',
+        resultText: '你问出几条外门换岗时段，正好能作为试帖前的参考。',
+        rewardExp: 11,
+      ),
+      EventChoice(
+        text: '只听不问',
+        resultText: '你不动声色地听完，记住了“外阶巡守加密”这条关键信息。',
+        rewardExp: 6,
+      ),
+    ],
+  ),
 
   // ===== 青竹林 =====
   'qz_wild_boar': const GameEventData(
@@ -306,6 +384,26 @@ final gameEvents = <String, GameEventData>{
       ),
     ],
   ),
+  'qz_starfall_fragment': const GameEventData(
+    id: 'qz_starfall_fragment',
+    name: '坠星碎片',
+    description: '竹林深处有一块发着微光的石头半埋在土里，表面像夜空般斑驳。',
+    type: GameEventType.treasure,
+    weight: 4,
+    choices: [
+      EventChoice(
+        text: '小心挖出',
+        resultText: '你顺着裂隙一点点掘开，取到了一块天星石。',
+        rewardItemId: 'tianxing_stone',
+        rewardExp: 12,
+      ),
+      EventChoice(
+        text: '暂且放过',
+        resultText: '你担心这是诱饵，没有贸然下手。',
+        rewardExp: 3,
+      ),
+    ],
+  ),
 
   // ===== 望月楼 =====
   'wy_moonlight_practice': const GameEventData(
@@ -385,6 +483,26 @@ final gameEvents = <String, GameEventData>{
         resultText: '你跃出窗外，黑影追了几步便放弃了，但你摔伤了腿。',
         hpChange: -15,
         rewardExp: 8,
+      ),
+    ],
+  ),
+  'wy_moonflower_bloom': const GameEventData(
+    id: 'wy_moonflower_bloom',
+    name: '月见花开',
+    description: '楼外石阶边有几朵银白花在月光下绽放，花香清冽。',
+    type: GameEventType.treasure,
+    weight: 5,
+    choices: [
+      EventChoice(
+        text: '采下一朵',
+        resultText: '你趁花未谢时摘下一朵月见花，花瓣还带着露水。',
+        rewardItemId: 'moonflower',
+        rewardExp: 10,
+      ),
+      EventChoice(
+        text: '只观不取',
+        resultText: '你只是静静看着花开花落，心神渐宁。',
+        rewardExp: 6,
       ),
     ],
   ),
@@ -490,6 +608,66 @@ final gameEvents = <String, GameEventData>{
       ),
     ],
   ),
+  'lx_cold_iron_vein': const GameEventData(
+    id: 'lx_cold_iron_vein',
+    name: '寒铁矿脉',
+    description: '山壁裂缝中透出丝丝寒气，像是埋着极罕见的矿石。',
+    type: GameEventType.treasure,
+    weight: 5,
+    choices: [
+      EventChoice(
+        text: '凿开矿壁',
+        resultText: '你顶着寒气凿开矿层，取到一块寒铁矿。',
+        rewardItemId: 'cold_iron',
+        rewardExp: 14,
+      ),
+      EventChoice(
+        text: '先记位置',
+        resultText: '你担心动静太大引来山贼，只做了标记。',
+        rewardExp: 4,
+      ),
+    ],
+  ),
+  'lx_mine_trail_cleanup': const GameEventData(
+    id: 'lx_mine_trail_cleanup',
+    name: '矿路清障',
+    description: '矿路边散落着断木与旧陷索，显然是残党留下的阻路手段。',
+    type: GameEventType.adventure,
+    weight: 7,
+    choices: [
+      EventChoice(
+        text: '动手清理',
+        resultText: '你把路障一一拆掉，还顺手补了几处落石警示，后续运矿顺畅不少。',
+        rewardExp: 14,
+        rewardSilver: 8,
+      ),
+      EventChoice(
+        text: '先做标记',
+        resultText: '你在图纸上记下危险点，准备下次带齐工具再处理。',
+        rewardExp: 7,
+      ),
+    ],
+  ),
+  'lx_forge_supply_cache': const GameEventData(
+    id: 'lx_forge_supply_cache',
+    name: '炉料旧藏',
+    description: '峭壁凹槽里藏着几包封蜡炉料，标签上写着“秦氏旧库”。',
+    type: GameEventType.treasure,
+    weight: 5,
+    choices: [
+      EventChoice(
+        text: '带回矿营',
+        resultText: '你把旧藏打包带走，里面夹着一块打磨过的星陨铁胚。',
+        rewardItemId: 'star_iron',
+        rewardExp: 15,
+      ),
+      EventChoice(
+        text: '封存待取',
+        resultText: '你确认位置后重新封好，避免被山贼余党发现。',
+        rewardExp: 6,
+      ),
+    ],
+  ),
 
   // ===== 迷雾谷 =====
   'mw_fog_illusion': const GameEventData(
@@ -579,6 +757,25 @@ final gameEvents = <String, GameEventData>{
       ),
     ],
   ),
+  'mw_waymarker_trace': const GameEventData(
+    id: 'mw_waymarker_trace',
+    name: '旧道路标',
+    description: '雾墙后露出半截刻碑，纹路与林风提到的安全路线高度吻合。',
+    type: GameEventType.adventure,
+    weight: 6,
+    choices: [
+      EventChoice(
+        text: '拓下碑纹',
+        resultText: '你用炭笔把刻纹拓在布片上，回去可用于校准路线。',
+        rewardExp: 16,
+      ),
+      EventChoice(
+        text: '原地记忆',
+        resultText: '你反复默记路标方位，走出雾区后仍记得大半。',
+        rewardExp: 9,
+      ),
+    ],
+  ),
 
   // ===== 天剑门外 =====
   'tj_disciple_challenge': const GameEventData(
@@ -619,6 +816,25 @@ final gameEvents = <String, GameEventData>{
         resultText: '剑意如刀割般拂过你的面颊，你咬牙快步走过。',
         hpChange: -10,
         rewardExp: 10,
+      ),
+    ],
+  ),
+  'tj_gate_resonance': const GameEventData(
+    id: 'tj_gate_resonance',
+    name: '古玉共鸣',
+    description: '你靠近山门石阶时，怀中古玉微微发烫，似与门前阵纹产生了共鸣。',
+    type: GameEventType.adventure,
+    weight: 5,
+    choices: [
+      EventChoice(
+        text: '顺着纹路探查',
+        resultText: '你沿着阵纹缓缓前行，竟绕开了两处暗哨，确认了一段可用路径。',
+        rewardExp: 20,
+      ),
+      EventChoice(
+        text: '立刻后撤',
+        resultText: '你担心惊动守门弟子，先退回山道，记下了玉纹闪烁的节律。',
+        rewardExp: 8,
       ),
     ],
   ),

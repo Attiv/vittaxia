@@ -69,7 +69,7 @@ class StatusPanel extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  // HP/MP 条
+                  // HP/MP/体力 条
                   Row(
                     children: [
                       _MiniBar(
@@ -84,6 +84,13 @@ class StatusPanel extends StatelessWidget {
                         current: c.currentMp,
                         max: c.baseMp,
                         color: AppColors.mp,
+                      ),
+                      const SizedBox(width: 12),
+                      _MiniBar(
+                        label: '体力',
+                        current: c.stamina,
+                        max: c.maxStamina,
+                        color: AppColors.warning,
                       ),
                     ],
                   ),

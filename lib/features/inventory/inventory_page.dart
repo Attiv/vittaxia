@@ -6,6 +6,7 @@ import '../../data/item_data.dart';
 import '../../models/enums.dart';
 import '../../models/item.dart';
 import '../character/character_provider.dart';
+import 'enhance_sheet.dart';
 import 'inventory_provider.dart';
 
 class InventoryPage extends ConsumerWidget {
@@ -36,10 +37,10 @@ class InventoryPage extends ConsumerWidget {
               if (character != null) ...[
                 Text('当前装备', style: theme.textTheme.titleMedium),
                 const SizedBox(height: 8),
-                _equipSlot(context, ref, '武器', character.weaponId, EquipSlot.weapon, character),
-                _equipSlot(context, ref, '防具', character.armorId, EquipSlot.armor, character),
-                _equipSlot(context, ref, '鞋子', character.shoesId, EquipSlot.shoes, character),
-                _equipSlot(context, ref, '饰品', character.accessoryId, EquipSlot.accessory, character),
+                _equipSlot(context, ref, '武器', character.weaponId, EquipSlot.weapon, character, inventory),
+                _equipSlot(context, ref, '防具', character.armorId, EquipSlot.armor, character, inventory),
+                _equipSlot(context, ref, '鞋子', character.shoesId, EquipSlot.shoes, character, inventory),
+                _equipSlot(context, ref, '饰品', character.accessoryId, EquipSlot.accessory, character, inventory),
                 const Divider(height: 24),
               ],
               Text('物品 (${inventory.length})', style: theme.textTheme.titleMedium),
@@ -53,8 +54,23 @@ class InventoryPage extends ConsumerWidget {
   }
 
   Widget _equipSlot(BuildContext context, WidgetRef ref, String label,
-      String? itemId, EquipSlot slot, dynamic character) {
+      String? itemId, EquipSlot slot, dynamic character, List<dynamic> inventory) {
     final item = (itemId != null && itemId.isNotEmpty) ? items[itemId] : null;
+    // 查找装备的强化等级
+    int enhLv = 0;
+    String? invId;
+    if (item != null) {
+      for (final inv in inventory) {
+        if (inv.itemId == itemId) {
+          enhLv = inv.enhanceLevel;
+          invId = inv.id;
+          break;
+        }
+      }
+    }
+    final displayName = item != null
+        ? '${item.name}${enhLv > 0 ? " +$enhLv" : ""}'
+        : '-- 空 --';
     return Card(
       child: ListTile(
         dense: true,
@@ -64,19 +80,29 @@ class InventoryPage extends ConsumerWidget {
           size: 20,
         ),
         title: Text(
-          item != null ? item.name : '-- 空 --',
+          displayName,
           style: TextStyle(
             color: item != null ? _rarityColor(item.rarity) : AppColors.textSecondary,
           ),
         ),
-        subtitle: item != null ? Text(_itemBonusText(item), style: const TextStyle(fontSize: 11)) : null,
+        subtitle: item != null ? Text(_itemBonusText(item, enhLv), style: const TextStyle(fontSize: 11)) : null,
         trailing: item != null
-            ? TextButton(
-                onPressed: () {
-                  ref.read(inventoryNotifierProvider.notifier)
-                      .unequipSlot(character.id, slot);
-                },
-                child: const Text('卸下', style: TextStyle(fontSize: 12)),
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (invId != null)
+                    TextButton(
+                      onPressed: () => _showEnhanceSheet(context, invId!, itemId!, enhLv),
+                      child: const Text('强化', style: TextStyle(fontSize: 12)),
+                    ),
+                  TextButton(
+                    onPressed: () {
+                      ref.read(inventoryNotifierProvider.notifier)
+                          .unequipSlot(character.id, slot);
+                    },
+                    child: const Text('卸下', style: TextStyle(fontSize: 12)),
+                  ),
+                ],
               )
             : null,
       ),
@@ -97,7 +123,7 @@ class InventoryPage extends ConsumerWidget {
         title: Row(
           children: [
             Text(
-              item.name,
+              inv.enhanceLevel > 0 ? '${item.name} +${inv.enhanceLevel}' : item.name,
               style: TextStyle(color: _rarityColor(item.rarity)),
             ),
             if (inv.quantity > 1) ...[
@@ -108,7 +134,7 @@ class InventoryPage extends ConsumerWidget {
           ],
         ),
         subtitle: Text(
-          item.description,
+          _isEquipable(item.type) ? _itemBonusText(item, inv.enhanceLevel) : item.description,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 12),
@@ -124,9 +150,19 @@ class InventoryPage extends ConsumerWidget {
     final notifier = ref.read(inventoryNotifierProvider.notifier);
 
     if (_isEquipable(item.type)) {
-      return TextButton(
-        onPressed: () => notifier.equipItem(character.id, item.id),
-        child: const Text('装备', style: TextStyle(fontSize: 12)),
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (inv.enhanceLevel < 10)
+            TextButton(
+              onPressed: () => _showEnhanceSheet(context, inv.id, item.id, inv.enhanceLevel),
+              child: const Text('强化', style: TextStyle(fontSize: 12)),
+            ),
+          TextButton(
+            onPressed: () => notifier.equipItem(character.id, item.id),
+            child: const Text('装备', style: TextStyle(fontSize: 12)),
+          ),
+        ],
       );
     }
     if (item.type == ItemType.consumable) {
@@ -139,6 +175,23 @@ class InventoryPage extends ConsumerWidget {
     return null;
   }
 
+  void _showEnhanceSheet(
+      BuildContext context, String inventoryId, String itemId, int currentLevel) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => EnhanceSheet(
+        inventoryId: inventoryId,
+        itemId: itemId,
+        currentLevel: currentLevel,
+      ),
+    );
+  }
+
   bool _isEquipable(ItemType type) {
     return type == ItemType.weapon ||
         type == ItemType.armor ||
@@ -146,13 +199,18 @@ class InventoryPage extends ConsumerWidget {
         type == ItemType.accessory;
   }
 
-  String _itemBonusText(Item item) {
+  String _itemBonusText(Item item, [int enhLv = 0]) {
     final parts = <String>[];
-    if (item.atkBonus > 0) parts.add('攻+${item.atkBonus}');
-    if (item.defBonus > 0) parts.add('防+${item.defBonus}');
-    if (item.hpBonus > 0) parts.add('血+${item.hpBonus}');
-    if (item.mpBonus > 0) parts.add('内+${item.mpBonus}');
-    if (item.speedBonus > 0) parts.add('速+${item.speedBonus}');
+    void add(String label, int base) {
+      if (base <= 0) return;
+      final val = enhLv > 0 ? base + (base * enhLv * 0.1).ceil() : base;
+      parts.add('$label+$val');
+    }
+    add('攻', item.atkBonus);
+    add('防', item.defBonus);
+    add('血', item.hpBonus);
+    add('内', item.mpBonus);
+    add('速', item.speedBonus);
     if (item.luckBonus > 0) parts.add('运+${item.luckBonus}');
     return parts.join(' ');
   }

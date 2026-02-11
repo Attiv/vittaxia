@@ -15,6 +15,7 @@ part 'app_database.g.dart';
   LearnedSkills,
   NpcRelations,
   QuestProgress,
+  DungeonProgress,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -22,7 +23,20 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onUpgrade: (migrator, from, to) async {
+          if (from < 2) {
+            await migrator.addColumn(characters, characters.stamina);
+            await migrator.addColumn(characters, characters.maxStamina);
+            await migrator.addColumn(
+                characters, characters.lastStaminaRegenTime);
+            await migrator.createTable(dungeonProgress);
+          }
+        },
+      );
 
   // ========== Character CRUD ==========
 
@@ -97,6 +111,18 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> upsertQuestProgress(QuestProgressCompanion entry) {
     return into(questProgress).insertOnConflictUpdate(entry);
+  }
+
+  // ========== Dungeon Progress ==========
+
+  Stream<List<DungeonProgressData>> watchDungeonProgress(String characterId) {
+    return (select(dungeonProgress)
+          ..where((t) => t.characterId.equals(characterId)))
+        .watch();
+  }
+
+  Future<void> upsertDungeonProgress(DungeonProgressCompanion entry) {
+    return into(dungeonProgress).insertOnConflictUpdate(entry);
   }
 }
 

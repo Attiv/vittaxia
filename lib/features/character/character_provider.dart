@@ -79,6 +79,9 @@ class CharacterNotifier extends StateNotifier<AsyncValue<void>> {
     int? currentHp,
     int? currentMp,
     int? reputation,
+    int? stamina,
+    int? maxStamina,
+    DateTime? lastStaminaRegenTime,
     RealmTier? realmTier,
     RealmStage? realmStage,
     String? locationId,
@@ -95,6 +98,12 @@ class CharacterNotifier extends StateNotifier<AsyncValue<void>> {
       currentMp: currentMp != null ? Value(currentMp) : const Value.absent(),
       reputation:
           reputation != null ? Value(reputation) : const Value.absent(),
+      stamina: stamina != null ? Value(stamina) : const Value.absent(),
+      maxStamina:
+          maxStamina != null ? Value(maxStamina) : const Value.absent(),
+      lastStaminaRegenTime: lastStaminaRegenTime != null
+          ? Value(lastStaminaRegenTime)
+          : const Value.absent(),
       realmTierIndex: realmTier != null
           ? Value(realmTier.index)
           : const Value.absent(),
@@ -111,6 +120,39 @@ class CharacterNotifier extends StateNotifier<AsyncValue<void>> {
       lastOnlineTime: Value(DateTime.now()),
     );
     await _db.updateCharacter(companion);
+  }
+
+  /// 消耗体力，返回是否成功
+  Future<bool> consumeStamina(String characterId, int amount) async {
+    final character = await _db.getCharacter(characterId);
+    if (character == null || character.stamina < amount) return false;
+    await updateStats(
+      characterId: characterId,
+      stamina: character.stamina - amount,
+      lastStaminaRegenTime:
+          character.lastStaminaRegenTime ?? DateTime.now(),
+    );
+    return true;
+  }
+
+  /// 离线体力恢复：每3分钟恢复1点
+  Future<void> regenStamina(String characterId) async {
+    final character = await _db.getCharacter(characterId);
+    if (character == null) return;
+    final lastRegen = character.lastStaminaRegenTime;
+    if (lastRegen == null || character.stamina >= character.maxStamina) return;
+
+    final elapsed = DateTime.now().difference(lastRegen).inMinutes;
+    final regenAmount = elapsed ~/ 3;
+    if (regenAmount <= 0) return;
+
+    final newStamina =
+        (character.stamina + regenAmount).clamp(0, character.maxStamina);
+    await updateStats(
+      characterId: characterId,
+      stamina: newStamina,
+      lastStaminaRegenTime: DateTime.now(),
+    );
   }
 }
 

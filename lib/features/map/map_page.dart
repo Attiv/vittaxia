@@ -18,6 +18,11 @@ class MapPage extends ConsumerWidget {
     final theme = Theme.of(context);
     final character = ref.watch(currentCharacterProvider).valueOrNull;
     final currentLoc = ref.watch(currentLocationProvider);
+    final questProgress = ref.watch(questProgressProvider).valueOrNull ?? [];
+    final completedQuestIds = questProgress
+        .where((p) => p.status == 2)
+        .map((p) => p.questId)
+        .toSet();
 
     if (character == null || currentLoc == null) {
       return const Scaffold(
@@ -71,7 +76,13 @@ class MapPage extends ConsumerWidget {
           ...currentLoc.adjacentIds.map((id) {
             final loc = mapLocations[id];
             if (loc == null) return const SizedBox.shrink();
-            return _buildLocationTile(context, ref, loc, character);
+            return _buildLocationTile(
+              context,
+              ref,
+              loc,
+              character,
+              completedQuestIds,
+            );
           }),
         ],
       ),
@@ -83,9 +94,10 @@ class MapPage extends ConsumerWidget {
     WidgetRef ref,
     MapLocation loc,
     dynamic character,
+    Set<String> completedQuestIds,
   ) {
-    final canEnter = _canEnter(loc, character);
-    final reason = _blockReason(loc, character);
+    final canEnter = _canEnter(loc, character, completedQuestIds);
+    final reason = _blockReason(loc, character, completedQuestIds);
 
     return Card(
       child: ListTile(
@@ -126,27 +138,40 @@ class MapPage extends ConsumerWidget {
     );
   }
 
-  bool _canEnter(MapLocation loc, dynamic character) {
+  bool _canEnter(
+    MapLocation loc,
+    dynamic character,
+    Set<String> completedQuestIds,
+  ) {
     if (loc.requiredRealm != null) {
       final charTier = RealmTier.values[character.realmTierIndex];
       if (charTier.rank < loc.requiredRealm!.rank) return false;
     }
-    // 任务条件暂时跳过，Phase 7 再实现
+    if (loc.requiredQuestId != null &&
+        !completedQuestIds.contains(loc.requiredQuestId)) {
+      return false;
+    }
     return true;
   }
 
-  String _blockReason(MapLocation loc, dynamic character) {
+  String _blockReason(
+    MapLocation loc,
+    dynamic character,
+    Set<String> completedQuestIds,
+  ) {
     if (loc.requiredRealm != null) {
       final charTier = RealmTier.values[character.realmTierIndex];
       if (charTier.rank < loc.requiredRealm!.rank) {
         return '需要${loc.requiredRealm!.label}境界';
       }
     }
-    if (loc.requiredQuestId != null) {
+    if (loc.requiredQuestId != null &&
+        !completedQuestIds.contains(loc.requiredQuestId)) {
       return '需要完成前置任务';
     }
     return '';
   }
+
 
   void _moveTo(BuildContext context, WidgetRef ref, MapLocation loc,
       dynamic character) {

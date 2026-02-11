@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vittaxia/core/theme/app_theme.dart';
 
+import '../../data/mine_data.dart';
 import '../../models/game_event.dart';
 import '../../models/game_event_data.dart';
 import '../battle/battle_page.dart';
@@ -9,6 +10,8 @@ import '../character/character_create_page.dart';
 import '../character/character_detail_page.dart';
 import '../character/character_provider.dart';
 import '../dialogue/npc_list_page.dart';
+import '../dungeon/dungeon_list_page.dart';
+import '../dungeon/dungeon_provider.dart';
 import '../explore/event_rewards.dart';
 import '../explore/explore_provider.dart';
 import '../guide/guide_page.dart';
@@ -16,6 +19,7 @@ import '../idle/idle_calculator.dart';
 import '../idle/idle_reward_dialog.dart';
 import '../inventory/inventory_page.dart';
 import '../map/map_page.dart';
+import '../mine/mine_page.dart';
 import '../quest/quest_page.dart';
 import '../skill/skill_page.dart';
 import '../../shared/widgets/status_panel.dart';
@@ -72,6 +76,11 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   void _checkIdleReward(dynamic character) {
     if (character.lastOnlineTime == null) return;
+
+    // 离线体力恢复
+    ref
+        .read(characterNotifierProvider.notifier)
+        .regenStamina(character.id);
 
     final reward = IdleCalculator.calculate(
       comprehension: character.baseComprehension,
@@ -180,7 +189,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
           ),
         ),
-        // 操作区
+        // 操作区 (两行四列)
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -191,36 +200,64 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
             ),
           ),
-          child: Row(
+          child: Column(
             children: [
-              _actionButton(Icons.explore, '探索', () {
-                _doExplore(character);
-              }),
-              _actionButton(Icons.people, '交谈', () {
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => const NpcListPage()));
-              }),
-              _actionButton(Icons.inventory_2, '背包', () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const InventoryPage()),
-                );
-              }),
-              _actionButton(Icons.auto_stories, '技能', () {
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => const SkillPage()));
-              }),
-              _actionButton(Icons.assignment, '任务', () {
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => const QuestPage()));
-              }),
-              _actionButton(Icons.map, '地图', () {
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => const MapPage()));
-              }),
+              Row(
+                children: [
+                  _actionButton(Icons.explore, '探索', () {
+                    _doExplore(character);
+                  }),
+                  _actionButton(Icons.hardware, '挖矿', () {
+                    final spot = getMineSpotByLocation(character.locationId);
+                    if (spot == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('此处无矿脉')));
+                      return;
+                    }
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const MinePage()),
+                    );
+                  }),
+                  _actionButton(Icons.terrain, '探险', () {
+                    final dungeons = ref.read(availableDungeonsProvider);
+                    if (dungeons.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('此处无洞府')));
+                      return;
+                    }
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const DungeonListPage()),
+                    );
+                  }),
+                  _actionButton(Icons.people, '交谈', () {
+                    Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const NpcListPage()));
+                  }),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  _actionButton(Icons.inventory_2, '背包', () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const InventoryPage()),
+                    );
+                  }),
+                  _actionButton(Icons.auto_stories, '技能', () {
+                    Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const SkillPage()));
+                  }),
+                  _actionButton(Icons.assignment, '任务', () {
+                    Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const QuestPage()));
+                  }),
+                  _actionButton(Icons.map, '地图', () {
+                    Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const MapPage()));
+                  }),
+                ],
+              ),
             ],
           ),
         ),
@@ -228,7 +265,19 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  void _doExplore(dynamic character) {
+  void _doExplore(dynamic character) async {
+    // 消耗5点体力
+    final ok = await ref
+        .read(characterNotifierProvider.notifier)
+        .consumeStamina(character.id, 5);
+    if (!ok) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('体力不足')));
+      }
+      return;
+    }
+
     final engine = ref.read(eventEngineProvider);
     final logNotifier = ref.read(gameLogProvider.notifier);
     final event = engine.rollEvent(character.locationId);
@@ -240,6 +289,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     logNotifier.addLog('${event.name}...', type: LogType.explore);
 
+    if (!mounted) return;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

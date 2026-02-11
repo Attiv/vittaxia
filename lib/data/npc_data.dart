@@ -39,7 +39,7 @@ final npcs = <String, Npc>{
     description: '清风镇醉仙楼的女掌柜，精明能干又心地善良。笑起来如春风拂面。',
     type: NpcType.companion,
     locationId: 'qingfeng_town',
-    dialogueIds: ['liu_greet', 'liu_info'],
+    dialogueIds: ['liu_greet', 'liu_info', 'liu_night_patrol', 'liu_patrol_report'],
   ),
   'sun_yishou': const Npc(
     id: 'sun_yishou',
@@ -58,7 +58,7 @@ final npcs = <String, Npc>{
     description: '清风镇的说书先生，江湖掌故无所不知。"白无常"是他的绰号，真名无人知晓。',
     type: NpcType.story,
     locationId: 'qingfeng_town',
-    dialogueIds: ['bai_greet', 'bai_story'],
+    dialogueIds: ['bai_greet', 'bai_story', 'bai_star_record', 'bai_gate_report'],
     teachableSkillIds: ['swallow_dart'],
   ),
   'su_wanyin': const Npc(
@@ -68,7 +68,7 @@ final npcs = <String, Npc>{
     description: '望月楼的神秘女子，琴艺超凡。月夜常在楼上抚琴，曲声哀婉动人。身世成谜。',
     type: NpcType.companion,
     locationId: 'wangyue_tower',
-    dialogueIds: ['su_greet', 'su_music'],
+    dialogueIds: ['su_greet', 'su_music', 'su_moonflower_offer'],
     teachableSkillIds: ['moongazing_art'],
   ),
   'qin_zhu': const Npc(
