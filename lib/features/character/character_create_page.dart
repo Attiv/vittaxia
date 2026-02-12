@@ -104,7 +104,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
             ),
             const SizedBox(height: 16),
             Text(
-              '初始境界：练气初期\n'
+              '初始境界：初学初期\n'
               '起始地点：青云村',
               style: theme.textTheme.bodyMedium,
               textAlign: TextAlign.center,

@@ -126,6 +126,13 @@ const _run2 = _Pose(
   ll1: 38, ll2: 38, rl1: -30, rl2: -45,
 );
 
+// 蓄力姿势：身体后仰蓄力
+const _windUp = _Pose(
+  bodyLean: -8,
+  la1: -50, la2: -90, ra1: -30, ra2: -75,
+  ll1: -10, rl1: 12, rl2: -5,
+);
+
 const _punch = _Pose(
   bodyLean: 12,
   la1: -35, la2: -80, ra1: 85, ra2: 85,
@@ -168,11 +175,43 @@ const _hurt = _Pose(
   ll1: 10, rl1: -6,
 );
 
+// 被击退后弹一下
+const _hurtRecoil = _Pose(
+  bodyLean: -12,
+  la1: 18, la2: 35, ra1: -5, ra2: 10,
+  ll1: 5, rl1: -3,
+);
+
 const _dodge = _Pose(
   bodyLean: -28,
   la1: 12, la2: 22, ra1: -12, ra2: -22,
   ll1: -18, ll2: -5, rl1: 18, rl2: -12,
 );
+
+// 蓄力用的武器准备姿势（剑/刀举高）
+const _swordWindUp = _Pose(
+  bodyLean: -6,
+  la1: -35, la2: -50, ra1: -60, ra2: -100,
+  ll1: -8, rl1: 10,
+);
+
+const _kickWindUp = _Pose(
+  bodyLean: -3,
+  la1: -25, la2: -45, ra1: 20, ra2: 40,
+  ll1: -5, rl1: -25, rl2: -60,
+);
+
+_Pose _windUpPoseOf(BattleActionType t) {
+  switch (t) {
+    case BattleActionType.kick:
+      return _kickWindUp;
+    case BattleActionType.sword:
+    case BattleActionType.blade:
+      return _swordWindUp;
+    default:
+      return _windUp;
+  }
+}
 
 _Pose _attackPoseOf(BattleActionType t) {
   switch (t) {
@@ -205,12 +244,16 @@ class BattleArenaController {
     required BattleActionType type,
     bool crit = false,
     bool dodged = false,
+    int damage = 0,
+    int healAmount = 0,
   }) {
     return _state?._playAction(
           isPlayer: isPlayer,
           type: type,
           crit: crit,
           dodged: dodged,
+          damage: damage,
+          healAmount: healAmount,
         ) ??
         Future.value();
   }
@@ -244,12 +287,17 @@ class _BattleArenaState extends State<BattleArenaWidget>
   BattleActionType _actionType = BattleActionType.fist;
   bool _isCrit = false;
   bool _isDodged = false;
+  int _damageValue = 0;
+  int _healValue = 0;
 
   // 特效
   double _impactT = -1;
   double _glowT = -1;
   bool _glowOnPlayer = true;
   Color _glowColor = Colors.green;
+
+  // 伤害数字浮动进度 (0~1)
+  double _dmgTextT = -1;
 
   // 暗器飞行
   double _projX = 0;
@@ -277,20 +325,31 @@ class _BattleArenaState extends State<BattleArenaWidget>
     required BattleActionType type,
     bool crit = false,
     bool dodged = false,
+    int damage = 0,
+    int healAmount = 0,
   }) async {
     if (_isAnimating) return;
     _attackerIsPlayer = isPlayer;
     _actionType = type;
     _isCrit = crit;
     _isDodged = dodged;
+    _damageValue = damage;
+    _healValue = healAmount;
     _isAnimating = true;
     _impactT = -1;
     _glowT = -1;
+    _dmgTextT = -1;
     _showProj = false;
 
     final isHealBuff =
         type == BattleActionType.heal || type == BattleActionType.buff;
-    _anim.duration = Duration(milliseconds: isHealBuff ? 600 : 850);
+    // 加速：近战550ms，远程600ms，恢复380ms
+    _anim.duration = Duration(
+        milliseconds: isHealBuff
+            ? 380
+            : type == BattleActionType.hidden
+                ? 600
+                : 550);
 
     _completer = Completer<void>();
     _anim.forward(from: 0);
@@ -322,52 +381,78 @@ class _BattleArenaState extends State<BattleArenaWidget>
     _isAnimating = false;
     _impactT = -1;
     _glowT = -1;
+    _dmgTextT = -1;
     _showProj = false;
     _completer?.complete();
     _completer = null;
   }
 
-  // ── 近战：冲过去打到对方 ──
+  // ── 近战：冲过去 → 蓄力 → 打 → 弹开 → 回 ──
 
   void _updateMelee(double t) {
-    final pose = _attackPoseOf(_actionType);
+    final attackPose = _attackPoseOf(_actionType);
+    final windUpPose = _windUpPoseOf(_actionType);
     final startX = _attackerIsPlayer ? 0.25 : 0.75;
-    // 贴近目标：距对方只留一点空隙让拳/脚/剑刚好够到
     final targetX = _attackerIsPlayer ? 0.63 : 0.37;
 
     _showProj = false;
     _glowT = -1;
 
-    if (t < 0.28) {
-      final p = t / 0.28;
+    // 阶段划分（总比例=1.0）：
+    // 冲刺 0~0.22  蓄力 0.22~0.32  出招 0.32~0.42  击中 0.42~0.56  回退 0.56~0.88  归位 0.88~1.0
+    if (t < 0.22) {
+      // 冲刺
+      final p = t / 0.22;
       final ep = Curves.easeInQuad.transform(p);
-      final runT = (math.sin(p * math.pi * 4) + 1) / 2;
+      final runT = (math.sin(p * math.pi * 5) + 1) / 2; // 跑步频率更快
       _setAttacker(startX + (targetX - startX) * ep, _run1.lerp(_run2, runT));
       _setDefender(_idle);
-    } else if (t < 0.48) {
-      final p = ((t - 0.28) / 0.20).clamp(0.0, 1.0);
-      _setAttacker(targetX, _idle.lerp(pose, Curves.easeOut.transform(p)));
+      _dmgTextT = -1;
+    } else if (t < 0.32) {
+      // 蓄力
+      final p = ((t - 0.22) / 0.10).clamp(0.0, 1.0);
+      _setAttacker(targetX, _idle.lerp(windUpPose, Curves.easeOut.transform(p)));
       _setDefender(_idle);
-    } else if (t < 0.62) {
-      final p = ((t - 0.48) / 0.14).clamp(0.0, 1.0);
-      _setAttacker(targetX, pose);
+      _dmgTextT = -1;
+    } else if (t < 0.42) {
+      // 出招（蓄力→攻击姿势，快速）
+      final p = ((t - 0.32) / 0.10).clamp(0.0, 1.0);
+      _setAttacker(targetX, windUpPose.lerp(attackPose, Curves.easeOutBack.transform(p)));
+      _setDefender(_idle);
+      _dmgTextT = -1;
+    } else if (t < 0.56) {
+      // 击中：防御者受伤 + 显示伤害数字
+      final p = ((t - 0.42) / 0.14).clamp(0.0, 1.0);
+      _setAttacker(targetX, attackPose);
       if (_isDodged) {
         _setDefender(_idle.lerp(_dodge, (p * 2).clamp(0.0, 1.0)));
       } else {
-        _setDefender(_idle.lerp(_hurt, (p * 2).clamp(0.0, 1.0)));
+        // 击中后防御者先hurt再recoil
+        final hurtP = (p * 2.5).clamp(0.0, 1.0);
+        if (hurtP < 0.6) {
+          _setDefender(_idle.lerp(_hurt, hurtP / 0.6));
+        } else {
+          _setDefender(_hurt.lerp(_hurtRecoil, (hurtP - 0.6) / 0.4));
+        }
         _impactT = p;
+        _dmgTextT = p;
       }
     } else if (t < 0.88) {
-      final p = ((t - 0.62) / 0.26).clamp(0.0, 1.0);
+      // 回退
+      final p = ((t - 0.56) / 0.32).clamp(0.0, 1.0);
       final ep = Curves.easeOutQuad.transform(p);
-      _setAttacker(targetX + (startX - targetX) * ep, pose.lerp(_idle, ep));
-      final defPose = _isDodged ? _dodge : _hurt;
+      _setAttacker(targetX + (startX - targetX) * ep, attackPose.lerp(_idle, ep));
+      final defPose = _isDodged ? _dodge : _hurtRecoil;
       _setDefender(defPose.lerp(_idle, ep));
       _impactT = -1;
+      // 伤害数字继续浮动上升
+      _dmgTextT = 1.0 + p * 0.6;
     } else {
       _setAttacker(startX, _idle);
       _setDefender(_idle);
       _impactT = -1;
+      final p = ((t - 0.88) / 0.12).clamp(0.0, 1.0);
+      _dmgTextT = 1.6 + p * 0.4; // 淡出
     }
   }
 
@@ -379,20 +464,22 @@ class _BattleArenaState extends State<BattleArenaWidget>
     final startX = _attackerIsPlayer ? 0.25 : 0.75;
     final defX = _attackerIsPlayer ? 0.75 : 0.25;
 
-    if (t < 0.22) {
-      final p = (t / 0.22).clamp(0.0, 1.0);
+    if (t < 0.18) {
+      final p = (t / 0.18).clamp(0.0, 1.0);
       _setAttacker(startX, _idle.lerp(_throwPose, p));
       _setDefender(_idle);
       _showProj = false;
-    } else if (t < 0.55) {
-      final p = ((t - 0.22) / 0.33).clamp(0.0, 1.0);
+      _dmgTextT = -1;
+    } else if (t < 0.48) {
+      final p = ((t - 0.18) / 0.30).clamp(0.0, 1.0);
       _setAttacker(startX, _throwPose);
       _setDefender(_idle);
       _showProj = true;
       _projX = startX + (defX - startX) * Curves.easeIn.transform(p);
       _projY = 0.42 - math.sin(p * math.pi) * 0.1;
-    } else if (t < 0.72) {
-      final p = ((t - 0.55) / 0.17).clamp(0.0, 1.0);
+      _dmgTextT = -1;
+    } else if (t < 0.65) {
+      final p = ((t - 0.48) / 0.17).clamp(0.0, 1.0);
       _setAttacker(startX, _throwPose.lerp(_idle, p));
       _showProj = false;
       if (_isDodged) {
@@ -400,14 +487,16 @@ class _BattleArenaState extends State<BattleArenaWidget>
       } else {
         _setDefender(_idle.lerp(_hurt, (p * 2).clamp(0.0, 1.0)));
         _impactT = p;
+        _dmgTextT = p;
       }
     } else {
-      final p = ((t - 0.72) / 0.28).clamp(0.0, 1.0);
+      final p = ((t - 0.65) / 0.35).clamp(0.0, 1.0);
       _setAttacker(startX, _idle);
       final defPose = _isDodged ? _dodge : _hurt;
       _setDefender(defPose.lerp(_idle, Curves.easeOut.transform(p)));
       _impactT = -1;
       _showProj = false;
+      _dmgTextT = 1.0 + p;
     }
   }
 
@@ -428,6 +517,8 @@ class _BattleArenaState extends State<BattleArenaWidget>
         : t < 0.75
             ? 1.0
             : 1.0 - ((t - 0.75) / 0.25).clamp(0.0, 1.0);
+    // 回复数字在中段显示
+    _dmgTextT = t > 0.2 ? (t - 0.2) / 0.8 * 2.0 : -1;
   }
 
   // ── 辅助 ──
@@ -474,6 +565,10 @@ class _BattleArenaState extends State<BattleArenaWidget>
           glowColor: _glowColor,
           weaponType: _isAnimating ? _actionType : null,
           weaponOnPlayer: _attackerIsPlayer,
+          dmgTextT: _dmgTextT,
+          damageValue: _damageValue,
+          healValue: _healValue,
+          attackerIsPlayer: _attackerIsPlayer,
         ),
         size: Size.infinite,
       ),
@@ -500,6 +595,10 @@ class _ArenaPainter extends CustomPainter {
   final Color glowColor;
   final BattleActionType? weaponType;
   final bool weaponOnPlayer;
+  final double dmgTextT;
+  final int damageValue;
+  final int healValue;
+  final bool attackerIsPlayer;
 
   _ArenaPainter({
     required this.playerX,
@@ -520,6 +619,10 @@ class _ArenaPainter extends CustomPainter {
     required this.glowColor,
     required this.weaponType,
     required this.weaponOnPlayer,
+    required this.dmgTextT,
+    required this.damageValue,
+    required this.healValue,
+    required this.attackerIsPlayer,
   });
 
   @override
@@ -546,14 +649,31 @@ class _ArenaPainter extends CustomPainter {
           canvas, Offset(defX * size.width, size.height * 0.55), impactT);
     }
 
-    if (isCrit && impactT > 0.2 && !isDodged) {
-      _drawFloatingText(canvas, size, '暴击!', impactOnDefender ? playerX : enemyX,
-          const Color(0xFFFFD54F), 16);
+    // 伤害/回复数字
+    if (dmgTextT >= 0) {
+      final isHealBuff = weaponType == BattleActionType.heal ||
+          weaponType == BattleActionType.buff;
+      if (isHealBuff && healValue > 0) {
+        final targetX = attackerIsPlayer ? playerX : enemyX;
+        _drawDamageNumber(canvas, size, '+$healValue', targetX,
+            const Color(0xFF66BB6A), dmgTextT, false);
+      } else if (!isHealBuff && damageValue > 0 && !isDodged) {
+        final defX = impactOnDefender ? playerX : enemyX;
+        _drawDamageNumber(canvas, size, '-$damageValue', defX,
+            const Color(0xFFFF1744), dmgTextT, isCrit);
+      }
     }
 
-    if (isDodged && impactT >= 0) {
-      _drawFloatingText(canvas, size, '闪避', impactOnDefender ? playerX : enemyX,
-          Colors.white, 14);
+    // 暴击/闪避文字
+    if (isCrit && impactT > 0.2 && !isDodged) {
+      final defX = impactOnDefender ? playerX : enemyX;
+      _drawFloatingText(canvas, size, '暴击!', defX,
+          const Color(0xFFFFD54F), 14);
+    }
+
+    if (isDodged && dmgTextT >= 0) {
+      _drawFloatingText(canvas, size, '闪避',
+          impactOnDefender ? playerX : enemyX, Colors.white, 14);
     }
   }
 
@@ -587,14 +707,13 @@ class _ArenaPainter extends CustomPainter {
   void _drawFigure(Canvas canvas, Size size, double normX, _Pose pose,
       bool facingRight, Color color, BattleActionType? weapon) {
     final groundY = size.height * 0.88;
-    final s = size.height / 175; // 缩放因子
+    final s = size.height / 175;
     final cx = size.width * normX;
 
     canvas.save();
     canvas.translate(cx, groundY);
     if (!facingRight) canvas.scale(-1, 1);
 
-    // 骨骼参数
     const bodyLen = 24.0;
     const neckLen = 3.0;
     const headR = 9.0;
@@ -602,7 +721,7 @@ class _ArenaPainter extends CustomPainter {
     const fArmLen = 11.0;
     const thighLen = 16.0;
     const shinLen = 14.0;
-    const shoulderW = 7.0; // 肩宽（单侧）
+    const shoulderW = 7.0;
 
     final hipY = -(thighLen + shinLen) * s;
     final hip = Offset(0, hipY);
@@ -627,7 +746,6 @@ class _ArenaPainter extends CustomPainter {
     final neck = up(shoulder, pose.bodyLean, neckLen);
     final headC = up(neck, pose.bodyLean, headR);
 
-    // 肩膀两端（用于让身体看起来有宽度）
     final lShoulder = Offset(
       shoulder.dx - shoulderW * s * math.cos(pose.bodyLean * _deg),
       shoulder.dy - shoulderW * s * math.sin(pose.bodyLean * _deg),
@@ -642,7 +760,6 @@ class _ArenaPainter extends CustomPainter {
     final rElbow = limb(rShoulder, pose.ra1, uArmLen);
     final rHand = limb(rElbow, pose.ra2, fArmLen);
 
-    // 腿从臀部稍微分开
     final lHip = Offset(hip.dx - 3 * s, hip.dy);
     final rHip = Offset(hip.dx + 3 * s, hip.dy);
     final lKnee = limb(lHip, pose.ll1, thighLen);
@@ -650,7 +767,6 @@ class _ArenaPainter extends CustomPainter {
     final rKnee = limb(rHip, pose.rl1, thighLen);
     final rFoot = limb(rKnee, pose.rl2, shinLen);
 
-    // 画笔：粗壮风格
     final bodyPaint = Paint()
       ..color = color
       ..strokeWidth = 5.5 * s
@@ -674,48 +790,42 @@ class _ArenaPainter extends CustomPainter {
       ..strokeWidth = 5.0 * s
       ..strokeCap = StrokeCap.round;
 
-    // === 描边层（轮廓感）===
-    // 身体
+    // 描边层
     canvas.drawLine(hip, shoulder, outlinePaint);
     canvas.drawLine(lShoulder, rShoulder, outlinePaint);
-    // 腿
     canvas.drawLine(lHip, lKnee, limbOutline);
     canvas.drawLine(lKnee, lFoot, limbOutline);
     canvas.drawLine(rHip, rKnee, limbOutline);
     canvas.drawLine(rKnee, rFoot, limbOutline);
-    // 臂
     canvas.drawLine(lShoulder, lElbow, limbOutline);
     canvas.drawLine(lElbow, lHand, limbOutline);
     canvas.drawLine(rShoulder, rElbow, limbOutline);
     canvas.drawLine(rElbow, rHand, limbOutline);
 
-    // === 主色层 ===
-    // 腿
+    // 主色层
     canvas.drawLine(lHip, lKnee, limbPaint);
     canvas.drawLine(lKnee, lFoot, limbPaint);
     canvas.drawLine(rHip, rKnee, limbPaint);
     canvas.drawLine(rKnee, rFoot, limbPaint);
-    // 身体 + 肩
     canvas.drawLine(hip, shoulder, bodyPaint);
     canvas.drawLine(lShoulder, rShoulder, bodyPaint);
-    // 臂
     canvas.drawLine(lShoulder, lElbow, limbPaint);
     canvas.drawLine(lElbow, lHand, limbPaint);
     canvas.drawLine(rShoulder, rElbow, limbPaint);
     canvas.drawLine(rElbow, rHand, limbPaint);
 
-    // 关节圆点
+    // 关节
     final jr = 2.8 * s;
     for (final pt in [lElbow, rElbow, lKnee, rKnee]) {
       canvas.drawCircle(pt, jr, jointPaint);
     }
 
-    // 手（稍大的圆）
+    // 手
     final handR = 3.5 * s;
     canvas.drawCircle(lHand, handR, jointPaint);
     canvas.drawCircle(rHand, handR, jointPaint);
 
-    // 脚（椭圆形）
+    // 脚
     for (final ft in [lFoot, rFoot]) {
       canvas.drawOval(
         Rect.fromCenter(center: ft, width: 7 * s, height: 4 * s),
@@ -723,11 +833,10 @@ class _ArenaPainter extends CustomPainter {
       );
     }
 
-    // 头：填充 + 轮廓
+    // 头
     canvas.drawCircle(headC, headR * s,
         Paint()..color = Color.lerp(color, Colors.black, 0.15)!);
     canvas.drawCircle(headC, headR * s * 0.85, Paint()..color = color);
-    // 眼睛的小点（面朝方向侧）
     final eyeOff = Offset(headR * s * 0.35, -headR * s * 0.15);
     canvas.drawCircle(
       Offset(headC.dx + eyeOff.dx, headC.dy + eyeOff.dy),
@@ -735,17 +844,15 @@ class _ArenaPainter extends CustomPainter {
       Paint()..color = darkColor,
     );
 
-    // === 武器特效 ===
+    // 武器特效
     if (weapon == BattleActionType.sword || weapon == BattleActionType.blade) {
       final wColor = actionColor(weapon!);
       final wLen = weapon == BattleActionType.sword ? 24.0 : 20.0;
       final wEnd = limb(rHand, pose.ra2, wLen);
-      // 光晕
       canvas.drawLine(rHand, wEnd, Paint()
         ..color = wColor.withValues(alpha: 0.2)
         ..strokeWidth = 9 * s
         ..strokeCap = StrokeCap.round);
-      // 刃
       canvas.drawLine(rHand, wEnd, Paint()
         ..color = wColor
         ..strokeWidth = 3.0 * s
@@ -769,6 +876,40 @@ class _ArenaPainter extends CustomPainter {
     }
 
     canvas.restore();
+  }
+
+  // ── 伤害数字 ──
+
+  void _drawDamageNumber(Canvas canvas, Size size, String text,
+      double normX, Color color, double t, bool crit) {
+    // t: 0~2.0 左右，0~1 为显示阶段，1~2 为上浮淡出阶段
+    final floatUp = t.clamp(0.0, 2.0) * 18;
+    final alpha = (1.0 - (t - 0.8).clamp(0.0, 1.2) / 1.2).clamp(0.0, 1.0);
+    if (alpha <= 0) return;
+
+    final fontSize = crit ? 20.0 : 16.0;
+    final tp = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          color: color.withValues(alpha: alpha),
+          fontSize: fontSize,
+          fontWeight: FontWeight.w900,
+          shadows: [
+            Shadow(
+              color: Colors.black.withValues(alpha: alpha * 0.8),
+              blurRadius: 3,
+              offset: const Offset(1, 1),
+            ),
+          ],
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    final x = normX * size.width - tp.width / 2;
+    final y = size.height * 0.22 - floatUp;
+    tp.paint(canvas, Offset(x, y));
   }
 
   // ── 冲击 ──
@@ -801,21 +942,24 @@ class _ArenaPainter extends CustomPainter {
     }
   }
 
-  // ── 浮动文字 ──
+  // ── 浮动文字（暴击/闪避）──
 
   void _drawFloatingText(Canvas canvas, Size size, String text,
       double defNormX, Color color, double fontSize) {
-    final a = (1.0 - impactT).clamp(0.0, 1.0);
+    final rawT = dmgTextT.clamp(0.0, 2.0);
+    final alpha = (1.0 - (rawT - 0.5).clamp(0.0, 1.5) / 1.5).clamp(0.0, 1.0);
+    if (alpha <= 0) return;
+
     final tp = TextPainter(
       text: TextSpan(
         text: text,
         style: TextStyle(
-          color: color.withValues(alpha: a),
+          color: color.withValues(alpha: alpha),
           fontSize: fontSize,
           fontWeight: FontWeight.bold,
           shadows: [
             Shadow(
-              color: Colors.black.withValues(alpha: a * 0.6),
+              color: Colors.black.withValues(alpha: alpha * 0.6),
               blurRadius: 4,
             ),
           ],
@@ -825,7 +969,7 @@ class _ArenaPainter extends CustomPainter {
     )..layout();
     tp.paint(canvas,
         Offset(defNormX * size.width - tp.width / 2,
-            size.height * 0.32 - 25 * impactT));
+            size.height * 0.12 - rawT * 10));
   }
 
   // ── 暗器 ──

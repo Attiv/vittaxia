@@ -39,7 +39,8 @@ final npcs = <String, Npc>{
     description: '清风镇醉仙楼的女掌柜，精明能干又心地善良。笑起来如春风拂面。',
     type: NpcType.companion,
     locationId: 'qingfeng_town',
-    dialogueIds: ['liu_greet', 'liu_info', 'liu_night_patrol', 'liu_patrol_report'],
+    dialogueIds: ['liu_greet', 'liu_info', 'liu_night_patrol', 'liu_patrol_report', 'liu_teach_sweep'],
+    teachableSkillIds: ['passive_sweep_kick'],
   ),
   'sun_yishou': const Npc(
     id: 'sun_yishou',
@@ -48,8 +49,9 @@ final npcs = <String, Npc>{
     description: '清风镇的铁匠，打铁的手艺远近闻名。脾气有点暴躁但手艺没话说。',
     type: NpcType.merchant,
     locationId: 'qingfeng_town',
-    dialogueIds: ['sun_greet'],
+    dialogueIds: ['sun_greet', 'sun_teach_elbow'],
     shopItemIds: ['iron_sword', 'fine_steel_sword', 'leather_armor', 'iron_mail'],
+    teachableSkillIds: ['passive_elbow_strike'],
   ),
   'bai_wuchang': const Npc(
     id: 'bai_wuchang',
@@ -78,8 +80,9 @@ final npcs = <String, Npc>{
     description: '隐居落霞山脉的铸剑师，一生只求铸出一把绝世好剑。',
     type: NpcType.questGiver,
     locationId: 'luoxia_mountains',
-    dialogueIds: ['qin_greet'],
+    dialogueIds: ['qin_greet', 'qin_teach_iron_body'],
     shopItemIds: ['cold_moon_blade', 'cloud_boots'],
+    teachableSkillIds: ['passive_iron_body'],
   ),
   'lin_feng': const Npc(
     id: 'lin_feng',

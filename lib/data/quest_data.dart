@@ -117,7 +117,7 @@ final quests = <String, Quest>{
   'main_07': const Quest(
     id: 'main_07',
     name: '迷雾指引',
-    description: '穿越迷雾谷。据说谷中危机四伏，需要先天境界以上的实力才能通过。',
+    description: '穿越迷雾谷。据说谷中危机四伏，需要大成境界以上的实力才能通过。',
     type: QuestType.main,
     objectives: [
       QuestObjective(

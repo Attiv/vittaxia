@@ -152,6 +152,7 @@ final dialogues = <String, DialogueNode>{
       DialogueChoice(text: '来碗酒', nextId: 'liu_wine'),
       DialogueChoice(text: '接清风夜巡差事', nextId: 'liu_night_patrol'),
       DialogueChoice(text: '汇报夜巡进展', nextId: 'liu_patrol_report'),
+      DialogueChoice(text: '请教下盘功夫', nextId: 'liu_teach_sweep'),
     ],
     affectionChange: 2,
   ),
@@ -182,6 +183,15 @@ final dialogues = <String, DialogueNode>{
     text: '辛苦你了。昨夜街面确实安稳了不少。镇民提起你，都说你是个靠得住的人。',
     expReward: 12,
     affectionChange: 3,
+  ),
+  'liu_teach_sweep': const DialogueNode(
+    id: 'liu_teach_sweep',
+    speaker: '柳如烟',
+    text: '在酒馆干久了，什么招式没见过。那些醉汉最爱用的就是扫腿——别看不起眼，贴身打架的时候管用得很。来，我比划给你看。',
+    teachSkillId: 'passive_sweep_kick',
+    expReward: 15,
+    affectionChange: 3,
+    requiredAffection: 10,
   ),
 
   // ===== 白无常 =====
@@ -316,6 +326,7 @@ final dialogues = <String, DialogueNode>{
       DialogueChoice(text: '看看你的货', nextId: 'sun_shop'),
       DialogueChoice(text: '接铁匠急单', nextId: 'sun_rush_order'),
       DialogueChoice(text: '回报铁匠急单', nextId: 'sun_order_report'),
+      DialogueChoice(text: '请教近身寸劲', nextId: 'sun_teach_elbow'),
       DialogueChoice(text: '打扰了', nextId: 'sun_leave'),
     ],
   ),
@@ -344,6 +355,15 @@ final dialogues = <String, DialogueNode>{
     speaker: '孙一手',
     text: '走走走，别挡生意！',
   ),
+  'sun_teach_elbow': const DialogueNode(
+    id: 'sun_teach_elbow',
+    speaker: '孙一手',
+    text: '你以为打铁只靠膀子？锤子抡不开的时候，就得用肘——贴着铁料一寸一寸地砸。这股寸劲用在打架上，近身比什么都狠。',
+    teachSkillId: 'passive_elbow_strike',
+    expReward: 20,
+    affectionChange: 3,
+    requiredAffection: 15,
+  ),
 
   // ===== 秦铸 =====
   'qin_greet': const DialogueNode(
@@ -353,6 +373,7 @@ final dialogues = <String, DialogueNode>{
     choices: [
       DialogueChoice(text: '商议星铁试铸', nextId: 'qin_security_and_forge'),
       DialogueChoice(text: '回报矿路巡查', nextId: 'qin_mine_patrol_report'),
+      DialogueChoice(text: '请教护体功夫', nextId: 'qin_teach_iron_body'),
       DialogueChoice(text: '改日再来', nextId: 'qin_farewell'),
     ],
     affectionChange: 3,
@@ -376,6 +397,15 @@ final dialogues = <String, DialogueNode>{
     id: 'qin_farewell',
     speaker: '秦铸',
     text: '去吧。等你把材料备齐了，再来找我开炉。',
+  ),
+  'qin_teach_iron_body': const DialogueNode(
+    id: 'qin_teach_iron_body',
+    speaker: '秦铸',
+    text: '铸剑时炉火灼身，没点护体手段早就废了。我这套铁布衫不算上乘，但胜在实用——挨打时真气自动外放，能把一部分伤害震回去。你练着看。',
+    teachSkillId: 'passive_iron_body',
+    expReward: 25,
+    affectionChange: 5,
+    requiredAffection: 20,
   ),
 
   // ===== 林风 =====

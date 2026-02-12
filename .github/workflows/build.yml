@@ -1,0 +1,189 @@
+name: Build All Platforms
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: flutter build apk --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  build-web:
+    name: Web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # 项目目前没有 web 目录，CI 中自动生成
+      - run: flutter create --platforms web .
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: flutter build web --release --base-href "/${{ github.event.repository.name }}/"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: build/web
+
+  build-windows:
+    name: Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: flutter build windows --release
+
+      - name: Archive
+        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath vittaxia-windows.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: vittaxia-windows.zip
+
+  build-macos:
+    name: macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: flutter build macos --release
+
+      - name: Archive
+        run: |
+          cd build/macos/Build/Products/Release
+          zip -r -y "$GITHUB_WORKSPACE/vittaxia-macos.zip" vittaxia.app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: vittaxia-macos.zip
+
+  build-ios:
+    name: iOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+
+      # 未配置签名证书，使用 --no-codesign 构建
+      # 如需分发到真机/TestFlight，需要配置 Apple 开发者证书和描述文件
+      - run: flutter build ios --release --no-codesign
+
+      - name: Archive
+        run: |
+          cd build/ios/iphoneos
+          zip -r -y "$GITHUB_WORKSPACE/vittaxia-ios.zip" Runner.app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: vittaxia-ios.zip
+
+  # 将 Web 构建产物部署到 GitHub Pages
+  deploy-web:
+    name: Deploy to GitHub Pages
+    needs: build-web
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: web-build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web-build
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  # 打 tag 时自动创建 GitHub Release 并附带所有平台产物
+  release:
+    name: Create Release
+    needs: [build-android, build-web, build-windows, build-macos, build-ios]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release files
+        run: |
+          mkdir release
+          cp artifacts/android-apk/app-release.apk release/vittaxia-android.apk
+          cp artifacts/windows-build/vittaxia-windows.zip release/
+          cp artifacts/macos-build/vittaxia-macos.zip release/
+          cp artifacts/ios-build/vittaxia-ios.zip release/
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            release/vittaxia-android.apk
+            release/vittaxia-windows.zip
+            release/vittaxia-macos.zip
+            release/vittaxia-ios.zip

@@ -9,7 +9,7 @@ import '../models/map_location.dart';
 ///   (起始,1)       |
 ///      |       [望月楼] (3)
 ///   [青竹林]
-///   (2)        [迷雾谷] (6, 先天)
+///   (2)        [迷雾谷] (6, 大成)
 ///                |
 ///           [天剑门外] (5, 主线)
 final mapLocations = <String, MapLocation>{

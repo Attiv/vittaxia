@@ -121,6 +121,8 @@ class _BattlePageState extends ConsumerState<BattlePage> {
           type: playerType,
           crit: engine.lastPlayerAttackCrit,
           dodged: engine.lastPlayerAttackDodged,
+          damage: engine.lastPlayerDamage,
+          healAmount: engine.lastPlayerHeal,
         );
 
     Future<void> enemyAnim() {
@@ -132,6 +134,8 @@ class _BattlePageState extends ConsumerState<BattlePage> {
         type: skillToActionType(engine.lastEnemySkillId!),
         crit: engine.lastEnemyAttackCrit,
         dodged: engine.lastEnemyAttackDodged,
+        damage: engine.lastEnemyDamage,
+        healAmount: engine.lastEnemyHeal,
       );
     }
 

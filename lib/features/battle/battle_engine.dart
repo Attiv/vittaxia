@@ -87,6 +87,10 @@ class BattleEngine {
   bool lastPlayerAttackDodged = false;
   bool lastEnemyAttackCrit = false;
   bool lastEnemyAttackDodged = false;
+  int lastPlayerDamage = 0;
+  int lastEnemyDamage = 0;
+  int lastPlayerHeal = 0;
+  int lastEnemyHeal = 0;
 
   BattleEngine({
     required this.player,
@@ -175,6 +179,10 @@ class BattleEngine {
     lastEnemyAttackDodged = false;
     lastEnemySkillId = null;
     lastEnemyActed = false;
+    lastPlayerDamage = 0;
+    lastEnemyDamage = 0;
+    lastPlayerHeal = 0;
+    lastEnemyHeal = 0;
 
     // 先手判定
     if (player.effectiveSpeed >= enemy.effectiveSpeed) {
@@ -243,6 +251,11 @@ class BattleEngine {
       final before = attacker.hp;
       attacker.hp = (attacker.hp + heal).clamp(0, attacker.maxHp);
       final actual = attacker.hp - before;
+      if (isPlayer) {
+        lastPlayerHeal = actual;
+      } else {
+        lastEnemyHeal = actual;
+      }
       log.add(BattleLogEntry(
         '${attacker.name}施展【${skill.name}】调息运气，恢复了$actual点气血。'
         '（${attacker.hp}/${attacker.maxHp}）',
@@ -284,6 +297,14 @@ class BattleEngine {
 
         if (isCrit) {
           damage = (damage * GameConstants.critDamageMultiplier).round();
+        }
+        if (isPlayer) {
+          lastPlayerDamage = damage;
+        } else {
+          lastEnemyDamage = damage;
+        }
+
+        if (isCrit) {
           log.add(BattleLogEntry(
             '${attacker.name}使用【${skill.name}】攻向${defender.name}——'
             '击中要害！暴击！造成$damage点伤害！',

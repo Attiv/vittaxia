@@ -1,10 +1,10 @@
 /// 境界等级
 enum RealmTier {
-  lianQi('练气', 1),
-  lianTi('炼体', 2),
-  houTian('后天', 3),
-  xianTian('先天', 4),
-  zhuJi('筑基', 5);
+  lianQi('初学', 1),
+  lianTi('入门', 2),
+  houTian('小成', 3),
+  xianTian('大成', 4),
+  zhuJi('化境', 5);
 
   final String label;
   final int rank;
