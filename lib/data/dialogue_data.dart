@@ -1,5 +1,36 @@
 import '../models/npc.dart';
 
+/// 对话选项的剧情门控：nextId → 关联的任务 ID
+/// 只有该任务的前置任务已完成（即任务本身可接取），对话选项才会显示
+const dialogueQuestGates = <String, String>{
+  // 白无常
+  'bai_star_record': 'side_12',
+  'bai_gate_report': 'side_14',
+  'bai_clue_reconstruction': 'main_15',
+  'bai_gate_probe_plan': 'side_19',
+  'bai_gate_probe_report': 'side_19',
+  // 苏晚吟
+  'su_moonflower_offer': 'main_13',
+  'su_strategy_meeting': 'main_12',
+  'su_shadow_report': 'side_13',
+  // 柳如烟
+  'liu_night_patrol': 'side_07',
+  'liu_patrol_report': 'side_07',
+  // 林风
+  'lin_route_briefing': 'side_10',
+  'lin_route_review_report': 'side_15',
+  'lin_ghost_sweep_report': 'side_18',
+  // 秦铸
+  'qin_security_and_forge': 'main_17',
+  'qin_mine_patrol_report': 'side_17',
+  // 李药婆
+  'li_mist_antidote': 'main_07',
+  'li_moonlight_formula': 'side_20',
+  // 孙一手
+  'sun_rush_order': 'side_16',
+  'sun_order_report': 'side_16',
+};
+
 /// 对话数据
 final dialogues = <String, DialogueNode>{
   // ===== 张大叔 =====

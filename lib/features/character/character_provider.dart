@@ -7,6 +7,7 @@ import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
 import '../../models/enums.dart';
 import '../inventory/inventory_provider.dart';
+import '../quest/quest_provider.dart';
 
 /// 当前选中的角色 ID
 final currentCharacterIdProvider = StateProvider<String?>((ref) => null);
@@ -64,6 +65,9 @@ class CharacterNotifier extends StateNotifier<AsyncValue<void>> {
       await invNotifier.addItem(id, 'wooden_stick');
       await invNotifier.addItem(id, 'cloth_armor');
       await invNotifier.addItem(id, 'healing_pill', count: 3);
+
+      // 自动接取初始主线任务
+      await _ref.read(questNotifierProvider.notifier).autoAcceptMainQuests(id);
 
       state = const AsyncValue.data(null);
       return id;

@@ -156,16 +156,21 @@ class QuestNotifier extends StateNotifier<AsyncValue<void>> {
     final character = _ref.read(currentCharacterProvider).valueOrNull;
     if (character == null) return true;
 
-    int newExp = character.exp + quest.rewardExp;
-    int newSilver = character.silver + quest.rewardSilver;
-    int newRep = character.reputation + quest.rewardReputation;
+    // 经验走 addExp 以触发境界突破
+    if (quest.rewardExp > 0) {
+      final newRealm = await charNotifier.addExp(characterId, quest.rewardExp);
+      if (newRealm != null) {
+        logNotifier.addLog('突破！境界提升至$newRealm', type: LogType.system);
+      }
+    }
 
-    await charNotifier.updateStats(
-      characterId: characterId,
-      exp: newExp,
-      silver: newSilver,
-      reputation: newRep,
-    );
+    if (quest.rewardSilver > 0 || quest.rewardReputation > 0) {
+      await charNotifier.updateStats(
+        characterId: characterId,
+        silver: character.silver + quest.rewardSilver,
+        reputation: character.reputation + quest.rewardReputation,
+      );
+    }
 
     if (quest.rewardItemId != null) {
       await _ref
@@ -183,7 +188,35 @@ class QuestNotifier extends StateNotifier<AsyncValue<void>> {
       type: LogType.quest,
     );
 
+    // 完成任务后尝试自动接取下一个主线
+    await autoAcceptMainQuests(characterId);
+
     return true;
+  }
+
+  /// 自动接取所有满足前置条件的主线任务
+  Future<void> autoAcceptMainQuests(String characterId) async {
+    final progressList = await (_db.select(_db.questProgress)
+          ..where((t) => t.characterId.equals(characterId)))
+        .get();
+
+    final completedIds =
+        progressList.where((p) => p.status == 2).map((p) => p.questId).toSet();
+    final allIds = progressList.map((p) => p.questId).toSet();
+
+    for (final quest in quests.values) {
+      if (quest.type != QuestType.main) continue;
+      if (allIds.contains(quest.id)) continue;
+      if (quest.prerequisiteQuestId != null &&
+          !completedIds.contains(quest.prerequisiteQuestId)) {
+        continue;
+      }
+      await acceptQuest(characterId, quest.id);
+      _ref.read(gameLogProvider.notifier).addLog(
+            '自动接取主线任务: ${quest.name}',
+            type: LogType.quest,
+          );
+    }
   }
 }
 

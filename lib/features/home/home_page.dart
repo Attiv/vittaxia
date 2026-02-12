@@ -23,6 +23,7 @@ import '../inventory/inventory_provider.dart';
 import '../map/map_page.dart';
 import '../mine/mine_page.dart';
 import '../quest/quest_page.dart';
+import '../quest/quest_provider.dart';
 import '../skill/skill_page.dart';
 import '../../shared/widgets/status_panel.dart';
 
@@ -106,7 +107,10 @@ class _HomePageState extends ConsumerState<HomePage> {
     final db = ref.read(databaseProvider);
     final characters = await db.getAllCharacters();
     if (characters.isNotEmpty && mounted) {
-      ref.read(currentCharacterIdProvider.notifier).state = characters.first.id;
+      final id = characters.first.id;
+      ref.read(currentCharacterIdProvider.notifier).state = id;
+      // 恢复角色后补接可能遗漏的主线任务
+      await ref.read(questNotifierProvider.notifier).autoAcceptMainQuests(id);
     }
   }
 

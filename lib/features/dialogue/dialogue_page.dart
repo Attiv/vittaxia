@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/dialogue_data.dart';
+import '../../data/quest_data.dart';
 import '../../models/enums.dart';
 import '../../models/game_event.dart';
 import '../../models/npc.dart';
@@ -138,6 +139,11 @@ class _DialoguePageState extends ConsumerState<DialoguePage> {
     final theme = Theme.of(context);
     final node = _currentNode;
 
+    // 读取已完成任务集合，用于过滤受剧情门控的选项
+    final progress = ref.watch(questProgressProvider).valueOrNull ?? [];
+    final completedQuestIds =
+        progress.where((p) => p.status == 2).map((p) => p.questId).toSet();
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.npc.name),
@@ -188,13 +194,15 @@ class _DialoguePageState extends ConsumerState<DialoguePage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (node.choices.isNotEmpty)
-                    ...node.choices.map((c) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: ElevatedButton(
-                            onPressed: () => _selectChoice(c),
-                            child: Text(c.text),
-                          ),
-                        )),
+                    ...node.choices
+                        .where((c) => _isChoiceVisible(c, completedQuestIds))
+                        .map((c) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: ElevatedButton(
+                                onPressed: () => _selectChoice(c),
+                                child: Text(c.text),
+                              ),
+                            )),
                   if (node.choices.isEmpty && node.nextId != null)
                     ElevatedButton(
                       onPressed: () => _setNode(node.nextId!),
@@ -211,6 +219,19 @@ class _DialoguePageState extends ConsumerState<DialoguePage> {
         ],
       ),
     );
+  }
+
+  /// 检查对话选项是否可见（前置任务是否已完成）
+  bool _isChoiceVisible(DialogueChoice choice, Set<String> completedQuestIds) {
+    final gateQuestId = dialogueQuestGates[choice.nextId];
+    if (gateQuestId == null) return true;
+
+    final quest = quests[gateQuestId];
+    if (quest == null) return true;
+
+    // 没有前置任务的直接放行
+    if (quest.prerequisiteQuestId == null) return true;
+    return completedQuestIds.contains(quest.prerequisiteQuestId);
   }
 }
 
