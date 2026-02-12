@@ -149,6 +149,14 @@ class InventoryPage extends ConsumerWidget {
     if (character == null) return null;
     final notifier = ref.read(inventoryNotifierProvider.notifier);
 
+    final sellBtn = item.sellPrice > 0
+        ? TextButton(
+            onPressed: () => _confirmSell(context, ref, inv, item, character),
+            child: Text('售${item.sellPrice}',
+                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+          )
+        : null;
+
     if (_isEquipable(item.type)) {
       return Row(
         mainAxisSize: MainAxisSize.min,
@@ -162,17 +170,68 @@ class InventoryPage extends ConsumerWidget {
             onPressed: () => notifier.equipItem(character.id, item.id),
             child: const Text('装备', style: TextStyle(fontSize: 12)),
           ),
+          if (sellBtn != null) sellBtn,
         ],
       );
     }
     if (item.type == ItemType.consumable) {
-      return TextButton(
-        onPressed: () =>
-            notifier.useConsumable(character.id, inv.id, item.id),
-        child: const Text('使用', style: TextStyle(fontSize: 12)),
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextButton(
+            onPressed: () =>
+                notifier.useConsumable(character.id, inv.id, item.id),
+            child: const Text('使用', style: TextStyle(fontSize: 12)),
+          ),
+          if (sellBtn != null) sellBtn,
+        ],
       );
     }
-    return null;
+    // 材料和其他物品也可以出售
+    return sellBtn;
+  }
+
+  void _confirmSell(BuildContext context, WidgetRef ref, dynamic inv,
+      Item item, dynamic character) {
+    final name = inv.enhanceLevel > 0 ? '${item.name} +${inv.enhanceLevel}' : item.name;
+    final qty = inv.quantity as int;
+
+    // 强化过或数量为1时直接卖
+    if (inv.enhanceLevel > 0 || qty <= 1) {
+      ref.read(inventoryNotifierProvider.notifier)
+          .sellItem(character.id, inv.id, item.id);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('出售了$name，获得${item.sellPrice}银两')),
+      );
+      return;
+    }
+    // 多个时弹确认
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('出售物品'),
+          content: Text('出售1个$name？\n获得${item.sellPrice}银两（共有$qty个）'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                ref.read(inventoryNotifierProvider.notifier)
+                    .sellItem(character.id, inv.id, item.id);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('出售了$name，获得${item.sellPrice}银两')),
+                );
+              },
+              child: const Text('确认出售'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _showEnhanceSheet(

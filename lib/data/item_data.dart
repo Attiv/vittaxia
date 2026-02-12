@@ -207,6 +207,27 @@ final items = <String, Item>{
     buyPrice: 25,
     sellPrice: 10,
   ),
+  'stamina_pill': const Item(
+    id: 'stamina_pill',
+    name: '培元丹',
+    description: '以多种灵草炼制的丸药，服用后精力充沛。恢复30点体力。',
+    type: ItemType.consumable,
+    rarity: ItemRarity.uncommon,
+    healStamina: 30,
+    buyPrice: 40,
+    sellPrice: 18,
+  ),
+  'great_healing_pill': const Item(
+    id: 'great_healing_pill',
+    name: '大还丹',
+    description: '名贵丹药，气血内力同时大幅恢复。',
+    type: ItemType.consumable,
+    rarity: ItemRarity.rare,
+    healHp: 120,
+    healMp: 60,
+    buyPrice: 80,
+    sellPrice: 35,
+  ),
 
   // ===== 材料 =====
   'bixin_herb': const Item(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/item_data.dart';
 import '../../models/game_event_data.dart';
 import '../battle/battle_page.dart';
 import 'event_rewards.dart';
@@ -100,7 +101,7 @@ class EventPage extends ConsumerWidget {
                 choice.hpChange > 0 ? AppColors.success : AppColors.danger,
               ),
             if (choice.rewardItemId != null)
-              _rewardLine('获得物品', AppColors.accent),
+              _rewardLine('获得物品: ${items[choice.rewardItemId]?.name ?? choice.rewardItemId}', AppColors.accent),
           ],
         ),
         actions: [

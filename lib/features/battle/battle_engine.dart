@@ -79,6 +79,15 @@ class BattleEngine {
   bool isOver = false;
   bool playerWon = false;
 
+  // 上一轮动画所需元数据
+  bool lastPlayerFirst = true;
+  bool lastEnemyActed = false;
+  String? lastEnemySkillId;
+  bool lastPlayerAttackCrit = false;
+  bool lastPlayerAttackDodged = false;
+  bool lastEnemyAttackCrit = false;
+  bool lastEnemyAttackDodged = false;
+
   BattleEngine({
     required this.player,
     required this.enemy,
@@ -159,12 +168,26 @@ class BattleEngine {
   void playerAction(Skill skill) {
     if (isOver) return;
 
+    // 重置动画元数据
+    lastPlayerAttackCrit = false;
+    lastPlayerAttackDodged = false;
+    lastEnemyAttackCrit = false;
+    lastEnemyAttackDodged = false;
+    lastEnemySkillId = null;
+    lastEnemyActed = false;
+
     // 先手判定
     if (player.effectiveSpeed >= enemy.effectiveSpeed) {
+      lastPlayerFirst = true;
       _executeSkill(player, enemy, skill, isPlayer: true);
-      if (!isOver) _enemyTurn();
+      if (!isOver) {
+        _enemyTurn();
+        lastEnemyActed = true;
+      }
     } else {
+      lastPlayerFirst = false;
       _enemyTurn();
+      lastEnemyActed = true;
       if (!isOver) _executeSkill(player, enemy, skill, isPlayer: true);
     }
 
@@ -190,6 +213,7 @@ class BattleEngine {
         chosen = usable[_random.nextInt(usable.length)];
       }
     }
+    lastEnemySkillId = chosen.id;
     _executeSkill(enemy, player, chosen, isPlayer: false);
   }
 
@@ -232,6 +256,11 @@ class BattleEngine {
       final dodgeRate = (defender.effectiveSpeed - attacker.effectiveSpeed) * 0.008
           + defender.luck * 0.002;
       if (_random.nextDouble() < dodgeRate.clamp(0.0, 0.25)) {
+        if (isPlayer) {
+          lastPlayerAttackDodged = true;
+        } else {
+          lastEnemyAttackDodged = true;
+        }
         log.add(BattleLogEntry(
           '${attacker.name}使用【${skill.name}】攻向${defender.name}——'
           '${defender.name}身形一闪，巧妙躲开了！',
@@ -239,6 +268,11 @@ class BattleEngine {
         ));
       } else {
         final isCrit = _rollCrit(attacker, defender);
+        if (isPlayer) {
+          lastPlayerAttackCrit = isCrit;
+        } else {
+          lastEnemyAttackCrit = isCrit;
+        }
         var damage = ((skill.baseDamage +
                     attacker.effectiveAtk * skill.damageMultiplier) *
                 levelMult -

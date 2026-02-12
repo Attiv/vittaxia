@@ -22,6 +22,7 @@ _$ItemImpl _$$ItemImplFromJson(Map<String, dynamic> json) => _$ItemImpl(
   luckBonus: (json['luckBonus'] as num?)?.toInt() ?? 0,
   healHp: (json['healHp'] as num?)?.toInt() ?? 0,
   healMp: (json['healMp'] as num?)?.toInt() ?? 0,
+  healStamina: (json['healStamina'] as num?)?.toInt() ?? 0,
   buyPrice: (json['buyPrice'] as num?)?.toInt() ?? 0,
   sellPrice: (json['sellPrice'] as num?)?.toInt() ?? 0,
 );
@@ -41,6 +42,7 @@ Map<String, dynamic> _$$ItemImplToJson(_$ItemImpl instance) =>
       'luckBonus': instance.luckBonus,
       'healHp': instance.healHp,
       'healMp': instance.healMp,
+      'healStamina': instance.healStamina,
       'buyPrice': instance.buyPrice,
       'sellPrice': instance.sellPrice,
     };

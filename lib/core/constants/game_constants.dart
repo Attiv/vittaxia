@@ -53,6 +53,11 @@ class GameConstants {
   // 打坐
   static const meditateStaminaCost = 15;
   static const meditateMpRecover = 20;
+  static const meditateHpRecover = 10;
+
+  // 休息
+  static const restStaminaCost = 10;
+  static const restHpRecover = 30;
 
   // 探索间隔（秒）
   static const exploreIntervalSeconds = 30;

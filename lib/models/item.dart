@@ -23,6 +23,7 @@ class Item with _$Item {
     // 消耗品效果
     @Default(0) int healHp,
     @Default(0) int healMp,
+    @Default(0) int healStamina,
     // 价格
     @Default(0) int buyPrice,
     @Default(0) int sellPrice,

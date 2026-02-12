@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/enemy_data.dart';
+import '../../data/item_data.dart';
 import '../../data/skill_data.dart';
 import '../../models/enums.dart';
 import '../../models/game_event.dart';
@@ -13,6 +14,7 @@ import '../character/character_provider.dart';
 import '../explore/explore_provider.dart';
 import '../inventory/inventory_provider.dart';
 import '../skill/skill_provider.dart';
+import 'battle_animation.dart';
 import 'battle_engine.dart';
 import '../quest/quest_provider.dart';
 
@@ -28,6 +30,8 @@ class BattlePage extends ConsumerStatefulWidget {
 class _BattlePageState extends ConsumerState<BattlePage> {
   BattleEngine? _engine;
   final _scrollController = ScrollController();
+  final _arenaController = BattleArenaController();
+  bool _isAnimating = false;
 
   @override
   void initState() {
@@ -83,15 +87,64 @@ class _BattlePageState extends ConsumerState<BattlePage> {
     });
   }
 
-  void _useSkill(Skill skill) {
+  Future<void> _useSkill(Skill skill) async {
     final engine = _engine;
-    if (engine == null || engine.isOver) return;
+    if (engine == null || engine.isOver || _isAnimating) return;
 
-    setState(() {
-      engine.playerAction(skill);
-    });
+    final playerActionType = skillToActionType(skill.id);
 
-    // 滚到底部
+    // 先计算结果
+    engine.playerAction(skill);
+
+    // 标记动画中（禁用按钮）
+    setState(() => _isAnimating = true);
+
+    // 按先后手顺序播放动画
+    await _playRoundAnimations(engine, playerActionType);
+
+    // 动画结束，更新 UI
+    setState(() => _isAnimating = false);
+
+    _scrollToBottom();
+
+    if (engine.isOver) {
+      _resolveBattle();
+    }
+  }
+
+  Future<void> _playRoundAnimations(
+      BattleEngine engine, BattleActionType playerType) async {
+    final ctrl = _arenaController;
+
+    Future<void> playerAnim() => ctrl.playAction(
+          isPlayer: true,
+          type: playerType,
+          crit: engine.lastPlayerAttackCrit,
+          dodged: engine.lastPlayerAttackDodged,
+        );
+
+    Future<void> enemyAnim() {
+      if (!engine.lastEnemyActed || engine.lastEnemySkillId == null) {
+        return Future.value();
+      }
+      return ctrl.playAction(
+        isPlayer: false,
+        type: skillToActionType(engine.lastEnemySkillId!),
+        crit: engine.lastEnemyAttackCrit,
+        dodged: engine.lastEnemyAttackDodged,
+      );
+    }
+
+    if (engine.lastPlayerFirst) {
+      await playerAnim();
+      await enemyAnim();
+    } else {
+      await enemyAnim();
+      await playerAnim();
+    }
+  }
+
+  void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -101,10 +154,6 @@ class _BattlePageState extends ConsumerState<BattlePage> {
         );
       }
     });
-
-    if (engine.isOver) {
-      _resolveBattle();
-    }
   }
 
   Future<void> _resolveBattle() async {
@@ -144,7 +193,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
         if (Random().nextDouble() < template.dropRate) {
           ref.read(inventoryNotifierProvider.notifier)
               .addItem(character.id, template.dropItemId!);
-          final itemName = template.dropItemId!;
+          final itemName = items[template.dropItemId]?.name ?? template.dropItemId!;
           logNotifier.addLog('获得了物品: $itemName', type: LogType.item);
         }
       }
@@ -206,6 +255,8 @@ class _BattlePageState extends ConsumerState<BattlePage> {
               ],
             ),
           ),
+          // 战斗动画区
+          BattleArenaWidget(controller: _arenaController),
           // 战斗日志
           Expanded(
             child: Container(
@@ -242,7 +293,8 @@ class _BattlePageState extends ConsumerState<BattlePage> {
                 spacing: 8,
                 runSpacing: 8,
                 children: engine.player.skills.map((skill) {
-                  final canUse = skill.mpCost <= engine.player.mp;
+                  final canUse =
+                      skill.mpCost <= engine.player.mp && !_isAnimating;
                   return ElevatedButton(
                     onPressed: canUse ? () => _useSkill(skill) : null,
                     child: Text(

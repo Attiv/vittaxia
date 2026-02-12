@@ -33,7 +33,8 @@ mixin _$Item {
   int get speedBonus => throw _privateConstructorUsedError;
   int get luckBonus => throw _privateConstructorUsedError; // 消耗品效果
   int get healHp => throw _privateConstructorUsedError;
-  int get healMp => throw _privateConstructorUsedError; // 价格
+  int get healMp => throw _privateConstructorUsedError;
+  int get healStamina => throw _privateConstructorUsedError; // 价格
   int get buyPrice => throw _privateConstructorUsedError;
   int get sellPrice => throw _privateConstructorUsedError;
 
@@ -65,6 +66,7 @@ abstract class $ItemCopyWith<$Res> {
     int luckBonus,
     int healHp,
     int healMp,
+    int healStamina,
     int buyPrice,
     int sellPrice,
   });
@@ -98,6 +100,7 @@ class _$ItemCopyWithImpl<$Res, $Val extends Item>
     Object? luckBonus = null,
     Object? healHp = null,
     Object? healMp = null,
+    Object? healStamina = null,
     Object? buyPrice = null,
     Object? sellPrice = null,
   }) {
@@ -155,6 +158,10 @@ class _$ItemCopyWithImpl<$Res, $Val extends Item>
                 ? _value.healMp
                 : healMp // ignore: cast_nullable_to_non_nullable
                       as int,
+            healStamina: null == healStamina
+                ? _value.healStamina
+                : healStamina // ignore: cast_nullable_to_non_nullable
+                      as int,
             buyPrice: null == buyPrice
                 ? _value.buyPrice
                 : buyPrice // ignore: cast_nullable_to_non_nullable
@@ -191,6 +198,7 @@ abstract class _$$ItemImplCopyWith<$Res> implements $ItemCopyWith<$Res> {
     int luckBonus,
     int healHp,
     int healMp,
+    int healStamina,
     int buyPrice,
     int sellPrice,
   });
@@ -221,6 +229,7 @@ class __$$ItemImplCopyWithImpl<$Res>
     Object? luckBonus = null,
     Object? healHp = null,
     Object? healMp = null,
+    Object? healStamina = null,
     Object? buyPrice = null,
     Object? sellPrice = null,
   }) {
@@ -278,6 +287,10 @@ class __$$ItemImplCopyWithImpl<$Res>
             ? _value.healMp
             : healMp // ignore: cast_nullable_to_non_nullable
                   as int,
+        healStamina: null == healStamina
+            ? _value.healStamina
+            : healStamina // ignore: cast_nullable_to_non_nullable
+                  as int,
         buyPrice: null == buyPrice
             ? _value.buyPrice
             : buyPrice // ignore: cast_nullable_to_non_nullable
@@ -308,6 +321,7 @@ class _$ItemImpl implements _Item {
     this.luckBonus = 0,
     this.healHp = 0,
     this.healMp = 0,
+    this.healStamina = 0,
     this.buyPrice = 0,
     this.sellPrice = 0,
   });
@@ -352,6 +366,9 @@ class _$ItemImpl implements _Item {
   @override
   @JsonKey()
   final int healMp;
+  @override
+  @JsonKey()
+  final int healStamina;
   // 价格
   @override
   @JsonKey()
@@ -362,7 +379,7 @@ class _$ItemImpl implements _Item {
 
   @override
   String toString() {
-    return 'Item(id: $id, name: $name, description: $description, type: $type, rarity: $rarity, atkBonus: $atkBonus, defBonus: $defBonus, hpBonus: $hpBonus, mpBonus: $mpBonus, speedBonus: $speedBonus, luckBonus: $luckBonus, healHp: $healHp, healMp: $healMp, buyPrice: $buyPrice, sellPrice: $sellPrice)';
+    return 'Item(id: $id, name: $name, description: $description, type: $type, rarity: $rarity, atkBonus: $atkBonus, defBonus: $defBonus, hpBonus: $hpBonus, mpBonus: $mpBonus, speedBonus: $speedBonus, luckBonus: $luckBonus, healHp: $healHp, healMp: $healMp, healStamina: $healStamina, buyPrice: $buyPrice, sellPrice: $sellPrice)';
   }
 
   @override
@@ -388,6 +405,8 @@ class _$ItemImpl implements _Item {
                 other.luckBonus == luckBonus) &&
             (identical(other.healHp, healHp) || other.healHp == healHp) &&
             (identical(other.healMp, healMp) || other.healMp == healMp) &&
+            (identical(other.healStamina, healStamina) ||
+                other.healStamina == healStamina) &&
             (identical(other.buyPrice, buyPrice) ||
                 other.buyPrice == buyPrice) &&
             (identical(other.sellPrice, sellPrice) ||
@@ -411,6 +430,7 @@ class _$ItemImpl implements _Item {
     luckBonus,
     healHp,
     healMp,
+    healStamina,
     buyPrice,
     sellPrice,
   );
@@ -444,6 +464,7 @@ abstract class _Item implements Item {
     final int luckBonus,
     final int healHp,
     final int healMp,
+    final int healStamina,
     final int buyPrice,
     final int sellPrice,
   }) = _$ItemImpl;
@@ -475,7 +496,9 @@ abstract class _Item implements Item {
   @override
   int get healHp;
   @override
-  int get healMp; // 价格
+  int get healMp;
+  @override
+  int get healStamina; // 价格
   @override
   int get buyPrice;
   @override

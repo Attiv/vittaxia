@@ -113,18 +113,22 @@ class InventoryNotifier extends StateNotifier<AsyncValue<void>> {
     final character = _ref.read(currentCharacterProvider).valueOrNull;
     if (character == null) return;
 
-    int? newHp, newMp;
+    int? newHp, newMp, newStamina;
     if (item.healHp > 0) {
       newHp = (character.currentHp + item.healHp).clamp(0, character.baseHp);
     }
     if (item.healMp > 0) {
       newMp = (character.currentMp + item.healMp).clamp(0, character.baseMp);
     }
+    if (item.healStamina > 0) {
+      newStamina = (character.stamina + item.healStamina).clamp(0, character.maxStamina);
+    }
 
     await _ref.read(characterNotifierProvider.notifier).updateStats(
           characterId: characterId,
           currentHp: newHp,
           currentMp: newMp,
+          stamina: newStamina,
         );
     await removeItem(inventoryId);
   }
@@ -137,6 +141,22 @@ class InventoryNotifier extends StateNotifier<AsyncValue<void>> {
       ItemType.accessory => EquipSlot.accessory,
       _ => null,
     };
+  }
+
+  /// 出售物品，增加银两并移除背包中的一件
+  Future<bool> sellItem(String characterId, String inventoryId, String itemId) async {
+    final item = items[itemId];
+    if (item == null || item.sellPrice <= 0) return false;
+
+    final character = _ref.read(currentCharacterProvider).valueOrNull;
+    if (character == null) return false;
+
+    await _ref.read(characterNotifierProvider.notifier).updateStats(
+          characterId: characterId,
+          silver: character.silver + item.sellPrice,
+        );
+    await removeItem(inventoryId);
+    return true;
   }
 
   /// 按 itemId 扣减材料

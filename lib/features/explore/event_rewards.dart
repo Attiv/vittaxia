@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/item_data.dart';
 import '../../models/enums.dart';
 import '../../models/game_event.dart';
 import '../character/character_provider.dart';
@@ -50,7 +51,7 @@ void applyEventRewards(
   }
   if (itemId != null) {
     ref.read(inventoryNotifierProvider.notifier).addItem(character.id, itemId);
-    logNotifier.addLog('获得物品: $itemId', type: LogType.item);
+    logNotifier.addLog('获得物品: ${items[itemId]?.name ?? itemId}', type: LogType.item);
     ref.read(questNotifierProvider.notifier).checkAndUpdateObjectives(
           character.id,
           QuestObjectiveType.collect,

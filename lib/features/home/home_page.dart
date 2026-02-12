@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vittaxia/core/theme/app_theme.dart';
 
 import '../../core/constants/game_constants.dart';
 import '../../core/database/database_provider.dart';
+import '../../data/item_data.dart';
 import '../../data/mine_data.dart';
 import '../../models/game_event.dart';
 import '../../models/game_event_data.dart';
@@ -47,6 +50,33 @@ class _HomePageState extends ConsumerState<HomePage> {
   // 悬浮按钮拖动位置（右下角偏移）
   double _fabRight = 16;
   double _fabBottom = 90;
+  // 在线体力恢复定时器
+  Timer? _staminaTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startStaminaTimer();
+  }
+
+  @override
+  void dispose() {
+    _staminaTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startStaminaTimer() {
+    // 每3分钟恢复1点体力，和离线恢复速率一致
+    _staminaTimer = Timer.periodic(const Duration(minutes: 3), (_) {
+      final character = ref.read(currentCharacterProvider).valueOrNull;
+      if (character == null || character.stamina >= character.maxStamina) return;
+      ref.read(characterNotifierProvider.notifier).updateStats(
+            characterId: character.id,
+            stamina: (character.stamina + 1).clamp(0, character.maxStamina),
+            lastStaminaRegenTime: DateTime.now(),
+          );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -310,7 +340,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                   _actionButton(Icons.self_improvement, '打坐', () {
                     _doMeditate(character);
                   }),
-                  const Spacer(),
+                  _actionButton(Icons.hotel, '休息', () {
+                    _doRest(character);
+                  }),
                   const Spacer(),
                   const Spacer(),
                 ],
@@ -361,7 +393,8 @@ class _HomePageState extends ConsumerState<HomePage> {
         );
       },
     );
-    controller.dispose();
+    // 等 dialog 关闭动画结束后再 dispose，避免 TextField 引用已销毁的 controller
+    WidgetsBinding.instance.addPostFrameCallback((_) => controller.dispose());
 
     if (!mounted || password == null || password.isEmpty) return;
 
@@ -436,15 +469,14 @@ class _HomePageState extends ConsumerState<HomePage> {
       _cheatMenuOpen = true;
     });
 
-    await showModalBottomSheet<void>(
+    final action = await showModalBottomSheet<_CheatAction>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         return _CheatActionSheet(
           onSelected: (action) {
-            Navigator.of(sheetContext).pop();
-            _runCheatAction(action);
+            Navigator.of(sheetContext).pop(action);
           },
         );
       },
@@ -454,6 +486,13 @@ class _HomePageState extends ConsumerState<HomePage> {
     setState(() {
       _cheatMenuOpen = false;
     });
+
+    if (action != null) {
+      // 延迟到下一帧执行，避免 sheet dispose 期间触发 provider 更新导致断言失败
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _runCheatAction(action);
+      });
+    }
   }
 
   Future<void> _runCheatAction(_CheatAction action) async {
@@ -492,6 +531,16 @@ class _HomePageState extends ConsumerState<HomePage> {
           'spirit_pill',
           count: 999,
         );
+        await inventoryNotifier.addItem(
+          character.id,
+          'stamina_pill',
+          count: 999,
+        );
+        await inventoryNotifier.addItem(
+          character.id,
+          'great_healing_pill',
+          count: 999,
+        );
       case _CheatAction.restoreHp:
         await charNotifier.updateStats(
           characterId: character.id,
@@ -526,6 +575,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
 
     final doneText = _cheatActionDoneText(action);
+    if (!mounted) return;
     ref
         .read(gameLogProvider.notifier)
         .addLog('作弊指令：$doneText', type: LogType.system);
@@ -576,15 +626,53 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
 
     final recover = (GameConstants.meditateMpRecover).clamp(0, maxMp - currentMp);
+    // 打坐附带少量 HP 恢复
+    final maxHp = character.baseHp as int;
+    final currentHp = character.currentHp as int;
+    final hpRecover = (GameConstants.meditateHpRecover).clamp(0, maxHp - currentHp);
     await charNotifier.updateStats(
       characterId: character.id,
       currentMp: currentMp + recover,
+      currentHp: hpRecover > 0 ? currentHp + hpRecover : null,
     );
+    final hpMsg = hpRecover > 0 ? '，顺带调养了气血（+$hpRecover）' : '';
     logNotifier.addLog(
-      '盘膝打坐，吐纳调息，恢复了$recover点内力。',
+      '盘膝打坐，吐纳调息，恢复了$recover点内力$hpMsg。',
       type: LogType.system,
     );
-    _showActionTip('恢复了$recover点内力');
+    _showActionTip('恢复了$recover点内力${hpRecover > 0 ? "、$hpRecover点气血" : ""}');
+  }
+
+  void _doRest(dynamic character) async {
+    final charNotifier = ref.read(characterNotifierProvider.notifier);
+    final logNotifier = ref.read(gameLogProvider.notifier);
+
+    final maxHp = character.baseHp as int;
+    final currentHp = character.currentHp as int;
+    if (currentHp >= maxHp) {
+      _showActionTip('气血充盈，无需休息');
+      return;
+    }
+
+    final ok = await charNotifier.consumeStamina(
+      character.id,
+      GameConstants.restStaminaCost,
+    );
+    if (!ok) {
+      _showActionTip('体力不足');
+      return;
+    }
+
+    final recover = (GameConstants.restHpRecover).clamp(0, maxHp - currentHp);
+    await charNotifier.updateStats(
+      characterId: character.id,
+      currentHp: currentHp + recover,
+    );
+    logNotifier.addLog(
+      '寻一处清净之地歇息片刻，恢复了$recover点气血。',
+      type: LogType.system,
+    );
+    _showActionTip('恢复了$recover点气血');
   }
 
   void _doExplore(dynamic character) async {
@@ -860,7 +948,10 @@ class _EventBottomSheetState extends ConsumerState<_EventBottomSheet> {
                             : AppColors.danger,
                       ),
                     if (_selectedChoice!.rewardItemId != null)
-                      _rewardLine('获得物品', AppColors.accent),
+                      _rewardLine(
+                        '获得物品: ${items[_selectedChoice!.rewardItemId]?.name ?? _selectedChoice!.rewardItemId}',
+                        AppColors.accent,
+                      ),
                   ],
                 ],
               ),

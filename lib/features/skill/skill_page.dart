@@ -129,9 +129,24 @@ class SkillPage extends ConsumerWidget {
                                   ? () => ref
                                       .read(skillNotifierProvider.notifier)
                                       .equipSkill(ls.id, equipped)
-                                  : null,
-                          child:
-                              const Text('装备', style: TextStyle(fontSize: 12)),
+                                  : () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('装备栏已满，请先卸下一个技能'),
+                                        ),
+                                      );
+                                    },
+                          child: Text(
+                            equipped.length < GameConstants.maxEquippedSkills
+                                ? '装备'
+                                : '已满',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: equipped.length < GameConstants.maxEquippedSkills
+                                  ? null
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
                         ),
                 ],
               ),

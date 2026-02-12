@@ -20,7 +20,7 @@ final npcs = <String, Npc>{
     type: NpcType.merchant,
     locationId: 'qingyun_village',
     dialogueIds: ['li_greet'],
-    shopItemIds: ['healing_pill', 'spirit_pill', 'bixin_herb'],
+    shopItemIds: ['healing_pill', 'spirit_pill', 'stamina_pill', 'great_healing_pill', 'bixin_herb'],
   ),
   'chen_laotou': const Npc(
     id: 'chen_laotou',
