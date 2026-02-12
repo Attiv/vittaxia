@@ -187,4 +187,240 @@ final skills = <String, Skill>{
     requiredLevel: 12,
     learnCost: 300,
   ),
+  // —— 被动武技 ——
+  'passive_follow_fist': const Skill(
+    id: 'passive_follow_fist',
+    name: '后手追拳',
+    description: '攻击后顺势补上一拳，打出追击伤害。',
+    type: SkillType.passive,
+    quality: SkillQuality.crude,
+    baseDamage: 5,
+    mpCost: 0,
+    requiredLevel: 1,
+    learnCost: 0,
+  ),
+  'passive_sweep_kick': const Skill(
+    id: 'passive_sweep_kick',
+    name: '下盘横扫',
+    description: '趁敌不备扫腿攻下盘，常令对手失去重心。',
+    type: SkillType.passive,
+    quality: SkillQuality.refined,
+    baseDamage: 8,
+    mpCost: 0,
+    requiredLevel: 3,
+    learnCost: 40,
+  ),
+  'passive_elbow_strike': const Skill(
+    id: 'passive_elbow_strike',
+    name: '寸肘',
+    description: '近身时以肘尖发力，短促而凶狠。',
+    type: SkillType.passive,
+    quality: SkillQuality.refined,
+    baseDamage: 10,
+    mpCost: 0,
+    requiredLevel: 5,
+    learnCost: 60,
+  ),
+  'passive_iron_body': const Skill(
+    id: 'passive_iron_body',
+    name: '铁布衫',
+    description: '以内力护体，受击时自动反震伤害。',
+    type: SkillType.passive,
+    quality: SkillQuality.superior,
+    baseDamage: 12,
+    mpCost: 0,
+    requiredLevel: 8,
+    learnCost: 120,
+  ),
+  'passive_palm_strike': const Skill(
+    id: 'passive_palm_strike',
+    name: '掌风余力',
+    description: '出招收势之间掌风自发，可在攻击后追加一掌。',
+    type: SkillType.passive,
+    quality: SkillQuality.crude,
+    baseDamage: 6,
+    mpCost: 0,
+    requiredLevel: 1,
+    learnCost: 20,
+  ),
+  'passive_finger_flick': const Skill(
+    id: 'passive_finger_flick',
+    name: '弹指',
+    description: '手指蓄劲弹出，看似不经意，实则暗藏杀机。',
+    type: SkillType.passive,
+    quality: SkillQuality.refined,
+    baseDamage: 7,
+    mpCost: 0,
+    requiredLevel: 4,
+    learnCost: 50,
+  ),
+  'passive_hidden_needle': const Skill(
+    id: 'passive_hidden_needle',
+    name: '袖底飞针',
+    description: '袖中暗藏细针，出手时趁隙掷出，防不胜防。',
+    type: SkillType.passive,
+    quality: SkillQuality.refined,
+    baseDamage: 8,
+    mpCost: 0,
+    requiredLevel: 4,
+    learnCost: 50,
+  ),
+  'passive_sword_qi': const Skill(
+    id: 'passive_sword_qi',
+    name: '剑气余韵',
+    description: '剑招施出之后剑气不散，裹挟余劲追击对手。',
+    type: SkillType.passive,
+    quality: SkillQuality.refined,
+    baseDamage: 9,
+    mpCost: 0,
+    requiredLevel: 5,
+    learnCost: 70,
+  ),
+  'passive_blade_wind': const Skill(
+    id: 'passive_blade_wind',
+    name: '刀风斩',
+    description: '刀势凌厉，挥刀之余卷起劲风割伤对手。',
+    type: SkillType.passive,
+    quality: SkillQuality.refined,
+    baseDamage: 9,
+    mpCost: 0,
+    requiredLevel: 6,
+    learnCost: 80,
+  ),
+  'passive_counter_punch': const Skill(
+    id: 'passive_counter_punch',
+    name: '借力打力',
+    description: '巧妙借用对方招式的力道反弹回去，四两拨千斤。',
+    type: SkillType.passive,
+    quality: SkillQuality.superior,
+    baseDamage: 11,
+    mpCost: 0,
+    requiredLevel: 7,
+    learnCost: 100,
+  ),
+  'passive_shadow_step': const Skill(
+    id: 'passive_shadow_step',
+    name: '踏影追击',
+    description: '身法诡异如影随形，踏着对手影子追出致命一击。',
+    type: SkillType.passive,
+    quality: SkillQuality.superior,
+    baseDamage: 10,
+    mpCost: 0,
+    requiredLevel: 8,
+    learnCost: 120,
+  ),
+  'passive_qi_burst': const Skill(
+    id: 'passive_qi_burst',
+    name: '真气爆发',
+    description: '攻击瞬间内力外泄形成爆裂冲击，附带强烈的真气震荡。',
+    type: SkillType.passive,
+    quality: SkillQuality.ultimate,
+    baseDamage: 15,
+    mpCost: 0,
+    requiredLevel: 10,
+    learnCost: 200,
+  ),
+};
+
+/// 被动武技触发时的随机描述，{target} 会被替换为目标名称
+const passiveHitFlavors = <String, List<String>>{
+  'passive_follow_fist': [
+    '顺手补了一拳，正中{target}肩头',
+    '左手一探，打在{target}面门上',
+    '拳风未散，又一记直拳轰向{target}胸口',
+  ],
+  'passive_sweep_kick': [
+    '下盘一扫，踢在{target}小腿上',
+    '侧身一脚，蹬在{target}腰间',
+    '顺势一绊，{target}脚下踉跄',
+  ],
+  'passive_elbow_strike': [
+    '近身发肘，捣在{target}肋下',
+    '侧身一靠，肘尖顶在{target}胸口',
+    '贴身短打，寸肘击中{target}腹部',
+  ],
+  'passive_iron_body': [
+    '真气外放，震得{target}手臂发麻',
+    '护体罡气反弹而出，{target}吃了个暗亏',
+    '内力护体自动反击，{target}被震退半步',
+  ],
+  'passive_palm_strike': [
+    '掌风一卷，拍在{target}后背',
+    '顺手一掌，推在{target}胸前',
+    '掌力未歇，又补了{target}一记',
+  ],
+  'passive_finger_flick': [
+    '指尖一弹，点在{target}手腕穴位上',
+    '顺势弹出一指，击中{target}咽喉',
+    '手指轻弹如拨弦，正中{target}太阳穴',
+  ],
+  'passive_hidden_needle': [
+    '袖中飞针射出，扎在{target}肩头',
+    '暗针趁隙掷出，没入{target}小臂',
+    '几枚细针如流星般飞向{target}',
+  ],
+  'passive_sword_qi': [
+    '剑气余韵未消，划过{target}面颊',
+    '一缕剑气追出，割在{target}衣袖上',
+    '残留剑气如丝，掠过{target}身侧',
+  ],
+  'passive_blade_wind': [
+    '刀风卷起，割在{target}手臂上',
+    '刀势余劲横扫，{target}皮开肉绽',
+    '刀气如风，在{target}身上又添一道口子',
+  ],
+  'passive_counter_punch': [
+    '借力一带，把{target}自己的劲道弹了回去',
+    '顺着{target}的攻势一引一送，对手反吃一拳',
+    '四两拨千斤，{target}的力道反噬自身',
+  ],
+  'passive_shadow_step': [
+    '脚步诡异地闪到{target}身后，一击即中',
+    '踏着{target}的影子欺身而上，攻其不备',
+    '身形如鬼魅般绕到{target}侧翼追击',
+  ],
+  'passive_qi_burst': [
+    '内力猛然爆发，震得{target}口吐鲜血',
+    '真气冲体而出，{target}被气浪掀退数步',
+    '一股狂暴真气轰向{target}，地面碎石飞溅',
+  ],
+};
+
+/// 内功被动效果定义
+class InnerForcePassiveEffect {
+  final int healHp;
+  final int healMp;
+  final int extraDamage;
+  final String flavorText;
+
+  const InnerForcePassiveEffect({
+    this.healHp = 0,
+    this.healMp = 0,
+    this.extraDamage = 0,
+    required this.flavorText,
+  });
+}
+
+const innerForcePassives = <String, InnerForcePassiveEffect>{
+  'tuna_breathing': InnerForcePassiveEffect(
+    healMp: 5,
+    flavorText: '吐纳之间真气流转，恢复了5点内力',
+  ),
+  'golden_bell': InnerForcePassiveEffect(
+    healHp: 5,
+    flavorText: '金钟罩余韵护体，恢复了5点气血',
+  ),
+  'qi_surge': InnerForcePassiveEffect(
+    extraDamage: 5,
+    flavorText: '真气涌动，拳劲暴增！',
+  ),
+  'spring_return': InnerForcePassiveEffect(
+    healHp: 8,
+    flavorText: '回春真气温养经脉，恢复了8点气血',
+  ),
+  'moongazing_art': InnerForcePassiveEffect(
+    healHp: 5,
+    healMp: 3,
+    flavorText: '月华真气流转全身，气血内力微有恢复',
+  ),
 };

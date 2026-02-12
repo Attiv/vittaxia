@@ -9,8 +9,8 @@ final npcs = <String, Npc>{
     description: '青云村的老猎户，性格豪爽。看着你长大，对你颇为照顾。',
     type: NpcType.story,
     locationId: 'qingyun_village',
-    dialogueIds: ['zhang_greet', 'zhang_teach'],
-    teachableSkillIds: ['basic_fist', 'basic_kick'],
+    dialogueIds: ['zhang_greet', 'zhang_teach', 'zhang_teach_palm'],
+    teachableSkillIds: ['basic_fist', 'basic_kick', 'passive_palm_strike'],
   ),
   'li_yaopo': const Npc(
     id: 'li_yaopo',
@@ -29,8 +29,8 @@ final npcs = <String, Npc>{
     description: '村口下棋的老头，看似普通，棋力却深不可测。没人知道他的来历。',
     type: NpcType.master,
     locationId: 'qingyun_village',
-    dialogueIds: ['chen_greet', 'chen_chess'],
-    teachableSkillIds: ['chess_insight'],
+    dialogueIds: ['chen_greet', 'chen_chess', 'chen_finger'],
+    teachableSkillIds: ['chess_insight', 'passive_finger_flick'],
   ),
   'liu_ruyan': const Npc(
     id: 'liu_ruyan',
@@ -58,8 +58,8 @@ final npcs = <String, Npc>{
     description: '清风镇的说书先生，江湖掌故无所不知。"白无常"是他的绰号，真名无人知晓。',
     type: NpcType.story,
     locationId: 'qingfeng_town',
-    dialogueIds: ['bai_greet', 'bai_story', 'bai_star_record', 'bai_gate_report'],
-    teachableSkillIds: ['swallow_dart'],
+    dialogueIds: ['bai_greet', 'bai_story', 'bai_star_record', 'bai_gate_report', 'bai_teach_needle'],
+    teachableSkillIds: ['swallow_dart', 'passive_hidden_needle'],
   ),
   'su_wanyin': const Npc(
     id: 'su_wanyin',
@@ -88,7 +88,7 @@ final npcs = <String, Npc>{
     description: '在迷雾谷中迷路的剑客，剑法不俗。似乎在寻找什么东西。',
     type: NpcType.companion,
     locationId: 'miwu_valley',
-    dialogueIds: ['lin_greet'],
-    teachableSkillIds: ['gale_sword', 'mist_step'],
+    dialogueIds: ['lin_greet', 'lin_teach_sword_qi'],
+    teachableSkillIds: ['gale_sword', 'mist_step', 'passive_sword_qi'],
   ),
 };

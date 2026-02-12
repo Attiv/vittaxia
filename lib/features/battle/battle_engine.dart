@@ -3,6 +3,7 @@ import 'dart:math';
 import '../../core/constants/game_constants.dart';
 import '../../data/enemy_data.dart';
 import '../../data/skill_data.dart';
+import '../../models/enums.dart';
 import '../../models/skill.dart';
 
 /// 战斗中的角色状态
@@ -17,6 +18,7 @@ class BattleFighter {
   int speed;
   int luck;
   final List<Skill> skills;
+  final List<Skill> passives; // 已学被动技能
   final Map<String, int> skillLevels; // skillId -> 等级
   final Map<String, int> buffs; // buffName -> 剩余回合
 
@@ -31,8 +33,10 @@ class BattleFighter {
     required this.speed,
     this.luck = 5,
     required this.skills,
+    List<Skill>? passives,
     Map<String, int>? skillLevels,
-  })  : skillLevels = skillLevels ?? {},
+  })  : passives = passives ?? [],
+        skillLevels = skillLevels ?? {},
         buffs = {};
 
   int getSkillLevel(String skillId) => skillLevels[skillId] ?? 1;
@@ -94,6 +98,8 @@ class BattleEngine {
     required int luck,
     required List<String> equippedSkillIds,
     Map<String, int> skillLevels = const {},
+    List<String> passiveSkillIds = const [],
+    Map<String, int> passiveSkillLevels = const {},
   }) {
     final playerSkills = <Skill>[];
     for (final id in equippedSkillIds) {
@@ -104,6 +110,12 @@ class BattleEngine {
     if (playerSkills.isEmpty) {
       playerSkills.add(skills['basic_fist']!);
     }
+    final playerPassives = <Skill>[];
+    for (final id in passiveSkillIds) {
+      final s = skills[id];
+      if (s != null) playerPassives.add(s);
+    }
+    final mergedLevels = Map.of(skillLevels)..addAll(passiveSkillLevels);
     return BattleFighter(
       name: name,
       hp: hp,
@@ -115,7 +127,8 @@ class BattleEngine {
       speed: speed,
       luck: luck,
       skills: playerSkills,
-      skillLevels: Map.of(skillLevels),
+      passives: playerPassives,
+      skillLevels: mergedLevels,
     );
   }
 
@@ -258,6 +271,11 @@ class BattleEngine {
         }
         defender.hp = (defender.hp - damage).clamp(0, defender.maxHp);
 
+        // 被动技能追击 & 内功被动
+        if (!defender.isDead) {
+          _tryPassiveEffects(attacker, defender, isPlayer: isPlayer);
+        }
+
         // HP 状态播报
         if (!defender.isDead) {
           final hpRatio = defender.hp / defender.maxHp;
@@ -322,6 +340,57 @@ class BattleEngine {
       isOver = true;
       playerWon = false;
       log.add(BattleLogEntry('你被${enemy.name}击败了…', isPlayerAction: false));
+    }
+  }
+
+  /// 攻击命中后尝试触发被动武技和内功被动
+  void _tryPassiveEffects(
+    BattleFighter attacker,
+    BattleFighter defender, {
+    required bool isPlayer,
+  }) {
+    // 被动武技：遍历已学被动，25% 概率触发，最多触发一个
+    for (final passive in attacker.passives) {
+      if (_random.nextDouble() >= 0.25) continue;
+
+      final skillLevel = attacker.getSkillLevel(passive.id);
+      final levelMult = GameConstants.skillLevelMultiplier(skillLevel);
+      var damage = ((passive.baseDamage + attacker.effectiveAtk * 0.3) * levelMult)
+          .round()
+          .clamp(1, 9999);
+
+      final flavors = passiveHitFlavors[passive.id];
+      final flavor = (flavors != null && flavors.isNotEmpty)
+          ? flavors[_random.nextInt(flavors.length)]
+              .replaceAll('{target}', defender.name)
+          : '${attacker.name}追击了${defender.name}';
+
+      defender.hp = (defender.hp - damage).clamp(0, defender.maxHp);
+      log.add(BattleLogEntry(
+        '$flavor，造成$damage点追击伤害！',
+        isPlayerAction: isPlayer,
+      ));
+      break;
+    }
+
+    // 内功被动：遍历已装备的内功，20% 概率触发，最多触发一个
+    for (final skill in attacker.skills) {
+      if (skill.type != SkillType.innerForce) continue;
+      final effect = innerForcePassives[skill.id];
+      if (effect == null) continue;
+      if (_random.nextDouble() >= 0.20) continue;
+
+      if (effect.healHp > 0) {
+        attacker.hp = (attacker.hp + effect.healHp).clamp(0, attacker.maxHp);
+      }
+      if (effect.healMp > 0) {
+        attacker.mp = (attacker.mp + effect.healMp).clamp(0, attacker.maxMp);
+      }
+      if (effect.extraDamage > 0) {
+        defender.hp = (defender.hp - effect.extraDamage).clamp(0, defender.maxHp);
+      }
+      log.add(BattleLogEntry(effect.flavorText, isPlayerAction: isPlayer));
+      break;
     }
   }
 }

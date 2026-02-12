@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/enemy_data.dart';
+import '../../data/skill_data.dart';
 import '../../models/enums.dart';
 import '../../models/game_event.dart';
 import '../../models/skill.dart';
@@ -49,6 +50,17 @@ class _BattlePageState extends ConsumerState<BattlePage> {
     final equippedSkillIds = equipped.map((ls) => ls.skillId).toList();
     final skillLevels = {for (final ls in equipped) ls.skillId: ls.level};
 
+    // 加载已学的被动技能
+    final allLearned = ref.read(learnedSkillsProvider).valueOrNull ?? [];
+    final passiveEntries = allLearned.where((ls) {
+      final s = skills[ls.skillId];
+      return s != null && s.type == SkillType.passive;
+    }).toList();
+    final passiveSkillIds = passiveEntries.map((ls) => ls.skillId).toList();
+    final passiveSkillLevels = {
+      for (final ls in passiveEntries) ls.skillId: ls.level,
+    };
+
     final player = BattleEngine.createPlayerFighter(
       name: character.name,
       hp: character.currentHp,
@@ -61,6 +73,8 @@ class _BattlePageState extends ConsumerState<BattlePage> {
       luck: character.baseLuck,
       equippedSkillIds: equippedSkillIds,
       skillLevels: skillLevels,
+      passiveSkillIds: passiveSkillIds,
+      passiveSkillLevels: passiveSkillLevels,
     );
     final enemy = BattleEngine.createEnemyFighter(template);
 

@@ -41,6 +41,7 @@ final dialogues = <String, DialogueNode>{
     choices: [
       DialogueChoice(text: '大叔，我准备好了', nextId: 'zhang_greet_2', affectionChange: 2),
       DialogueChoice(text: '大叔放心', nextId: 'zhang_greet_3'),
+      DialogueChoice(text: '请教掌法', nextId: 'zhang_teach_palm'),
     ],
     affectionChange: 1,
   ),
@@ -63,6 +64,15 @@ final dialogues = <String, DialogueNode>{
     teachSkillId: 'basic_fist',
     expReward: 15,
     affectionChange: 3,
+  ),
+  'zhang_teach_palm': const DialogueNode(
+    id: 'zhang_teach_palm',
+    speaker: '张大叔',
+    text: '你拳脚练得不错，不过光靠拳头还不够。大叔再教你一招掌法——出手收势之间带一股掌风，能多伤对手一分。',
+    teachSkillId: 'passive_palm_strike',
+    expReward: 15,
+    affectionChange: 3,
+    requiredAffection: 10,
   ),
 
   // ===== 李药婆 =====
@@ -105,6 +115,7 @@ final dialogues = <String, DialogueNode>{
     text: '想下棋？坐下吧。世事如棋，落子无悔。',
     choices: [
       DialogueChoice(text: '和他下一局', nextId: 'chen_chess', affectionChange: 2),
+      DialogueChoice(text: '请教指法', nextId: 'chen_finger'),
       DialogueChoice(text: '改天再来', nextId: 'chen_bye'),
     ],
   ),
@@ -120,6 +131,15 @@ final dialogues = <String, DialogueNode>{
     id: 'chen_bye',
     speaker: '陈老头',
     text: '去吧去吧，年轻人总是坐不住。',
+  ),
+  'chen_finger': const DialogueNode(
+    id: 'chen_finger',
+    speaker: '陈老头',
+    text: '落子时手指的劲道你注意到了吗？弹指之间也能伤人。这一招叫"弹指"，看着简单，关键在寸劲。',
+    teachSkillId: 'passive_finger_flick',
+    expReward: 20,
+    affectionChange: 5,
+    requiredAffection: 20,
   ),
 
   // ===== 柳如烟 =====
@@ -177,6 +197,7 @@ final dialogues = <String, DialogueNode>{
       DialogueChoice(text: '一起拼古玉线索', nextId: 'bai_clue_reconstruction'),
       DialogueChoice(text: '商议剑门试帖', nextId: 'bai_gate_probe_plan'),
       DialogueChoice(text: '汇报剑门试帖', nextId: 'bai_gate_probe_report'),
+      DialogueChoice(text: '请教暗器手法', nextId: 'bai_teach_needle'),
     ],
   ),
   'bai_story': const DialogueNode(
@@ -226,6 +247,15 @@ final dialogues = <String, DialogueNode>{
     text: '你把试帖过程讲得细，连对方换手时机都记下了。好，这封回帖我来润色，下一步咱们就能更稳地探剑门底线。',
     expReward: 16,
     affectionChange: 2,
+  ),
+  'bai_teach_needle': const DialogueNode(
+    id: 'bai_teach_needle',
+    speaker: '白无常',
+    text: '老朽年轻时也不全靠嘴皮子混饭吃。来，教你一手袖底飞针——出招时顺手丢几根针出去，花不了多少力气，效果却好得很。',
+    teachSkillId: 'passive_hidden_needle',
+    expReward: 20,
+    affectionChange: 5,
+    requiredAffection: 15,
   ),
 
   // ===== 苏晚吟 =====
@@ -358,6 +388,7 @@ final dialogues = <String, DialogueNode>{
       DialogueChoice(text: '请他标注安全路', nextId: 'lin_route_briefing', affectionChange: 1),
       DialogueChoice(text: '回报路标复测', nextId: 'lin_route_review_report'),
       DialogueChoice(text: '回报雾谷清障', nextId: 'lin_ghost_sweep_report'),
+      DialogueChoice(text: '请教剑气诀窍', nextId: 'lin_teach_sword_qi'),
       DialogueChoice(text: '我自己走', nextId: 'lin_solo'),
     ],
     affectionChange: 3,
@@ -390,6 +421,15 @@ final dialogues = <String, DialogueNode>{
     text: '路标附近那几只怨灵被清了，雾道总算能喘口气。接下来我们就按新路线推进，不再被它们牵着走。',
     expReward: 17,
     affectionChange: 2,
+  ),
+  'lin_teach_sword_qi': const DialogueNode(
+    id: 'lin_teach_sword_qi',
+    speaker: '林风',
+    text: '我看你剑招收得太干净了——出剑之后，留一丝真气在剑锋上。这叫剑气余韵，就算招式过了，那股劲还能追着对手跑。',
+    teachSkillId: 'passive_sword_qi',
+    expReward: 25,
+    affectionChange: 5,
+    requiredAffection: 20,
   ),
   'lin_solo': const DialogueNode(
     id: 'lin_solo',

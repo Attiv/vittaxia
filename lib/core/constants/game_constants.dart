@@ -50,6 +50,10 @@ class GameConstants {
     return 1.0 + (level - 1) * skillLevelBonusRate;
   }
 
+  // 打坐
+  static const meditateStaminaCost = 15;
+  static const meditateMpRecover = 20;
+
   // 探索间隔（秒）
   static const exploreIntervalSeconds = 30;
 }

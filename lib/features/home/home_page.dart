@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vittaxia/core/theme/app_theme.dart';
 
+import '../../core/constants/game_constants.dart';
 import '../../core/database/database_provider.dart';
 import '../../data/mine_data.dart';
 import '../../models/game_event.dart';
@@ -303,6 +304,17 @@ class _HomePageState extends ConsumerState<HomePage> {
                   }),
                 ],
               ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  _actionButton(Icons.self_improvement, '打坐', () {
+                    _doMeditate(character);
+                  }),
+                  const Spacer(),
+                  const Spacer(),
+                  const Spacer(),
+                ],
+              ),
             ],
           ),
         ),
@@ -541,6 +553,38 @@ class _HomePageState extends ConsumerState<HomePage> {
     messenger.showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
+  }
+
+  void _doMeditate(dynamic character) async {
+    final charNotifier = ref.read(characterNotifierProvider.notifier);
+    final logNotifier = ref.read(gameLogProvider.notifier);
+
+    final maxMp = character.baseMp as int;
+    final currentMp = character.currentMp as int;
+    if (currentMp >= maxMp) {
+      _showActionTip('内力已满，无需打坐');
+      return;
+    }
+
+    final ok = await charNotifier.consumeStamina(
+      character.id,
+      GameConstants.meditateStaminaCost,
+    );
+    if (!ok) {
+      _showActionTip('体力不足');
+      return;
+    }
+
+    final recover = (GameConstants.meditateMpRecover).clamp(0, maxMp - currentMp);
+    await charNotifier.updateStats(
+      characterId: character.id,
+      currentMp: currentMp + recover,
+    );
+    logNotifier.addLog(
+      '盘膝打坐，吐纳调息，恢复了$recover点内力。',
+      type: LogType.system,
+    );
+    _showActionTip('恢复了$recover点内力');
   }
 
   void _doExplore(dynamic character) async {

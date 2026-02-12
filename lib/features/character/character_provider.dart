@@ -59,6 +59,12 @@ class CharacterNotifier extends StateNotifier<AsyncValue<void>> {
         skillId: 'tuna_breathing',
         isEquipped: const Value(true),
       ));
+      // 赠送初始被动技能
+      await _db.upsertLearnedSkill(LearnedSkillsCompanion.insert(
+        id: const Uuid().v4(),
+        characterId: id,
+        skillId: 'passive_follow_fist',
+      ));
 
       // 赠送初始物品
       final invNotifier = _ref.read(inventoryNotifierProvider.notifier);
