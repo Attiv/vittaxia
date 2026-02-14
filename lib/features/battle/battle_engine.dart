@@ -35,9 +35,9 @@ class BattleFighter {
     required this.skills,
     List<Skill>? passives,
     Map<String, int>? skillLevels,
-  })  : passives = passives ?? [],
-        skillLevels = skillLevels ?? {},
-        buffs = {};
+  }) : passives = passives ?? [],
+       skillLevels = skillLevels ?? {},
+       buffs = {};
 
   int getSkillLevel(String skillId) => skillLevels[skillId] ?? 1;
 
@@ -91,12 +91,11 @@ class BattleEngine {
   int lastEnemyDamage = 0;
   int lastPlayerHeal = 0;
   int lastEnemyHeal = 0;
+  bool lastPlayerKilled = false;
+  bool lastEnemyKilled = false;
 
-  BattleEngine({
-    required this.player,
-    required this.enemy,
-    Random? random,
-  }) : _random = random ?? Random();
+  BattleEngine({required this.player, required this.enemy, Random? random})
+    : _random = random ?? Random();
 
   /// 从角色数据创建玩家 BattleFighter
   static BattleFighter createPlayerFighter({
@@ -117,7 +116,7 @@ class BattleEngine {
     final playerSkills = <Skill>[];
     for (final id in equippedSkillIds) {
       final s = skills[id];
-      if (s != null) playerSkills.add(s);
+      if (s != null && s.type != SkillType.passive) playerSkills.add(s);
     }
     // 至少有普通攻击
     if (playerSkills.isEmpty) {
@@ -183,6 +182,8 @@ class BattleEngine {
     lastEnemyDamage = 0;
     lastPlayerHeal = 0;
     lastEnemyHeal = 0;
+    lastPlayerKilled = false;
+    lastEnemyKilled = false;
 
     // 先手判定
     if (player.effectiveSpeed >= enemy.effectiveSpeed) {
@@ -210,7 +211,8 @@ class BattleEngine {
     // AI: 血量低于 30% 且有回复技能 → 回复；内力不足 → 普攻；否则随机
     Skill chosen;
     final healSkills = enemy.skills.where(
-        (s) => s.healAmount > 0 && s.mpCost <= enemy.mp);
+      (s) => s.healAmount > 0 && s.mpCost <= enemy.mp,
+    );
     if (enemy.hp < enemy.maxHp * 0.3 && healSkills.isNotEmpty) {
       chosen = healSkills.first;
     } else {
@@ -236,10 +238,12 @@ class BattleEngine {
     // 消耗内力
     attacker.mp = (attacker.mp - skill.mpCost).clamp(0, attacker.maxMp);
     if (skill.mpCost > 0) {
-      log.add(BattleLogEntry(
-        '${attacker.name}运起内力，消耗${skill.mpCost}点真气。',
-        isPlayerAction: isPlayer,
-      ));
+      log.add(
+        BattleLogEntry(
+          '${attacker.name}运起内力，消耗${skill.mpCost}点真气。',
+          isPlayerAction: isPlayer,
+        ),
+      );
     }
 
     final skillLevel = attacker.getSkillLevel(skill.id);
@@ -256,29 +260,34 @@ class BattleEngine {
       } else {
         lastEnemyHeal = actual;
       }
-      log.add(BattleLogEntry(
-        '${attacker.name}施展【${skill.name}】调息运气，恢复了$actual点气血。'
-        '（${attacker.hp}/${attacker.maxHp}）',
-        isPlayerAction: isPlayer,
-      ));
+      log.add(
+        BattleLogEntry(
+          '${attacker.name}施展【${skill.name}】调息运气，恢复了$actual点气血。'
+          '（${attacker.hp}/${attacker.maxHp}）',
+          isPlayerAction: isPlayer,
+        ),
+      );
     }
 
     // 攻击伤害
     if (skill.baseDamage > 0) {
       // 闪避判定：基于速度差
-      final dodgeRate = (defender.effectiveSpeed - attacker.effectiveSpeed) * 0.008
-          + defender.luck * 0.002;
+      final dodgeRate =
+          (defender.effectiveSpeed - attacker.effectiveSpeed) * 0.008 +
+          defender.luck * 0.002;
       if (_random.nextDouble() < dodgeRate.clamp(0.0, 0.25)) {
         if (isPlayer) {
           lastPlayerAttackDodged = true;
         } else {
           lastEnemyAttackDodged = true;
         }
-        log.add(BattleLogEntry(
-          '${attacker.name}使用【${skill.name}】攻向${defender.name}——'
-          '${defender.name}身形一闪，巧妙躲开了！',
-          isPlayerAction: isPlayer,
-        ));
+        log.add(
+          BattleLogEntry(
+            '${attacker.name}使用【${skill.name}】攻向${defender.name}——'
+            '${defender.name}身形一闪，巧妙躲开了！',
+            isPlayerAction: isPlayer,
+          ),
+        );
       } else {
         final isCrit = _rollCrit(attacker, defender);
         if (isPlayer) {
@@ -286,14 +295,16 @@ class BattleEngine {
         } else {
           lastEnemyAttackCrit = isCrit;
         }
-        var damage = ((skill.baseDamage +
-                    attacker.effectiveAtk * skill.damageMultiplier) *
-                levelMult -
-                defender.effectiveDef * GameConstants.defenseMultiplier)
-            .round();
+        var damage =
+            ((skill.baseDamage +
+                            attacker.effectiveAtk * skill.damageMultiplier) *
+                        levelMult -
+                    defender.effectiveDef * GameConstants.defenseMultiplier)
+                .round();
         damage = damage.clamp(1, 9999);
 
-        final defReduction = (defender.effectiveDef * GameConstants.defenseMultiplier).round();
+        final defReduction =
+            (defender.effectiveDef * GameConstants.defenseMultiplier).round();
 
         if (isCrit) {
           damage = (damage * GameConstants.critDamageMultiplier).round();
@@ -305,24 +316,30 @@ class BattleEngine {
         }
 
         if (isCrit) {
-          log.add(BattleLogEntry(
-            '${attacker.name}使用【${skill.name}】攻向${defender.name}——'
-            '击中要害！暴击！造成$damage点伤害！',
-            isPlayerAction: isPlayer,
-          ));
+          log.add(
+            BattleLogEntry(
+              '${attacker.name}使用【${skill.name}】攻向${defender.name}——'
+              '击中要害！暴击！造成$damage点伤害！',
+              isPlayerAction: isPlayer,
+            ),
+          );
         } else if (defReduction > skill.baseDamage ~/ 2) {
-          log.add(BattleLogEntry(
-            '${attacker.name}使用【${skill.name}】攻向${defender.name}，'
-            '${defender.name}硬扛了一击，防御抵消了$defReduction点，'
-            '受到$damage点伤害。',
-            isPlayerAction: isPlayer,
-          ));
+          log.add(
+            BattleLogEntry(
+              '${attacker.name}使用【${skill.name}】攻向${defender.name}，'
+              '${defender.name}硬扛了一击，防御抵消了$defReduction点，'
+              '受到$damage点伤害。',
+              isPlayerAction: isPlayer,
+            ),
+          );
         } else {
-          log.add(BattleLogEntry(
-            '${attacker.name}使用【${skill.name}】攻向${defender.name}，'
-            '造成$damage点伤害。',
-            isPlayerAction: isPlayer,
-          ));
+          log.add(
+            BattleLogEntry(
+              '${attacker.name}使用【${skill.name}】攻向${defender.name}，'
+              '造成$damage点伤害。',
+              isPlayerAction: isPlayer,
+            ),
+          );
         }
         defender.hp = (defender.hp - damage).clamp(0, defender.maxHp);
 
@@ -330,22 +347,33 @@ class BattleEngine {
         if (!defender.isDead) {
           _tryPassiveEffects(attacker, defender, isPlayer: isPlayer);
         }
+        if (defender.isDead) {
+          if (isPlayer) {
+            lastPlayerKilled = true;
+          } else {
+            lastEnemyKilled = true;
+          }
+        }
 
         // HP 状态播报
         if (!defender.isDead) {
           final hpRatio = defender.hp / defender.maxHp;
           if (hpRatio < 0.15) {
-            log.add(BattleLogEntry(
-              '${defender.name}摇摇欲坠，已经快撑不住了！'
-              '（${defender.hp}/${defender.maxHp}）',
-              isPlayerAction: isPlayer,
-            ));
+            log.add(
+              BattleLogEntry(
+                '${defender.name}摇摇欲坠，已经快撑不住了！'
+                '（${defender.hp}/${defender.maxHp}）',
+                isPlayerAction: isPlayer,
+              ),
+            );
           } else if (hpRatio < 0.3) {
-            log.add(BattleLogEntry(
-              '${defender.name}气息紊乱，伤势不轻。'
-              '（${defender.hp}/${defender.maxHp}）',
-              isPlayerAction: isPlayer,
-            ));
+            log.add(
+              BattleLogEntry(
+                '${defender.name}气息紊乱，伤势不轻。'
+                '（${defender.hp}/${defender.maxHp}）',
+                isPlayerAction: isPlayer,
+              ),
+            );
           }
         }
       }
@@ -366,10 +394,12 @@ class BattleEngine {
       buffParts.add('身法提升');
     }
     if (buffParts.isNotEmpty) {
-      log.add(BattleLogEntry(
-        '${attacker.name}${buffParts.join("、")}，持续${skill.buffDuration}回合！',
-        isPlayerAction: isPlayer,
-      ));
+      log.add(
+        BattleLogEntry(
+          '${attacker.name}${buffParts.join("、")}，持续${skill.buffDuration}回合！',
+          isPlayerAction: isPlayer,
+        ),
+      );
     }
 
     _checkBattleEnd();
@@ -377,7 +407,8 @@ class BattleEngine {
 
   bool _rollCrit(BattleFighter attacker, BattleFighter defender) {
     final speedDiff = attacker.effectiveSpeed - defender.effectiveSpeed;
-    final critRate = GameConstants.baseCritRate + speedDiff * 0.005 + attacker.luck * 0.003;
+    final critRate =
+        GameConstants.baseCritRate + speedDiff * 0.005 + attacker.luck * 0.003;
     return _random.nextDouble() < critRate.clamp(0.01, 0.5);
   }
 
@@ -410,21 +441,23 @@ class BattleEngine {
 
       final skillLevel = attacker.getSkillLevel(passive.id);
       final levelMult = GameConstants.skillLevelMultiplier(skillLevel);
-      var damage = ((passive.baseDamage + attacker.effectiveAtk * 0.3) * levelMult)
-          .round()
-          .clamp(1, 9999);
+      var damage =
+          ((passive.baseDamage + attacker.effectiveAtk * 0.3) * levelMult)
+              .round()
+              .clamp(1, 9999);
 
       final flavors = passiveHitFlavors[passive.id];
       final flavor = (flavors != null && flavors.isNotEmpty)
-          ? flavors[_random.nextInt(flavors.length)]
-              .replaceAll('{target}', defender.name)
+          ? flavors[_random.nextInt(flavors.length)].replaceAll(
+              '{target}',
+              defender.name,
+            )
           : '${attacker.name}追击了${defender.name}';
 
       defender.hp = (defender.hp - damage).clamp(0, defender.maxHp);
-      log.add(BattleLogEntry(
-        '$flavor，造成$damage点追击伤害！',
-        isPlayerAction: isPlayer,
-      ));
+      log.add(
+        BattleLogEntry('$flavor，造成$damage点追击伤害！', isPlayerAction: isPlayer),
+      );
       break;
     }
 
@@ -442,7 +475,10 @@ class BattleEngine {
         attacker.mp = (attacker.mp + effect.healMp).clamp(0, attacker.maxMp);
       }
       if (effect.extraDamage > 0) {
-        defender.hp = (defender.hp - effect.extraDamage).clamp(0, defender.maxHp);
+        defender.hp = (defender.hp - effect.extraDamage).clamp(
+          0,
+          defender.maxHp,
+        );
       }
       log.add(BattleLogEntry(effect.flavorText, isPlayerAction: isPlayer));
       break;

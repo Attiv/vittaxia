@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -32,38 +33,63 @@ class _BattlePageState extends ConsumerState<BattlePage> {
   final _scrollController = ScrollController();
   final _arenaController = BattleArenaController();
   bool _isAnimating = false;
+  String? _battleInitSnapshot;
+  ProviderSubscription<AsyncValue<dynamic>>? _characterSub;
+  ProviderSubscription<AsyncValue<dynamic>>? _learnedSkillsSub;
 
   @override
   void initState() {
     super.initState();
-    _initBattle();
+    _characterSub = ref.listenManual(currentCharacterProvider, (_, __) {
+      _tryInitBattle();
+    });
+    _learnedSkillsSub = ref.listenManual(learnedSkillsProvider, (_, __) {
+      _tryInitBattle();
+    });
+    _tryInitBattle(force: true);
   }
 
   @override
   void dispose() {
+    _characterSub?.close();
+    _learnedSkillsSub?.close();
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _initBattle() {
+  void _tryInitBattle({bool force = false}) {
+    if (!force && _engine != null) return;
+
     final character = ref.read(currentCharacterProvider).valueOrNull;
     final template = enemies[widget.enemyId];
-    if (character == null || template == null) return;
+    final allLearned = ref.read(learnedSkillsProvider).valueOrNull;
+    if (character == null || template == null || allLearned == null) return;
 
-    final equipped = ref.read(equippedSkillsProvider);
+    final equipped = allLearned.where((ls) => ls.isEquipped).toList()
+      ..sort((a, b) => a.skillId.compareTo(b.skillId));
     final equippedSkillIds = equipped.map((ls) => ls.skillId).toList();
     final skillLevels = {for (final ls in equipped) ls.skillId: ls.level};
 
     // 加载已学的被动技能
-    final allLearned = ref.read(learnedSkillsProvider).valueOrNull ?? [];
     final passiveEntries = allLearned.where((ls) {
       final s = skills[ls.skillId];
       return s != null && s.type == SkillType.passive;
-    }).toList();
+    }).toList()..sort((a, b) => a.skillId.compareTo(b.skillId));
     final passiveSkillIds = passiveEntries.map((ls) => ls.skillId).toList();
     final passiveSkillLevels = {
       for (final ls in passiveEntries) ls.skillId: ls.level,
     };
+
+    final snapshot = [
+      character.id,
+      character.currentHp,
+      character.currentMp,
+      widget.enemyId,
+      for (final ls in equipped) '${ls.skillId}:${ls.level}',
+      '|',
+      for (final ls in passiveEntries) '${ls.skillId}:${ls.level}',
+    ].join(';');
+    if (!force && snapshot == _battleInitSnapshot) return;
 
     final player = BattleEngine.createPlayerFighter(
       name: character.name,
@@ -82,7 +108,9 @@ class _BattlePageState extends ConsumerState<BattlePage> {
     );
     final enemy = BattleEngine.createEnemyFighter(template);
 
+    if (!mounted) return;
     setState(() {
+      _battleInitSnapshot = snapshot;
       _engine = BattleEngine(player: player, enemy: enemy);
     });
   }
@@ -90,8 +118,9 @@ class _BattlePageState extends ConsumerState<BattlePage> {
   Future<void> _useSkill(Skill skill) async {
     final engine = _engine;
     if (engine == null || engine.isOver || _isAnimating) return;
+    HapticFeedback.mediumImpact();
 
-    final playerActionType = skillToActionType(skill.id);
+    final playerActionType = _resolvePlayerActionType(skill);
 
     // 先计算结果
     engine.playerAction(skill);
@@ -100,7 +129,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
     setState(() => _isAnimating = true);
 
     // 按先后手顺序播放动画
-    await _playRoundAnimations(engine, playerActionType);
+    await _playRoundAnimations(engine, playerActionType, skill.id);
 
     // 动画结束，更新 UI
     setState(() => _isAnimating = false);
@@ -112,18 +141,48 @@ class _BattlePageState extends ConsumerState<BattlePage> {
     }
   }
 
+  BattleActionType _resolvePlayerActionType(Skill skill) {
+    final baseType = skillToActionType(skill.id);
+    if (baseType != BattleActionType.fist) return baseType;
+
+    return _resolveEquippedWeaponType() ?? baseType;
+  }
+
+  BattleActionType? _resolveEquippedWeaponType() {
+    final character = ref.read(currentCharacterProvider).valueOrNull;
+    final weaponId = character?.weaponId;
+    if (weaponId == null || weaponId.isEmpty) return null;
+
+    final weapon = items[weaponId];
+    if (weapon == null || weapon.type != ItemType.weapon) return null;
+
+    final weaponHint = '${weapon.name} ${weapon.id}'.toLowerCase();
+    if (weaponHint.contains('blade') ||
+        weaponHint.contains('saber') ||
+        weaponHint.contains('刀')) {
+      return BattleActionType.blade;
+    }
+    // 没有明确标注刀型时，统一按剑型展示，保证持武器时有明显武器动作/待机展示。
+    return BattleActionType.sword;
+  }
+
   Future<void> _playRoundAnimations(
-      BattleEngine engine, BattleActionType playerType) async {
+    BattleEngine engine,
+    BattleActionType playerType,
+    String playerSkillId,
+  ) async {
     final ctrl = _arenaController;
 
     Future<void> playerAnim() => ctrl.playAction(
-          isPlayer: true,
-          type: playerType,
-          crit: engine.lastPlayerAttackCrit,
-          dodged: engine.lastPlayerAttackDodged,
-          damage: engine.lastPlayerDamage,
-          healAmount: engine.lastPlayerHeal,
-        );
+      isPlayer: true,
+      type: playerType,
+      skillId: playerSkillId,
+      crit: engine.lastPlayerAttackCrit,
+      dodged: engine.lastPlayerAttackDodged,
+      damage: engine.lastPlayerDamage,
+      healAmount: engine.lastPlayerHeal,
+      defenderDefeated: engine.lastPlayerKilled,
+    );
 
     Future<void> enemyAnim() {
       if (!engine.lastEnemyActed || engine.lastEnemySkillId == null) {
@@ -132,10 +191,12 @@ class _BattlePageState extends ConsumerState<BattlePage> {
       return ctrl.playAction(
         isPlayer: false,
         type: skillToActionType(engine.lastEnemySkillId!),
+        skillId: engine.lastEnemySkillId,
         crit: engine.lastEnemyAttackCrit,
         dodged: engine.lastEnemyAttackDodged,
         damage: engine.lastEnemyDamage,
         healAmount: engine.lastEnemyHeal,
+        defenderDefeated: engine.lastEnemyKilled,
       );
     }
 
@@ -183,7 +244,10 @@ class _BattlePageState extends ConsumerState<BattlePage> {
         characterId: character.id,
         silver: character.silver + template.silverReward,
       );
-      final newRealm = await charNotifier.addExp(character.id, template.expReward);
+      final newRealm = await charNotifier.addExp(
+        character.id,
+        template.expReward,
+      );
       logNotifier.addLog(
         '击败了${template.name}！获得${template.expReward}经验、${template.silverReward}银两',
         type: LogType.combat,
@@ -195,9 +259,11 @@ class _BattlePageState extends ConsumerState<BattlePage> {
       // 掉落判定
       if (template.dropItemId != null) {
         if (Random().nextDouble() < template.dropRate) {
-          ref.read(inventoryNotifierProvider.notifier)
+          ref
+              .read(inventoryNotifierProvider.notifier)
               .addItem(character.id, template.dropItemId!);
-          final itemName = items[template.dropItemId]?.name ?? template.dropItemId!;
+          final itemName =
+              items[template.dropItemId]?.name ?? template.dropItemId!;
           logNotifier.addLog('获得了物品: $itemName', type: LogType.item);
         }
       }
@@ -210,7 +276,9 @@ class _BattlePageState extends ConsumerState<BattlePage> {
       }
 
       // 更新击杀类任务目标
-      ref.read(questNotifierProvider.notifier).checkAndUpdateObjectives(
+      ref
+          .read(questNotifierProvider.notifier)
+          .checkAndUpdateObjectives(
             character.id,
             QuestObjectiveType.kill,
             widget.enemyId,
@@ -218,10 +286,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
     } else {
       logNotifier.addLog('战斗失败，你勉强逃了出来。', type: LogType.combat);
       // 保底1血
-      charNotifier.updateStats(
-        characterId: character.id,
-        currentHp: 1,
-      );
+      charNotifier.updateStats(characterId: character.id, currentHp: 1);
     }
   }
 
@@ -230,9 +295,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
     final engine = _engine;
 
     if (engine == null) {
-      return const Scaffold(
-        body: Center(child: Text('战斗初始化中…')),
-      );
+      return const Scaffold(body: Center(child: Text('战斗初始化中…')));
     }
 
     return Scaffold(
@@ -249,18 +312,40 @@ class _BattlePageState extends ConsumerState<BattlePage> {
               children: [
                 Expanded(child: _fighterStatus(engine.player, true)),
                 const SizedBox(width: 12),
-                const Text('VS',
-                    style: TextStyle(
-                        color: AppColors.accent,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
+                const Text(
+                  'VS',
+                  style: TextStyle(
+                    color: AppColors.accent,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(width: 12),
                 Expanded(child: _fighterStatus(engine.enemy, false)),
               ],
             ),
           ),
           // 战斗动画区
-          BattleArenaWidget(controller: _arenaController),
+          Container(
+            margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primaryLight.withValues(alpha: 0.5),
+              ),
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF201C18), Color(0xFF151312)],
+              ),
+            ),
+            child: BattleArenaWidget(
+              controller: _arenaController,
+              idlePlayerWeaponType: _resolveEquippedWeaponType(),
+              height: 220,
+            ),
+          ),
           // 战斗日志
           Expanded(
             child: Container(
@@ -299,11 +384,15 @@ class _BattlePageState extends ConsumerState<BattlePage> {
                 children: engine.player.skills.map((skill) {
                   final canUse =
                       skill.mpCost <= engine.player.mp && !_isAnimating;
-                  return ElevatedButton(
-                    onPressed: canUse ? () => _useSkill(skill) : null,
-                    child: Text(
-                      '${skill.name}${skill.mpCost > 0 ? " (${skill.mpCost})" : ""}',
-                      style: const TextStyle(fontSize: 13),
+                  return Tooltip(
+                    message:
+                        '${skill.description}\n消耗内力: ${skill.mpCost}  当前: ${engine.player.mp}',
+                    child: ElevatedButton(
+                      onPressed: canUse ? () => _useSkill(skill) : null,
+                      child: Text(
+                        '${skill.name}${skill.mpCost > 0 ? " (${skill.mpCost})" : ""}',
+                        style: const TextStyle(fontSize: 13),
+                      ),
                     ),
                   );
                 }).toList(),
@@ -328,7 +417,8 @@ class _BattlePageState extends ConsumerState<BattlePage> {
                   ),
                   const SizedBox(height: 12),
                   ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(engine.playerWon),
+                    onPressed: () =>
+                        Navigator.of(context).pop(engine.playerWon),
                     child: const Text('返回'),
                   ),
                 ],
@@ -373,8 +463,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label, style: TextStyle(color: color, fontSize: 10)),
-            Text('$current/$max',
-                style: TextStyle(color: color, fontSize: 10)),
+            Text('$current/$max', style: TextStyle(color: color, fontSize: 10)),
           ],
         ),
         const SizedBox(height: 2),

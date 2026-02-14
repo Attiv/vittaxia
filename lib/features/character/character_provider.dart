@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/constants/game_constants.dart';
+import '../../core/utils/character_growth.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
 import '../../models/enums.dart';
@@ -38,33 +39,41 @@ class CharacterNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       final id = const Uuid().v4();
       final now = DateTime.now();
-      await _db.insertCharacter(CharactersCompanion.insert(
-        id: id,
-        name: name,
-        lastOnlineTime: Value(now),
-      ));
+      await _db.insertCharacter(
+        CharactersCompanion.insert(
+          id: id,
+          name: name,
+          lastOnlineTime: Value(now),
+        ),
+      );
       _ref.read(currentCharacterIdProvider.notifier).state = id;
       _ref.invalidate(characterListProvider);
 
       // 新手引导：赠送基础技能
-      await _db.upsertLearnedSkill(LearnedSkillsCompanion.insert(
-        id: const Uuid().v4(),
-        characterId: id,
-        skillId: 'basic_fist',
-        isEquipped: const Value(true),
-      ));
-      await _db.upsertLearnedSkill(LearnedSkillsCompanion.insert(
-        id: const Uuid().v4(),
-        characterId: id,
-        skillId: 'tuna_breathing',
-        isEquipped: const Value(true),
-      ));
+      await _db.upsertLearnedSkill(
+        LearnedSkillsCompanion.insert(
+          id: const Uuid().v4(),
+          characterId: id,
+          skillId: 'basic_fist',
+          isEquipped: const Value(true),
+        ),
+      );
+      await _db.upsertLearnedSkill(
+        LearnedSkillsCompanion.insert(
+          id: const Uuid().v4(),
+          characterId: id,
+          skillId: 'tuna_breathing',
+          isEquipped: const Value(true),
+        ),
+      );
       // 赠送初始被动技能
-      await _db.upsertLearnedSkill(LearnedSkillsCompanion.insert(
-        id: const Uuid().v4(),
-        characterId: id,
-        skillId: 'passive_follow_fist',
-      ));
+      await _db.upsertLearnedSkill(
+        LearnedSkillsCompanion.insert(
+          id: const Uuid().v4(),
+          characterId: id,
+          skillId: 'passive_follow_fist',
+        ),
+      );
 
       // 赠送初始物品
       final invNotifier = _ref.read(inventoryNotifierProvider.notifier);
@@ -112,11 +121,9 @@ class CharacterNotifier extends StateNotifier<AsyncValue<void>> {
       silver: silver != null ? Value(silver) : const Value.absent(),
       currentHp: currentHp != null ? Value(currentHp) : const Value.absent(),
       currentMp: currentMp != null ? Value(currentMp) : const Value.absent(),
-      reputation:
-          reputation != null ? Value(reputation) : const Value.absent(),
+      reputation: reputation != null ? Value(reputation) : const Value.absent(),
       stamina: stamina != null ? Value(stamina) : const Value.absent(),
-      maxStamina:
-          maxStamina != null ? Value(maxStamina) : const Value.absent(),
+      maxStamina: maxStamina != null ? Value(maxStamina) : const Value.absent(),
       baseHp: baseHp != null ? Value(baseHp) : const Value.absent(),
       baseMp: baseMp != null ? Value(baseMp) : const Value.absent(),
       baseAtk: baseAtk != null ? Value(baseAtk) : const Value.absent(),
@@ -131,13 +138,13 @@ class CharacterNotifier extends StateNotifier<AsyncValue<void>> {
       realmStageIndex: realmStage != null
           ? Value(realmStage.index)
           : const Value.absent(),
-      locationId:
-          locationId != null ? Value(locationId) : const Value.absent(),
+      locationId: locationId != null ? Value(locationId) : const Value.absent(),
       weaponId: weaponId != null ? Value(weaponId) : const Value.absent(),
       armorId: armorId != null ? Value(armorId) : const Value.absent(),
       shoesId: shoesId != null ? Value(shoesId) : const Value.absent(),
-      accessoryId:
-          accessoryId != null ? Value(accessoryId) : const Value.absent(),
+      accessoryId: accessoryId != null
+          ? Value(accessoryId)
+          : const Value.absent(),
       lastOnlineTime: Value(DateTime.now()),
     );
     await _db.updateCharacter(companion);
@@ -158,7 +165,7 @@ class CharacterNotifier extends StateNotifier<AsyncValue<void>> {
     while (true) {
       final tier = RealmTier.values[tierIndex];
       final stage = RealmStage.values[stageIndex];
-      if (tier == RealmTier.zhuJi && stage == RealmStage.peak) break;
+      if (tier == RealmTier.huaJing && stage == RealmStage.peak) break;
 
       final required = tier.rank * stage.rank * GameConstants.realmExpBase;
       if (exp < required) break;
@@ -183,18 +190,30 @@ class CharacterNotifier extends StateNotifier<AsyncValue<void>> {
     if (upgraded) {
       final newTier = RealmTier.values[tierIndex];
       final newStage = RealmStage.values[stageIndex];
+      final newBaseHp = character.baseHp + hpGain;
+      final newBaseMp = character.baseMp + mpGain;
+      final fullHp = leveledMaxHp(
+        baseHp: newBaseHp,
+        realmTierIndex: tierIndex,
+        realmStageIndex: stageIndex,
+      );
+      final fullMp = leveledMaxMp(
+        baseMp: newBaseMp,
+        realmTierIndex: tierIndex,
+        realmStageIndex: stageIndex,
+      );
       await updateStats(
         characterId: characterId,
         exp: exp,
         realmTier: newTier,
         realmStage: newStage,
-        baseHp: character.baseHp + hpGain,
-        baseMp: character.baseMp + mpGain,
+        baseHp: newBaseHp,
+        baseMp: newBaseMp,
         baseAtk: character.baseAtk + atkGain,
         baseDef: character.baseDef + defGain,
         baseSpeed: character.baseSpeed + speedGain,
-        currentHp: character.baseHp + hpGain,
-        currentMp: character.baseMp + mpGain,
+        currentHp: fullHp,
+        currentMp: fullMp,
       );
       return '${newTier.label}${newStage.label}';
     } else {
@@ -210,8 +229,7 @@ class CharacterNotifier extends StateNotifier<AsyncValue<void>> {
     await updateStats(
       characterId: characterId,
       stamina: character.stamina - amount,
-      lastStaminaRegenTime:
-          character.lastStaminaRegenTime ?? DateTime.now(),
+      lastStaminaRegenTime: character.lastStaminaRegenTime ?? DateTime.now(),
     );
     return true;
   }
@@ -220,15 +238,15 @@ class CharacterNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> regenStamina(String characterId) async {
     final character = await _db.getCharacter(characterId);
     if (character == null) return;
+    final maxStamina = character.levelMaxStamina;
     final lastRegen = character.lastStaminaRegenTime;
-    if (lastRegen == null || character.stamina >= character.maxStamina) return;
+    if (lastRegen == null || character.stamina >= maxStamina) return;
 
     final elapsed = DateTime.now().difference(lastRegen).inMinutes;
     final regenAmount = elapsed ~/ 3;
     if (regenAmount <= 0) return;
 
-    final newStamina =
-        (character.stamina + regenAmount).clamp(0, character.maxStamina);
+    final newStamina = (character.stamina + regenAmount).clamp(0, maxStamina);
     await updateStats(
       characterId: characterId,
       stamina: newStamina,
@@ -239,6 +257,6 @@ class CharacterNotifier extends StateNotifier<AsyncValue<void>> {
 
 final characterNotifierProvider =
     StateNotifierProvider<CharacterNotifier, AsyncValue<void>>((ref) {
-  final db = ref.watch(databaseProvider);
-  return CharacterNotifier(db, ref);
-});
+      final db = ref.watch(databaseProvider);
+      return CharacterNotifier(db, ref);
+    });

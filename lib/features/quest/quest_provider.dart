@@ -7,6 +7,8 @@ import 'package:uuid/uuid.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
 import '../../data/quest_data.dart';
+import '../../data/item_data.dart';
+import '../../data/skill_data.dart';
 import '../../models/enums.dart';
 import '../../models/game_event.dart';
 import '../../models/quest.dart';
@@ -183,8 +185,19 @@ class QuestNotifier extends StateNotifier<AsyncValue<void>> {
           .learnSkill(characterId, quest.rewardSkillId!);
     }
 
+    final rewardParts = <String>[];
+    if (quest.rewardExp > 0) rewardParts.add('${quest.rewardExp}经验');
+    if (quest.rewardSilver > 0) rewardParts.add('${quest.rewardSilver}银两');
+    if (quest.rewardItemId != null) {
+      final itemName = items[quest.rewardItemId]?.name ?? quest.rewardItemId!;
+      rewardParts.add('物品[$itemName]');
+    }
+    if (quest.rewardSkillId != null) {
+      final skillName = skills[quest.rewardSkillId]?.name ?? quest.rewardSkillId!;
+      rewardParts.add('技能【$skillName】');
+    }
     logNotifier.addLog(
-      '完成任务: ${quest.name}！获得${quest.rewardExp}经验、${quest.rewardSilver}银两',
+      '完成任务: ${quest.name}！获得${rewardParts.join("、")}',
       type: LogType.quest,
     );
 

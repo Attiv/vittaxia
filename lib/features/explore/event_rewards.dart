@@ -25,7 +25,7 @@ void applyEventRewards(
   int? newSilver = silver > 0 ? character.silver + silver : null;
   int? newHp;
   if (hpChange != null) {
-    newHp = (character.currentHp + hpChange).clamp(1, character.baseHp);
+    newHp = (character.currentHp + hpChange).clamp(1, totalMaxHp(character));
   }
 
   charNotifier.updateStats(
@@ -51,8 +51,13 @@ void applyEventRewards(
   }
   if (itemId != null) {
     ref.read(inventoryNotifierProvider.notifier).addItem(character.id, itemId);
-    logNotifier.addLog('获得物品: ${items[itemId]?.name ?? itemId}', type: LogType.item);
-    ref.read(questNotifierProvider.notifier).checkAndUpdateObjectives(
+    logNotifier.addLog(
+      '获得物品: ${items[itemId]?.name ?? itemId}',
+      type: LogType.item,
+    );
+    ref
+        .read(questNotifierProvider.notifier)
+        .checkAndUpdateObjectives(
           character.id,
           QuestObjectiveType.collect,
           itemId,

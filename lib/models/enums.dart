@@ -4,7 +4,11 @@ enum RealmTier {
   lianTi('入门', 2),
   houTian('小成', 3),
   xianTian('大成', 4),
-  zhuJi('化境', 5);
+  zhuJi('通脉', 5),
+  guiYuan('归元', 6),
+  zongShi('宗师', 7),
+  wuSheng('武圣', 8),
+  huaJing('化境', 9);
 
   final String label;
   final int rank;

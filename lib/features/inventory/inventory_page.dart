@@ -26,10 +26,20 @@ class InventoryPage extends ConsumerWidget {
         data: (inventory) {
           if (inventory.isEmpty) {
             return Center(
-              child: Text('背包空空如也',
-                  style: theme.textTheme.bodyMedium),
+              child: Text('背包空空如也', style: theme.textTheme.bodyMedium),
             );
           }
+          final equipGroups = _groupByType(inventory, equipmentOnly: true);
+          final itemGroups = _groupByType(inventory, equipmentOnly: false);
+          final equipCount = equipGroups.values.fold<int>(
+            0,
+            (sum, list) => sum + list.length,
+          );
+          final itemCount = itemGroups.values.fold<int>(
+            0,
+            (sum, list) => sum + list.length,
+          );
+
           return ListView(
             padding: const EdgeInsets.all(12),
             children: [
@@ -37,15 +47,55 @@ class InventoryPage extends ConsumerWidget {
               if (character != null) ...[
                 Text('当前装备', style: theme.textTheme.titleMedium),
                 const SizedBox(height: 8),
-                _equipSlot(context, ref, '武器', character.weaponId, EquipSlot.weapon, character, inventory),
-                _equipSlot(context, ref, '防具', character.armorId, EquipSlot.armor, character, inventory),
-                _equipSlot(context, ref, '鞋子', character.shoesId, EquipSlot.shoes, character, inventory),
-                _equipSlot(context, ref, '饰品', character.accessoryId, EquipSlot.accessory, character, inventory),
+                _equipSlot(
+                  context,
+                  ref,
+                  '武器',
+                  character.weaponId,
+                  EquipSlot.weapon,
+                  character,
+                  inventory,
+                ),
+                _equipSlot(
+                  context,
+                  ref,
+                  '防具',
+                  character.armorId,
+                  EquipSlot.armor,
+                  character,
+                  inventory,
+                ),
+                _equipSlot(
+                  context,
+                  ref,
+                  '鞋子',
+                  character.shoesId,
+                  EquipSlot.shoes,
+                  character,
+                  inventory,
+                ),
+                _equipSlot(
+                  context,
+                  ref,
+                  '饰品',
+                  character.accessoryId,
+                  EquipSlot.accessory,
+                  character,
+                  inventory,
+                ),
                 const Divider(height: 24),
               ],
-              Text('物品 (${inventory.length})', style: theme.textTheme.titleMedium),
-              const SizedBox(height: 8),
-              ...inventory.map((inv) => _buildItemTile(context, ref, inv, character)),
+              if (equipCount > 0) ...[
+                Text('装备分类 ($equipCount)', style: theme.textTheme.titleMedium),
+                const SizedBox(height: 8),
+                ..._buildGroupedItems(context, ref, equipGroups, character),
+                const SizedBox(height: 12),
+              ],
+              if (itemCount > 0) ...[
+                Text('物品分类 ($itemCount)', style: theme.textTheme.titleMedium),
+                const SizedBox(height: 8),
+                ..._buildGroupedItems(context, ref, itemGroups, character),
+              ],
             ],
           );
         },
@@ -53,8 +103,15 @@ class InventoryPage extends ConsumerWidget {
     );
   }
 
-  Widget _equipSlot(BuildContext context, WidgetRef ref, String label,
-      String? itemId, EquipSlot slot, dynamic character, List<dynamic> inventory) {
+  Widget _equipSlot(
+    BuildContext context,
+    WidgetRef ref,
+    String label,
+    String? itemId,
+    EquipSlot slot,
+    dynamic character,
+    List<dynamic> inventory,
+  ) {
     final item = (itemId != null && itemId.isNotEmpty) ? items[itemId] : null;
     // 查找装备的强化等级
     int enhLv = 0;
@@ -76,28 +133,39 @@ class InventoryPage extends ConsumerWidget {
         dense: true,
         leading: Icon(
           _slotIcon(slot),
-          color: item != null ? _rarityColor(item.rarity) : AppColors.textSecondary,
+          color: item != null
+              ? _rarityColor(item.rarity)
+              : AppColors.textSecondary,
           size: 20,
         ),
         title: Text(
           displayName,
           style: TextStyle(
-            color: item != null ? _rarityColor(item.rarity) : AppColors.textSecondary,
+            color: item != null
+                ? _rarityColor(item.rarity)
+                : AppColors.textSecondary,
           ),
         ),
-        subtitle: item != null ? Text(_itemBonusText(item, enhLv), style: const TextStyle(fontSize: 11)) : null,
+        subtitle: item != null
+            ? Text(
+                _itemBonusText(item, enhLv),
+                style: const TextStyle(fontSize: 11),
+              )
+            : null,
         trailing: item != null
             ? Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (invId != null)
                     TextButton(
-                      onPressed: () => _showEnhanceSheet(context, invId!, itemId!, enhLv),
+                      onPressed: () =>
+                          _showEnhanceSheet(context, invId!, itemId!, enhLv),
                       child: const Text('强化', style: TextStyle(fontSize: 12)),
                     ),
                   TextButton(
                     onPressed: () {
-                      ref.read(inventoryNotifierProvider.notifier)
+                      ref
+                          .read(inventoryNotifierProvider.notifier)
                           .unequipSlot(character.id, slot);
                     },
                     child: const Text('卸下', style: TextStyle(fontSize: 12)),
@@ -110,31 +178,41 @@ class InventoryPage extends ConsumerWidget {
   }
 
   Widget _buildItemTile(
-      BuildContext context, WidgetRef ref, dynamic inv, dynamic character) {
+    BuildContext context,
+    WidgetRef ref,
+    dynamic inv,
+    dynamic character,
+  ) {
     final item = items[inv.itemId];
     if (item == null) return const SizedBox.shrink();
 
     return Card(
       child: ListTile(
-        leading: Icon(
-          _typeIcon(item.type),
-          color: _rarityColor(item.rarity),
-        ),
+        leading: Icon(_typeIcon(item.type), color: _rarityColor(item.rarity)),
         title: Row(
           children: [
             Text(
-              inv.enhanceLevel > 0 ? '${item.name} +${inv.enhanceLevel}' : item.name,
+              inv.enhanceLevel > 0
+                  ? '${item.name} +${inv.enhanceLevel}'
+                  : item.name,
               style: TextStyle(color: _rarityColor(item.rarity)),
             ),
             if (inv.quantity > 1) ...[
               const SizedBox(width: 4),
-              Text('x${inv.quantity}',
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              Text(
+                'x${inv.quantity}',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
             ],
           ],
         ),
         subtitle: Text(
-          _isEquipable(item.type) ? _itemBonusText(item, inv.enhanceLevel) : item.description,
+          _isEquipable(item.type)
+              ? _itemBonusText(item, inv.enhanceLevel)
+              : item.description,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 12),
@@ -144,16 +222,26 @@ class InventoryPage extends ConsumerWidget {
     );
   }
 
-  Widget? _itemActions(BuildContext context, WidgetRef ref, dynamic inv,
-      Item item, dynamic character) {
+  Widget? _itemActions(
+    BuildContext context,
+    WidgetRef ref,
+    dynamic inv,
+    Item item,
+    dynamic character,
+  ) {
     if (character == null) return null;
     final notifier = ref.read(inventoryNotifierProvider.notifier);
 
     final sellBtn = item.sellPrice > 0
         ? TextButton(
             onPressed: () => _confirmSell(context, ref, inv, item, character),
-            child: Text('售${item.sellPrice}',
-                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+            child: Text(
+              '售${item.sellPrice}',
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textSecondary,
+              ),
+            ),
           )
         : null;
 
@@ -163,7 +251,8 @@ class InventoryPage extends ConsumerWidget {
         children: [
           if (inv.enhanceLevel < 10)
             TextButton(
-              onPressed: () => _showEnhanceSheet(context, inv.id, item.id, inv.enhanceLevel),
+              onPressed: () =>
+                  _showEnhanceSheet(context, inv.id, item.id, inv.enhanceLevel),
               child: const Text('强化', style: TextStyle(fontSize: 12)),
             ),
           TextButton(
@@ -191,18 +280,26 @@ class InventoryPage extends ConsumerWidget {
     return sellBtn;
   }
 
-  void _confirmSell(BuildContext context, WidgetRef ref, dynamic inv,
-      Item item, dynamic character) {
-    final name = inv.enhanceLevel > 0 ? '${item.name} +${inv.enhanceLevel}' : item.name;
+  void _confirmSell(
+    BuildContext context,
+    WidgetRef ref,
+    dynamic inv,
+    Item item,
+    dynamic character,
+  ) {
+    final name = inv.enhanceLevel > 0
+        ? '${item.name} +${inv.enhanceLevel}'
+        : item.name;
     final qty = inv.quantity as int;
 
     // 强化过或数量为1时直接卖
     if (inv.enhanceLevel > 0 || qty <= 1) {
-      ref.read(inventoryNotifierProvider.notifier)
+      ref
+          .read(inventoryNotifierProvider.notifier)
           .sellItem(character.id, inv.id, item.id);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('出售了$name，获得${item.sellPrice}银两')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('出售了$name，获得${item.sellPrice}银两')));
       return;
     }
     // 多个时弹确认
@@ -220,7 +317,8 @@ class InventoryPage extends ConsumerWidget {
             ElevatedButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
-                ref.read(inventoryNotifierProvider.notifier)
+                ref
+                    .read(inventoryNotifierProvider.notifier)
                     .sellItem(character.id, inv.id, item.id);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('出售了$name，获得${item.sellPrice}银两')),
@@ -235,7 +333,11 @@ class InventoryPage extends ConsumerWidget {
   }
 
   void _showEnhanceSheet(
-      BuildContext context, String inventoryId, String itemId, int currentLevel) {
+    BuildContext context,
+    String inventoryId,
+    String itemId,
+    int currentLevel,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -258,6 +360,73 @@ class InventoryPage extends ConsumerWidget {
         type == ItemType.accessory;
   }
 
+  Map<ItemType, List<dynamic>> _groupByType(
+    List<dynamic> inventory, {
+    required bool equipmentOnly,
+  }) {
+    final order = [
+      ItemType.weapon,
+      ItemType.armor,
+      ItemType.shoes,
+      ItemType.accessory,
+      ItemType.consumable,
+      ItemType.material,
+      ItemType.questItem,
+    ];
+    final grouped = <ItemType, List<dynamic>>{};
+    for (final inv in inventory) {
+      final item = items[inv.itemId];
+      if (item == null) continue;
+      final isEquip = _isEquipable(item.type);
+      if (equipmentOnly != isEquip) continue;
+      grouped.putIfAbsent(item.type, () => []).add(inv);
+    }
+    final sorted = <ItemType, List<dynamic>>{};
+    for (final type in order) {
+      final list = grouped[type];
+      if (list == null || list.isEmpty) continue;
+      sorted[type] = list;
+    }
+    return sorted;
+  }
+
+  List<Widget> _buildGroupedItems(
+    BuildContext context,
+    WidgetRef ref,
+    Map<ItemType, List<dynamic>> groups,
+    dynamic character,
+  ) {
+    final widgets = <Widget>[];
+    for (final entry in groups.entries) {
+      final type = entry.key;
+      final group = entry.value;
+      widgets.add(_groupHeader(type, group.length));
+      widgets.add(const SizedBox(height: 6));
+      for (final inv in group) {
+        widgets.add(_buildItemTile(context, ref, inv, character));
+      }
+      widgets.add(const SizedBox(height: 8));
+    }
+    return widgets;
+  }
+
+  Widget _groupHeader(ItemType type, int count) {
+    return Row(
+      children: [
+        Icon(_typeIcon(type), size: 16, color: AppColors.textSecondary),
+        const SizedBox(width: 6),
+        Text(
+          '${type.label} ($count)',
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
   String _itemBonusText(Item item, [int enhLv = 0]) {
     final parts = <String>[];
     void add(String label, int base) {
@@ -265,6 +434,7 @@ class InventoryPage extends ConsumerWidget {
       final val = enhLv > 0 ? base + (base * enhLv * 0.1).ceil() : base;
       parts.add('$label+$val');
     }
+
     add('攻', item.atkBonus);
     add('防', item.defBonus);
     add('血', item.hpBonus);

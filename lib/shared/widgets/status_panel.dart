@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../core/utils/character_growth.dart';
 import '../../core/database/app_database.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/enums.dart';
+import '../../features/inventory/inventory_provider.dart';
 
 /// 顶部角色状态条
 class StatusPanel extends StatelessWidget {
@@ -16,6 +18,9 @@ class StatusPanel extends StatelessWidget {
     final c = character;
     final tier = RealmTier.values[c.realmTierIndex];
     final stage = RealmStage.values[c.realmStageIndex];
+    final hpMax = totalMaxHp(c);
+    final mpMax = totalMaxMp(c);
+    final staminaMax = totalMaxStamina(c);
 
     return GestureDetector(
       onTap: onTap,
@@ -59,7 +64,7 @@ class StatusPanel extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          '${tier.label}${stage.label}',
+                          '${tier.label}${stage.label} · Lv.${c.level}',
                           style: const TextStyle(
                             color: AppColors.accent,
                             fontSize: 11,
@@ -75,21 +80,21 @@ class StatusPanel extends StatelessWidget {
                       _MiniBar(
                         label: '气血',
                         current: c.currentHp,
-                        max: c.baseHp,
+                        max: hpMax,
                         color: AppColors.hp,
                       ),
                       const SizedBox(width: 12),
                       _MiniBar(
                         label: '内力',
                         current: c.currentMp,
-                        max: c.baseMp,
+                        max: mpMax,
                         color: AppColors.mp,
                       ),
                       const SizedBox(width: 12),
                       _MiniBar(
                         label: '体力',
                         current: c.stamina,
-                        max: c.maxStamina,
+                        max: staminaMax,
                         color: AppColors.warning,
                       ),
                     ],
@@ -103,10 +108,7 @@ class StatusPanel extends StatelessWidget {
               children: [
                 Text(
                   '${c.silver} 两',
-                  style: const TextStyle(
-                    color: AppColors.accent,
-                    fontSize: 13,
-                  ),
+                  style: const TextStyle(color: AppColors.accent, fontSize: 13),
                 ),
                 const SizedBox(height: 4),
                 Text(

@@ -21,6 +21,7 @@ class GameConstants {
 
   // 境界升级经验需求（基础值，实际 = base × tier × stage）
   static const realmExpBase = 100;
+  static const realmStageCount = 4;
 
   // 境界突破属性成长（每次突破固定增长）
   static const realmUpgradeHp = 15;
@@ -29,15 +30,20 @@ class GameConstants {
   static const realmUpgradeDef = 1;
   static const realmUpgradeSpeed = 1;
 
+  // 等级成长（每升1级的额外上限成长）
+  static const hpGrowthPerLevel = 6;
+  static const mpGrowthPerLevel = 3;
+  static const staminaGrowthPerLevel = 2;
+
   // 好感度
   static const maxAffection = 100;
   static const affectionLevels = [
-    '陌生',   // 0~19
-    '相识',   // 20~39
-    '友善',   // 40~59
-    '亲近',   // 60~79
-    '信赖',   // 80~94
-    '知己',   // 95~100
+    '陌生', // 0~19
+    '相识', // 20~39
+    '友善', // 40~59
+    '亲近', // 60~79
+    '信赖', // 80~94
+    '知己', // 95~100
   ];
 
   // 技能

@@ -74,6 +74,10 @@ const _$RealmTierEnumMap = {
   RealmTier.houTian: 'houTian',
   RealmTier.xianTian: 'xianTian',
   RealmTier.zhuJi: 'zhuJi',
+  RealmTier.guiYuan: 'guiYuan',
+  RealmTier.zongShi: 'zongShi',
+  RealmTier.wuSheng: 'wuSheng',
+  RealmTier.huaJing: 'huaJing',
 };
 
 const _$RealmStageEnumMap = {

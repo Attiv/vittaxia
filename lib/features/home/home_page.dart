@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vittaxia/core/theme/app_theme.dart';
 
@@ -69,10 +70,13 @@ class _HomePageState extends ConsumerState<HomePage> {
     // 每3分钟恢复1点体力，和离线恢复速率一致
     _staminaTimer = Timer.periodic(const Duration(minutes: 3), (_) {
       final character = ref.read(currentCharacterProvider).valueOrNull;
-      if (character == null || character.stamina >= character.maxStamina) return;
-      ref.read(characterNotifierProvider.notifier).updateStats(
+      final maxStamina = character == null ? 0 : totalMaxStamina(character);
+      if (character == null || character.stamina >= maxStamina) return;
+      ref
+          .read(characterNotifierProvider.notifier)
+          .updateStats(
             characterId: character.id,
-            stamina: (character.stamina + 1).clamp(0, character.maxStamina),
+            stamina: (character.stamina + 1).clamp(0, maxStamina),
             lastStaminaRegenTime: DateTime.now(),
           );
     });
@@ -162,12 +166,12 @@ class _HomePageState extends ConsumerState<HomePage> {
           .read(characterNotifierProvider.notifier)
           .addExp(character.id, reward.exp)
           .then((newRealm) {
-        if (newRealm != null) {
-          ref
-              .read(gameLogProvider.notifier)
-              .addLog('突破！境界提升至$newRealm', type: LogType.system);
-        }
-      });
+            if (newRealm != null) {
+              ref
+                  .read(gameLogProvider.notifier)
+                  .addLog('突破！境界提升至$newRealm', type: LogType.system);
+            }
+          });
       ref
           .read(gameLogProvider.notifier)
           .addLog(
@@ -217,6 +221,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   ) {
     final logs = ref.watch(gameLogProvider);
     final location = ref.watch(currentLocationProvider);
+    final mineSpot = getMineSpotByLocation(character.locationId);
 
     return Column(
       children: [
@@ -277,19 +282,33 @@ class _HomePageState extends ConsumerState<HomePage> {
             children: [
               Row(
                 children: [
-                  _actionButton(Icons.explore, '探索', () {
-                    _doExplore(character);
-                  }),
-                  _actionButton(Icons.hardware, '挖矿', () {
-                    final spot = getMineSpotByLocation(character.locationId);
-                    if (spot == null) {
-                      _showActionTip('此处无矿脉');
-                      return;
-                    }
-                    Navigator.of(
-                      context,
-                    ).push(MaterialPageRoute(builder: (_) => const MinePage()));
-                  }),
+                  _actionButton(
+                    Icons.explore,
+                    '探索',
+                    () {
+                      _doExplore(character);
+                    },
+                    staminaCost: 5,
+                    currentStamina: character.stamina,
+                    hint: '随机事件',
+                  ),
+                  _actionButton(
+                    Icons.hardware,
+                    '挖矿',
+                    () {
+                      final spot = mineSpot;
+                      if (spot == null) {
+                        _showActionTip('此处无矿脉');
+                        return;
+                      }
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const MinePage()),
+                      );
+                    },
+                    staminaCost: mineSpot?.staminaCost,
+                    currentStamina: character.stamina,
+                    hint: mineSpot == null ? '此地无矿脉' : null,
+                  ),
                   _actionButton(Icons.terrain, '探险', () {
                     final dungeons = ref.read(availableDungeonsProvider);
                     if (dungeons.isEmpty) {
@@ -301,12 +320,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                         builder: (_) => const DungeonListPage(),
                       ),
                     );
-                  }),
+                  }, hint: '洞府挑战'),
                   _actionButton(Icons.people, '交谈', () {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const NpcListPage()),
                     );
-                  }),
+                  }, hint: 'NPC互动'),
                 ],
               ),
               const SizedBox(height: 4),
@@ -316,33 +335,49 @@ class _HomePageState extends ConsumerState<HomePage> {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const InventoryPage()),
                     );
-                  }),
+                  }, hint: '物品/装备'),
                   _actionButton(Icons.auto_stories, '技能', () {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const SkillPage()),
                     );
-                  }),
+                  }, hint: '修炼与装备'),
                   _actionButton(Icons.assignment, '任务', () {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const QuestPage()),
                     );
-                  }),
+                  }, hint: '主线与支线'),
                   _actionButton(Icons.map, '地图', () {
                     Navigator.of(
                       context,
                     ).push(MaterialPageRoute(builder: (_) => const MapPage()));
-                  }),
+                  }, hint: '切换地点'),
                 ],
               ),
               const SizedBox(height: 4),
               Row(
                 children: [
-                  _actionButton(Icons.self_improvement, '打坐', () {
-                    _doMeditate(character);
-                  }),
-                  _actionButton(Icons.hotel, '休息', () {
-                    _doRest(character);
-                  }),
+                  _actionButton(
+                    Icons.self_improvement,
+                    '打坐',
+                    () {
+                      _doMeditate(character);
+                    },
+                    onLongPress: () => _doBatchRecover(isMeditate: true),
+                    staminaCost: GameConstants.meditateStaminaCost,
+                    currentStamina: character.stamina,
+                    hint: '长按连续恢复',
+                  ),
+                  _actionButton(
+                    Icons.hotel,
+                    '休息',
+                    () {
+                      _doRest(character);
+                    },
+                    onLongPress: () => _doBatchRecover(isMeditate: false),
+                    staminaCost: GameConstants.restStaminaCost,
+                    currentStamina: character.stamina,
+                    hint: '长按连续恢复',
+                  ),
                   const Spacer(),
                   const Spacer(),
                 ],
@@ -544,25 +579,25 @@ class _HomePageState extends ConsumerState<HomePage> {
       case _CheatAction.restoreHp:
         await charNotifier.updateStats(
           characterId: character.id,
-          currentHp: character.baseHp,
+          currentHp: totalMaxHp(character),
         );
       case _CheatAction.restoreMp:
         await charNotifier.updateStats(
           characterId: character.id,
-          currentMp: character.baseMp,
+          currentMp: totalMaxMp(character),
         );
       case _CheatAction.restoreStamina:
         await charNotifier.updateStats(
           characterId: character.id,
-          stamina: character.maxStamina,
+          stamina: totalMaxStamina(character),
           lastStaminaRegenTime: DateTime.now(),
         );
       case _CheatAction.restoreAll:
         await charNotifier.updateStats(
           characterId: character.id,
-          currentHp: character.baseHp,
-          currentMp: character.baseMp,
-          stamina: character.maxStamina,
+          currentHp: totalMaxHp(character),
+          currentMp: totalMaxMp(character),
+          stamina: totalMaxStamina(character),
           lastStaminaRegenTime: DateTime.now(),
         );
       case _CheatAction.addExp:
@@ -605,15 +640,15 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  void _doMeditate(dynamic character) async {
+  Future<bool> _doMeditate(dynamic character, {bool showTip = true}) async {
     final charNotifier = ref.read(characterNotifierProvider.notifier);
     final logNotifier = ref.read(gameLogProvider.notifier);
 
-    final maxMp = character.baseMp as int;
+    final maxMp = totalMaxMp(character);
     final currentMp = character.currentMp as int;
     if (currentMp >= maxMp) {
-      _showActionTip('内力已满，无需打坐');
-      return;
+      if (showTip) _showActionTip('内力已满，无需打坐');
+      return false;
     }
 
     final ok = await charNotifier.consumeStamina(
@@ -621,37 +656,43 @@ class _HomePageState extends ConsumerState<HomePage> {
       GameConstants.meditateStaminaCost,
     );
     if (!ok) {
-      _showActionTip('体力不足');
-      return;
+      if (showTip) _showActionTip('体力不足');
+      return false;
     }
 
-    final recover = (GameConstants.meditateMpRecover).clamp(0, maxMp - currentMp);
+    final recover = (GameConstants.meditateMpRecover).clamp(
+      0,
+      maxMp - currentMp,
+    );
     // 打坐附带少量 HP 恢复
-    final maxHp = character.baseHp as int;
+    final maxHp = totalMaxHp(character);
     final currentHp = character.currentHp as int;
-    final hpRecover = (GameConstants.meditateHpRecover).clamp(0, maxHp - currentHp);
+    final hpRecover = (GameConstants.meditateHpRecover).clamp(
+      0,
+      maxHp - currentHp,
+    );
     await charNotifier.updateStats(
       characterId: character.id,
       currentMp: currentMp + recover,
       currentHp: hpRecover > 0 ? currentHp + hpRecover : null,
     );
     final hpMsg = hpRecover > 0 ? '，顺带调养了气血（+$hpRecover）' : '';
-    logNotifier.addLog(
-      '盘膝打坐，吐纳调息，恢复了$recover点内力$hpMsg。',
-      type: LogType.system,
-    );
-    _showActionTip('恢复了$recover点内力${hpRecover > 0 ? "、$hpRecover点气血" : ""}');
+    logNotifier.addLog('盘膝打坐，吐纳调息，恢复了$recover点内力$hpMsg。', type: LogType.system);
+    if (showTip) {
+      _showActionTip('恢复了$recover点内力${hpRecover > 0 ? "、$hpRecover点气血" : ""}');
+    }
+    return true;
   }
 
-  void _doRest(dynamic character) async {
+  Future<bool> _doRest(dynamic character, {bool showTip = true}) async {
     final charNotifier = ref.read(characterNotifierProvider.notifier);
     final logNotifier = ref.read(gameLogProvider.notifier);
 
-    final maxHp = character.baseHp as int;
+    final maxHp = totalMaxHp(character);
     final currentHp = character.currentHp as int;
     if (currentHp >= maxHp) {
-      _showActionTip('气血充盈，无需休息');
-      return;
+      if (showTip) _showActionTip('气血充盈，无需休息');
+      return false;
     }
 
     final ok = await charNotifier.consumeStamina(
@@ -659,8 +700,8 @@ class _HomePageState extends ConsumerState<HomePage> {
       GameConstants.restStaminaCost,
     );
     if (!ok) {
-      _showActionTip('体力不足');
-      return;
+      if (showTip) _showActionTip('体力不足');
+      return false;
     }
 
     final recover = (GameConstants.restHpRecover).clamp(0, maxHp - currentHp);
@@ -668,11 +709,9 @@ class _HomePageState extends ConsumerState<HomePage> {
       characterId: character.id,
       currentHp: currentHp + recover,
     );
-    logNotifier.addLog(
-      '寻一处清净之地歇息片刻，恢复了$recover点气血。',
-      type: LogType.system,
-    );
-    _showActionTip('恢复了$recover点气血');
+    logNotifier.addLog('寻一处清净之地歇息片刻，恢复了$recover点气血。', type: LogType.system);
+    if (showTip) _showActionTip('恢复了$recover点气血');
+    return true;
   }
 
   void _doExplore(dynamic character) async {
@@ -710,6 +749,25 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
+  Future<void> _doBatchRecover({required bool isMeditate}) async {
+    var done = 0;
+    for (var i = 0; i < 3; i++) {
+      final latestCharacter = ref.read(currentCharacterProvider).valueOrNull;
+      if (latestCharacter == null) break;
+      final ok = isMeditate
+          ? await _doMeditate(latestCharacter, showTip: false)
+          : await _doRest(latestCharacter, showTip: false);
+      if (!ok) break;
+      done++;
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+    }
+    if (done <= 0) {
+      _showActionTip(isMeditate ? '内力已满或体力不足' : '气血已满或体力不足');
+      return;
+    }
+    _showActionTip('连续${isMeditate ? "打坐" : "休息"} $done 次');
+  }
+
   Widget _logEntry(GameLog log, ThemeData theme) {
     final color = switch (log.type) {
       LogType.combat => AppColors.hp,
@@ -728,23 +786,60 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _actionButton(IconData icon, String label, VoidCallback onTap) {
+  Widget _actionButton(
+    IconData icon,
+    String label,
+    VoidCallback onTap, {
+    VoidCallback? onLongPress,
+    int? staminaCost,
+    int? currentStamina,
+    String? hint,
+    bool enabled = true,
+  }) {
+    final enoughStamina =
+        staminaCost == null ||
+        currentStamina == null ||
+        currentStamina >= staminaCost;
+    final canTap = enabled && enoughStamina;
+    final tooltip = [
+      label,
+      if (staminaCost != null) '消耗体力: $staminaCost',
+      if (hint != null) hint,
+      if (onLongPress != null) '长按可连续执行',
+    ].join('\n');
     return Expanded(
-      child: TextButton(
-        onPressed: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: AppColors.accent, size: 24),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 11,
+      child: Tooltip(
+        message: tooltip,
+        child: TextButton(
+          onLongPress: canTap ? onLongPress : null,
+          onPressed: canTap
+              ? () {
+                  HapticFeedback.selectionClick();
+                  onTap();
+                }
+              : null,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                color: canTap
+                    ? AppColors.accent
+                    : AppColors.textSecondary.withValues(alpha: 0.45),
+                size: 24,
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: canTap
+                      ? AppColors.textSecondary
+                      : AppColors.textSecondary.withValues(alpha: 0.5),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

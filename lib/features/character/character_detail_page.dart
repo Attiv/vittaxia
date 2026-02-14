@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/game_constants.dart';
+import '../../core/utils/character_growth.dart';
 import '../../core/database/app_database.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/enums.dart';
+import '../inventory/inventory_provider.dart';
 
 class CharacterDetailPage extends ConsumerWidget {
   final Character character;
@@ -17,6 +19,9 @@ class CharacterDetailPage extends ConsumerWidget {
     final c = character;
     final tier = RealmTier.values[c.realmTierIndex];
     final stage = RealmStage.values[c.realmStageIndex];
+    final hpMax = totalMaxHp(c);
+    final mpMax = totalMaxMp(c);
+    final staminaMax = totalMaxStamina(c);
 
     return Scaffold(
       appBar: AppBar(title: Text(c.name)),
@@ -43,22 +48,31 @@ class CharacterDetailPage extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Builder(builder: (_) {
-                    final isMaxRealm = tier == RealmTier.zhuJi &&
-                        stage == RealmStage.peak;
-                    if (isMaxRealm) {
+                  Text(
+                    '等级: Lv.${c.level}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Builder(
+                    builder: (_) {
+                      final isMaxRealm =
+                          tier == RealmTier.huaJing && stage == RealmStage.peak;
+                      if (isMaxRealm) {
+                        return Text(
+                          '经验: ${c.exp}（已达最高境界）',
+                          style: theme.textTheme.bodyMedium,
+                        );
+                      }
+                      final required =
+                          tier.rank * stage.rank * GameConstants.realmExpBase;
                       return Text(
-                        '经验: ${c.exp}（已达最高境界）',
+                        '经验: ${c.exp} / $required',
                         style: theme.textTheme.bodyMedium,
                       );
-                    }
-                    final required =
-                        tier.rank * stage.rank * GameConstants.realmExpBase;
-                    return Text(
-                      '经验: ${c.exp} / $required',
-                      style: theme.textTheme.bodyMedium,
-                    );
-                  }),
+                    },
+                  ),
                 ],
               ),
             ),
@@ -74,9 +88,11 @@ class CharacterDetailPage extends ConsumerWidget {
                 children: [
                   Text('属性', style: theme.textTheme.titleMedium),
                   const SizedBox(height: 12),
-                  _buildStatBar('气血', c.currentHp, c.baseHp, AppColors.hp),
+                  _buildStatBar('气血', c.currentHp, hpMax, AppColors.hp),
                   const SizedBox(height: 8),
-                  _buildStatBar('内力', c.currentMp, c.baseMp, AppColors.mp),
+                  _buildStatBar('内力', c.currentMp, mpMax, AppColors.mp),
+                  const SizedBox(height: 8),
+                  _buildStatBar('体力', c.stamina, staminaMax, AppColors.warning),
                   const Divider(height: 24),
                   _buildStatRow('攻击', c.baseAtk),
                   _buildStatRow('防御', c.baseDef),
@@ -118,8 +134,10 @@ class CharacterDetailPage extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label, style: const TextStyle(color: AppColors.textSecondary)),
-            Text('$current/$max',
-                style: TextStyle(color: color, fontWeight: FontWeight.w600)),
+            Text(
+              '$current/$max',
+              style: TextStyle(color: color, fontWeight: FontWeight.w600),
+            ),
           ],
         ),
         const SizedBox(height: 4),
@@ -143,11 +161,13 @@ class CharacterDetailPage extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(color: AppColors.textSecondary)),
-          Text('$value',
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
-              )),
+          Text(
+            '$value',
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
