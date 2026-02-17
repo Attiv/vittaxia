@@ -3,6 +3,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../core/constants/battle_speed_settings.dart';
+
 // ──────────────────────────────────────────────
 // 动作类型 & 映射
 // ──────────────────────────────────────────────
@@ -831,6 +833,28 @@ class _BattleArenaState extends State<BattleArenaWidget>
     bool defenderDefeated = false,
   }) async {
     if (_isAnimating) return;
+
+    // 跳过动画模式：直接显示结果
+    if (BattleSpeedSettings.skipAnimation) {
+      _attackerIsPlayer = isPlayer;
+      _actionType = type;
+      _isCrit = crit;
+      _isDodged = dodged;
+      _damageValue = damage;
+      _healValue = healAmount;
+      _defenderDefeated = defenderDefeated && !dodged;
+
+      if (_defenderDefeated) {
+        setState(() {
+          _playerDown = !isPlayer;
+          _enemyDown = isPlayer;
+          _playerPose = _playerDown ? _down : _idle;
+          _enemyPose = _enemyDown ? _down : _idle;
+        });
+      }
+      return;
+    }
+
     _attackerIsPlayer = isPlayer;
     _actionType = type;
     _actionSkillId = skillId;
@@ -850,10 +874,11 @@ class _BattleArenaState extends State<BattleArenaWidget>
 
     final isHealBuff =
         type == BattleActionType.heal || type == BattleActionType.buff;
-    // 放慢动作节奏，强化武器可读性（尤其是剑/刀）
     final isBlade =
         type == BattleActionType.sword || type == BattleActionType.blade;
-    _anim.duration = Duration(
+
+    // 根据速度设置调整动画时长
+    final baseDuration = Duration(
       milliseconds: isHealBuff
           ? 560
           : type == BattleActionType.hidden
@@ -862,6 +887,7 @@ class _BattleArenaState extends State<BattleArenaWidget>
           ? 980
           : 820,
     );
+    _anim.duration = BattleSpeedSettings.adjustDuration(baseDuration);
 
     _completer = Completer<void>();
     _anim.forward(from: 0);

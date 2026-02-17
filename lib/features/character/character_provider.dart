@@ -234,7 +234,7 @@ class CharacterNotifier extends StateNotifier<AsyncValue<void>> {
     return true;
   }
 
-  /// 离线体力恢复：每3分钟恢复1点
+  /// 离线体力恢复：每2分钟恢复1点（提高在线恢复速度）
   Future<void> regenStamina(String characterId) async {
     final character = await _db.getCharacter(characterId);
     if (character == null) return;
@@ -243,7 +243,7 @@ class CharacterNotifier extends StateNotifier<AsyncValue<void>> {
     if (lastRegen == null || character.stamina >= maxStamina) return;
 
     final elapsed = DateTime.now().difference(lastRegen).inMinutes;
-    final regenAmount = elapsed ~/ 3;
+    final regenAmount = elapsed ~/ GameConstants.staminaRegenMinutes;
     if (regenAmount <= 0) return;
 
     final newStamina = (character.stamina + regenAmount).clamp(0, maxStamina);

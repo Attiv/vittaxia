@@ -435,8 +435,10 @@ class BattleEngine {
     BattleFighter defender, {
     required bool isPlayer,
   }) {
-    // 被动武技：遍历已学被动，25% 概率触发，最多触发一个
+    // 被动武技：遍历已学被动，25% 概率触发，只触发第一个成功的（限制叠加）
+    bool passiveTriggered = false;
     for (final passive in attacker.passives) {
+      if (passiveTriggered) break; // 已触发一个，不再继续
       if (_random.nextDouble() >= 0.25) continue;
 
       final skillLevel = attacker.getSkillLevel(passive.id);
@@ -458,11 +460,13 @@ class BattleEngine {
       log.add(
         BattleLogEntry('$flavor，造成$damage点追击伤害！', isPlayerAction: isPlayer),
       );
-      break;
+      passiveTriggered = true; // 标记已触发
     }
 
-    // 内功被动：遍历已装备的内功，20% 概率触发，最多触发一个
+    // 内功被动：遍历已装备的内功，20% 概率触发，只触发第一个成功的（限制叠加）
+    bool innerForceTriggered = false;
     for (final skill in attacker.skills) {
+      if (innerForceTriggered) break; // 已触发一个，不再继续
       if (skill.type != SkillType.innerForce) continue;
       final effect = innerForcePassives[skill.id];
       if (effect == null) continue;
@@ -481,7 +485,7 @@ class BattleEngine {
         );
       }
       log.add(BattleLogEntry(effect.flavorText, isPlayerAction: isPlayer));
-      break;
+      innerForceTriggered = true; // 标记已触发
     }
   }
 }

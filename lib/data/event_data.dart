@@ -838,4 +838,145 @@ final gameEvents = <String, GameEventData>{
       ),
     ],
   ),
+
+  // ===== 荒野营地 =====
+  'wc_mercenary_talk': const GameEventData(
+    id: 'wc_mercenary_talk',
+    name: '佣兵闲谈',
+    description: '几个佣兵围坐在篝火旁，正在讨论最近的任务。',
+    type: GameEventType.npcEncounter,
+    weight: 12,
+    choices: [
+      EventChoice(
+        text: '加入交谈',
+        resultText: '你和佣兵们聊了起来，从他们口中得知了不少江湖秘闻。',
+        rewardExp: 15,
+      ),
+      EventChoice(
+        text: '静静旁听',
+        resultText: '你在一旁默默听着，记下了几个有用的情报。',
+        rewardExp: 8,
+      ),
+    ],
+  ),
+  'wc_hunter_trade': const GameEventData(
+    id: 'wc_hunter_trade',
+    name: '猎人交易',
+    description: '一个猎人正在整理猎物，看到你走来，主动打起了招呼。',
+    type: GameEventType.merchant,
+    weight: 10,
+    choices: [
+      EventChoice(
+        text: '询问货物',
+        resultText: '猎人拿出一些兽皮和草药，你挑选了一些有用的材料。',
+        rewardItemId: 'rough_iron',
+      ),
+      EventChoice(
+        text: '礼貌拒绝',
+        resultText: '你婉言谢绝，继续前行。',
+      ),
+    ],
+  ),
+  'wc_rogue_encounter': const GameEventData(
+    id: 'wc_rogue_encounter',
+    name: '浪人剑客',
+    description: '一个衣衫褴褛的剑客坐在营地边缘，眼神锐利如刀。',
+    type: GameEventType.battle,
+    weight: 15,
+    choices: [
+      EventChoice(
+        text: '上前切磋',
+        resultText: '剑客站起身来，拔剑相向："既然你有此意，那就来吧！"',
+        triggerBattle: true,
+        enemyId: 'rogue_swordsman',
+      ),
+      EventChoice(
+        text: '点头致意',
+        resultText: '你向剑客点头示意，对方也微微颔首，没有多言。',
+        rewardExp: 5,
+      ),
+    ],
+  ),
+  'wc_campfire_story': const GameEventData(
+    id: 'wc_campfire_story',
+    name: '篝火故事',
+    description: '夜幕降临，营地里的人们围坐在篝火旁，有人开始讲述江湖往事。',
+    type: GameEventType.scenery,
+    weight: 8,
+    choices: [
+      EventChoice(
+        text: '认真倾听',
+        resultText: '你听到了一个关于古代高手的传说，心中若有所悟。',
+        rewardExp: 18,
+      ),
+      EventChoice(
+        text: '早早休息',
+        resultText: '你觉得疲惫，找了个角落休息去了。',
+        hpChange: 15,
+      ),
+    ],
+  ),
+  'wc_night_ambush': const GameEventData(
+    id: 'wc_night_ambush',
+    name: '夜袭',
+    description: '深夜，你听到营地外传来异响，似乎有什么东西在靠近。',
+    type: GameEventType.battle,
+    weight: 10,
+    choices: [
+      EventChoice(
+        text: '提剑警戒',
+        resultText: '一个山中猎户突然冲出，原来是被山贼追杀至此！',
+        triggerBattle: true,
+        enemyId: 'mountain_hunter',
+      ),
+      EventChoice(
+        text: '假装熟睡',
+        resultText: '你闭目装睡，那声音渐渐远去了。',
+        rewardExp: 3,
+      ),
+    ],
+  ),
+
+  // ===== 迷雾谷新增事件 =====
+  'mw_blood_wolf': const GameEventData(
+    id: 'mw_blood_wolf',
+    name: '血狼袭击',
+    description: '浓雾中传来低沉的嚎叫，一头双眼赤红的血狼从雾中扑出！',
+    type: GameEventType.battle,
+    weight: 12,
+    choices: [
+      EventChoice(
+        text: '迎战血狼',
+        resultText: '血狼凶猛异常，你必须全力应对！',
+        triggerBattle: true,
+        enemyId: 'blood_wolf',
+      ),
+      EventChoice(
+        text: '燃火驱赶',
+        resultText: '你点燃火把挥舞，血狼畏惧火光，退入了雾中。',
+        rewardExp: 10,
+        hpChange: -8,
+      ),
+    ],
+  ),
+  'mw_iron_golem': const GameEventData(
+    id: 'mw_iron_golem',
+    name: '古代傀儡',
+    description: '雾气深处，一具铁甲傀儡缓缓转动，发出刺耳的金属摩擦声。',
+    type: GameEventType.battle,
+    weight: 8,
+    choices: [
+      EventChoice(
+        text: '挑战傀儡',
+        resultText: '傀儡的双眼亮起红光，朝你走来！',
+        triggerBattle: true,
+        enemyId: 'iron_golem',
+      ),
+      EventChoice(
+        text: '绕道而行',
+        resultText: '你小心翼翼地绕开傀儡，它似乎没有发现你。',
+        rewardExp: 5,
+      ),
+    ],
+  ),
 };

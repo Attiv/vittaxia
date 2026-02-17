@@ -8,8 +8,10 @@ import '../models/map_location.dart';
 ///   [青云村]---+---[清风镇] (1)
 ///   (起始,1)       |
 ///      |       [望月楼] (3)
-///   [青竹林]
-///   (2)        [迷雾谷] (6, 大成)
+///   [青竹林]       |
+///   (2)        [荒野营地] (4)
+///                |
+///           [迷雾谷] (6, 大成)
 ///                |
 ///           [天剑门外] (5, 主线)
 final mapLocations = <String, MapLocation>{
@@ -75,7 +77,7 @@ final mapLocations = <String, MapLocation>{
     description: '清风镇外的一座古塔，传闻是某位前辈高人修行之所。月圆之夜，楼上常传出悠扬琴声。',
     type: LocationType.special,
     dangerLevel: 3,
-    adjacentIds: ['qingfeng_town'],
+    adjacentIds: ['qingfeng_town', 'wilderness_camp'],
     npcIds: ['su_wanyin'],
     eventIds: [
       'wy_moonlight_practice',
@@ -92,7 +94,7 @@ final mapLocations = <String, MapLocation>{
     description: '绵延数十里的山脉，山势险峻。近来有山贼盘踞，往来客商苦不堪言。',
     type: LocationType.wilderness,
     dangerLevel: 4,
-    adjacentIds: ['qingfeng_town', 'miwu_valley'],
+    adjacentIds: ['qingfeng_town', 'wilderness_camp'],
     npcIds: ['qin_zhu'],
     eventIds: [
       'lx_bandit_ambush',
@@ -106,13 +108,30 @@ final mapLocations = <String, MapLocation>{
     ],
     explorationSeconds: 40,
   ),
+  'wilderness_camp': const MapLocation(
+    id: 'wilderness_camp',
+    name: '荒野营地',
+    description: '江湖人士临时搭建的营地，常有佣兵和猎人在此歇脚。篝火旁总能听到各种传闻和故事。',
+    type: LocationType.wilderness,
+    dangerLevel: 4,
+    adjacentIds: ['wangyue_tower', 'luoxia_mountains', 'miwu_valley'],
+    npcIds: [],
+    eventIds: [
+      'wc_mercenary_talk',
+      'wc_hunter_trade',
+      'wc_rogue_encounter',
+      'wc_campfire_story',
+      'wc_night_ambush',
+    ],
+    explorationSeconds: 38,
+  ),
   'miwu_valley': const MapLocation(
     id: 'miwu_valley',
     name: '迷雾谷',
     description: '常年弥漫浓雾的山谷，据说是通往天剑门的必经之路。雾中时有怪声，令人毛骨悚然。',
     type: LocationType.dungeon,
     dangerLevel: 6,
-    adjacentIds: ['luoxia_mountains', 'tianjian_gate'],
+    adjacentIds: ['wilderness_camp', 'tianjian_gate'],
     npcIds: ['lin_feng'],
     eventIds: [
       'mw_fog_illusion',
@@ -120,6 +139,8 @@ final mapLocations = <String, MapLocation>{
       'mw_ancient_tomb',
       'mw_poison_trap',
       'mw_waymarker_trace',
+      'mw_blood_wolf',
+      'mw_iron_golem',
     ],
     explorationSeconds: 50,
     requiredRealm: RealmTier.xianTian,

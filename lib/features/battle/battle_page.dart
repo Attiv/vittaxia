@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/constants/battle_speed_settings.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/enemy_data.dart';
 import '../../data/item_data.dart';
@@ -302,6 +303,64 @@ class _BattlePageState extends ConsumerState<BattlePage> {
       appBar: AppBar(
         title: Text('战斗 - ${engine.enemy.name}'),
         automaticallyImplyLeading: false,
+        actions: [
+          // 战斗速度切换按钮
+          PopupMenuButton<BattleSpeed>(
+            icon: Icon(
+              BattleSpeedSettings.skipAnimation
+                  ? Icons.fast_forward
+                  : Icons.speed,
+              color: AppColors.accent,
+            ),
+            tooltip: '战斗速度',
+            onSelected: (speed) {
+              setState(() {
+                BattleSpeedSettings.setSpeed(speed);
+              });
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: BattleSpeed.normal,
+                child: Row(
+                  children: [
+                    if (BattleSpeedSettings.currentSpeed == BattleSpeed.normal)
+                      const Icon(Icons.check, size: 18),
+                    if (BattleSpeedSettings.currentSpeed != BattleSpeed.normal)
+                      const SizedBox(width: 18),
+                    const SizedBox(width: 8),
+                    const Text('正常速度 (1x)'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: BattleSpeed.fast,
+                child: Row(
+                  children: [
+                    if (BattleSpeedSettings.currentSpeed == BattleSpeed.fast)
+                      const Icon(Icons.check, size: 18),
+                    if (BattleSpeedSettings.currentSpeed != BattleSpeed.fast)
+                      const SizedBox(width: 18),
+                    const SizedBox(width: 8),
+                    const Text('快速 (2x)'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: BattleSpeed.skip,
+                child: Row(
+                  children: [
+                    if (BattleSpeedSettings.currentSpeed == BattleSpeed.skip)
+                      const Icon(Icons.check, size: 18),
+                    if (BattleSpeedSettings.currentSpeed != BattleSpeed.skip)
+                      const SizedBox(width: 18),
+                    const SizedBox(width: 8),
+                    const Text('跳过动画'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: Column(
         children: [
