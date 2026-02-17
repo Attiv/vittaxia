@@ -61,7 +61,8 @@ class GuidePage extends StatelessWidget {
           ]),
           _section(theme, '挂机修炼', [
             '• 关闭游戏即为挂机，下次打开自动结算离线收益',
-            '• 离线经验 = 悟性 × 0.5 × 离线分钟数',
+            '• 离线经验 = 悟性 × 0.3 × 离线分钟数',
+            '• 离线还会带回少量银两与基础补给（粗铁矿/金创药）',
             '• 最多累计12小时离线收益',
           ]),
           _section(theme, '境界提升', [
@@ -129,17 +130,19 @@ class GuidePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              ...items.map((item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Text(
-                      item,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 14,
-                        height: 1.6,
-                      ),
+              ...items.map(
+                (item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    item,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                      height: 1.6,
                     ),
-                  )),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

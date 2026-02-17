@@ -3,6 +3,7 @@ class GameConstants {
   // 挂机
   static const maxIdleHours = 12;
   static const idleExpMultiplier = 0.3; // 悟性 × 此值 × 分钟（降低离线收益）
+  static const idleSilverMultiplier = 0.08; // 悟性 × 此值 × 分钟（离线基础银两）
 
   // 体力恢复
   static const staminaRegenMinutes = 2; // 每2分钟恢复1点（提高在线恢复速度）

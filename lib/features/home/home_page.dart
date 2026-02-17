@@ -67,8 +67,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _startStaminaTimer() {
-    // 每3分钟恢复1点体力，和离线恢复速率一致
-    _staminaTimer = Timer.periodic(const Duration(minutes: 3), (_) {
+    // 每2分钟恢复1点体力，与离线恢复速率一致
+    _staminaTimer = Timer.periodic(const Duration(minutes: 2), (_) {
       final character = ref.read(currentCharacterProvider).valueOrNull;
       final maxStamina = character == null ? 0 : totalMaxStamina(character);
       if (character == null || character.stamina >= maxStamina) return;
@@ -149,37 +149,67 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
   }
 
-  void _checkIdleReward(dynamic character) {
+  Future<void> _checkIdleReward(dynamic character) async {
     if (character.lastOnlineTime == null) return;
 
     // 离线体力恢复
-    ref.read(characterNotifierProvider.notifier).regenStamina(character.id);
+    await ref
+        .read(characterNotifierProvider.notifier)
+        .regenStamina(character.id);
 
     final reward = IdleCalculator.calculate(
       comprehension: character.baseComprehension,
       lastOnline: character.lastOnlineTime!,
     );
 
+    if (!reward.hasAny) return;
+
+    final charNotifier = ref.read(characterNotifierProvider.notifier);
+    final invNotifier = ref.read(inventoryNotifierProvider.notifier);
+    final logNotifier = ref.read(gameLogProvider.notifier);
+
     if (reward.exp > 0) {
-      // 发放经验
-      ref
-          .read(characterNotifierProvider.notifier)
-          .addExp(character.id, reward.exp)
-          .then((newRealm) {
-            if (newRealm != null) {
-              ref
-                  .read(gameLogProvider.notifier)
-                  .addLog('突破！境界提升至$newRealm', type: LogType.system);
-            }
-          });
-      ref
-          .read(gameLogProvider.notifier)
-          .addLog(
-            '离线修炼 ${IdleCalculator.formatDuration(reward.minutesIdle)}，获得 ${reward.exp} 经验',
-            type: LogType.system,
-          );
-      IdleRewardDialog.show(context, reward);
+      final newRealm = await charNotifier.addExp(character.id, reward.exp);
+      if (newRealm != null) {
+        logNotifier.addLog('突破！境界提升至$newRealm', type: LogType.system);
+      }
     }
+
+    if (reward.silver > 0) {
+      await charNotifier.updateStats(
+        characterId: character.id,
+        silver: character.silver + reward.silver,
+      );
+    }
+
+    if (reward.items.isNotEmpty) {
+      for (final entry in reward.items.entries) {
+        await invNotifier.addItem(character.id, entry.key, count: entry.value);
+      }
+    }
+
+    final parts = <String>[];
+    if (reward.exp > 0) {
+      parts.add('${reward.exp}经验');
+    }
+    if (reward.silver > 0) {
+      parts.add('${reward.silver}银两');
+    }
+    if (reward.items.isNotEmpty) {
+      final itemText = reward.items.entries
+          .map((entry) {
+            final itemName = items[entry.key]?.name ?? entry.key;
+            return '$itemName x${entry.value}';
+          })
+          .join('、');
+      parts.add(itemText);
+    }
+    logNotifier.addLog(
+      '离线修炼 ${IdleCalculator.formatDuration(reward.minutesIdle)}，获得 ${parts.join("、")}',
+      type: LogType.system,
+    );
+    if (!mounted) return;
+    await IdleRewardDialog.show(context, reward);
   }
 
   Widget _buildWelcome(BuildContext context, ThemeData theme) {

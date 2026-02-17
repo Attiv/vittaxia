@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/item_data.dart';
 import 'idle_calculator.dart';
 
 /// 离线收益弹窗
@@ -10,7 +11,7 @@ class IdleRewardDialog extends StatelessWidget {
   const IdleRewardDialog({super.key, required this.reward});
 
   static Future<void> show(BuildContext context, IdleReward reward) {
-    if (reward.exp <= 0) return Future.value();
+    if (!reward.hasAny) return Future.value();
     return showDialog(
       context: context,
       barrierDismissible: false,
@@ -42,21 +43,61 @@ class IdleRewardDialog extends StatelessWidget {
                 style: TextStyle(color: AppColors.warning, fontSize: 12),
               ),
             ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('修炼经验 ', style: TextStyle(color: AppColors.textPrimary)),
-              Text(
-                '+${reward.exp}',
+          const SizedBox(height: 14),
+          if (reward.exp > 0)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  '修炼经验 ',
+                  style: TextStyle(color: AppColors.textPrimary),
+                ),
+                Text(
+                  '+${reward.exp}',
+                  style: const TextStyle(
+                    color: AppColors.exp,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          if (reward.silver > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                '银两 +${reward.silver}',
                 style: const TextStyle(
-                  color: AppColors.exp,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                  color: AppColors.accent,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
-          ),
+            ),
+          if (reward.items.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '补给收获',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              ),
+            ),
+            const SizedBox(height: 4),
+            ...reward.items.entries.map((entry) {
+              final itemName = items[entry.key]?.name ?? entry.key;
+              return Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '• $itemName x${entry.value}',
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                  ),
+                ),
+              );
+            }),
+          ],
         ],
       ),
       actions: [

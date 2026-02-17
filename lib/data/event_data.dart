@@ -88,7 +88,7 @@ final gameEvents = <String, GameEventData>{
     name: '野狗袭击',
     description: '一条凶猛的野狗从草丛中窜出，龇牙咧嘴朝你扑来！',
     type: GameEventType.battle,
-    weight: 8,
+    weight: 6,
     choices: [
       EventChoice(
         text: '挥拳驱赶',
@@ -110,7 +110,7 @@ final gameEvents = <String, GameEventData>{
     name: '街头斗殴',
     description: '两个醉汉在酒楼门口争吵，眼看就要动手。',
     type: GameEventType.battle,
-    weight: 15,
+    weight: 10,
     choices: [
       EventChoice(
         text: '上前劝架',
@@ -130,7 +130,7 @@ final gameEvents = <String, GameEventData>{
     name: '行商交易',
     description: '一个外地商人正在街边摆摊，有些稀奇玩意。',
     type: GameEventType.merchant,
-    weight: 8,
+    weight: 10,
     choices: [
       EventChoice(
         text: '看看货物',
@@ -148,7 +148,7 @@ final gameEvents = <String, GameEventData>{
     name: '小道消息',
     description: '茶馆里几个茶客在窃窃私语，似乎在讨论什么大事。',
     type: GameEventType.npcEncounter,
-    weight: 12,
+    weight: 15,
     choices: [
       EventChoice(
         text: '凑近偷听',
@@ -208,7 +208,7 @@ final gameEvents = <String, GameEventData>{
     name: '夜巡缉闹',
     description: '夜色渐深，街口又有醉汉拍桌吵闹，几名镇民正愁没人压场。',
     type: GameEventType.battle,
-    weight: 10,
+    weight: 7,
     choices: [
       EventChoice(
         text: '上前制止',
@@ -226,9 +226,9 @@ final gameEvents = <String, GameEventData>{
   'qf_story_fragment': const GameEventData(
     id: 'qf_story_fragment',
     name: '茶馆残页',
-    description: '茶馆角落里压着一页旧抄本，字迹提到了“引路钥”和星铁。',
+    description: '茶馆角落里压着一页旧抄本，字迹提到了"引路钥"和星铁。',
     type: GameEventType.npcEncounter,
-    weight: 7,
+    weight: 10,
     choices: [
       EventChoice(
         text: '拿去请白无常辨认',
@@ -245,9 +245,9 @@ final gameEvents = <String, GameEventData>{
   'qf_blacksmith_invoice': const GameEventData(
     id: 'qf_blacksmith_invoice',
     name: '铁铺催单',
-    description: '铁铺伙计抱着账册一路小跑，嘴里念叨着“寒铁再不到就要误期了”。',
+    description: '铁铺伙计抱着账册一路小跑，嘴里念叨着"寒铁再不到就要误期了"。',
     type: GameEventType.npcEncounter,
-    weight: 8,
+    weight: 10,
     choices: [
       EventChoice(
         text: '帮他跑一趟',
@@ -257,7 +257,7 @@ final gameEvents = <String, GameEventData>{
       ),
       EventChoice(
         text: '记下需求',
-        resultText: '你默记下“寒铁矿两块”的需求，准备回头去山里碰碰运气。',
+        resultText: '你默记下"寒铁矿两块"的需求，准备回头去山里碰碰运气。',
         rewardExp: 7,
       ),
     ],
@@ -267,7 +267,7 @@ final gameEvents = <String, GameEventData>{
     name: '剑门传闻续篇',
     description: '两名过路镖师正在谈论天剑门外的新规，言辞间颇多戒备之意。',
     type: GameEventType.npcEncounter,
-    weight: 6,
+    weight: 8,
     choices: [
       EventChoice(
         text: '细问外门动静',
@@ -276,7 +276,7 @@ final gameEvents = <String, GameEventData>{
       ),
       EventChoice(
         text: '只听不问',
-        resultText: '你不动声色地听完，记住了“外阶巡守加密”这条关键信息。',
+        resultText: '你不动声色地听完，记住了"外阶巡守加密"这条关键信息。',
         rewardExp: 6,
       ),
     ],
@@ -288,7 +288,7 @@ final gameEvents = <String, GameEventData>{
     name: '野猪拦路',
     description: '一头野猪从竹林中冲了出来，气势汹汹地朝你冲来！',
     type: GameEventType.battle,
-    weight: 18,
+    weight: 12,
     choices: [
       EventChoice(
         text: '迎战',
@@ -470,7 +470,7 @@ final gameEvents = <String, GameEventData>{
     name: '暗影来袭',
     description: '月色中一道黑影从楼顶掠下，手持短刃直奔你而来！',
     type: GameEventType.battle,
-    weight: 6,
+    weight: 5,
     choices: [
       EventChoice(
         text: '拔刀迎敌',
@@ -491,7 +491,7 @@ final gameEvents = <String, GameEventData>{
     name: '月见花开',
     description: '楼外石阶边有几朵银白花在月光下绽放，花香清冽。',
     type: GameEventType.treasure,
-    weight: 5,
+    weight: 8,
     choices: [
       EventChoice(
         text: '采下一朵',
@@ -513,7 +513,7 @@ final gameEvents = <String, GameEventData>{
     name: '山贼伏击',
     description: '前方山路突然跳出几个蒙面人，为首的嚷道："此路是我开，留下买路财！"',
     type: GameEventType.battle,
-    weight: 22,
+    weight: 15,
     choices: [
       EventChoice(
         text: '拔刀相迎',
@@ -533,7 +533,7 @@ final gameEvents = <String, GameEventData>{
     name: '悬崖宝箱',
     description: '你在一处悬崖边发现了一个半露的箱子，似乎是被人藏在这里的。',
     type: GameEventType.treasure,
-    weight: 5,
+    weight: 8,
     choices: [
       EventChoice(
         text: '冒险取箱',
@@ -554,7 +554,7 @@ final gameEvents = <String, GameEventData>{
     name: '雄鹰翱翔',
     description: '一只苍鹰在山巅盘旋，它的飞行姿态竟让你联想到了某种轻功身法。',
     type: GameEventType.scenery,
-    weight: 8,
+    weight: 12,
     rewardExp: 12,
     choices: [
       EventChoice(
@@ -574,7 +574,7 @@ final gameEvents = <String, GameEventData>{
     name: '山中小屋',
     description: '在一处偏僻的山坳里，你发现了一间破旧的茅屋。',
     type: GameEventType.adventure,
-    weight: 4,
+    weight: 8,
     choices: [
       EventChoice(
         text: '敲门拜访',
@@ -593,7 +593,7 @@ final gameEvents = <String, GameEventData>{
     name: '山贼营地',
     description: '你远远望见几顶帐篷和升起的炊烟，那是山贼的营地。',
     type: GameEventType.battle,
-    weight: 12,
+    weight: 8,
     choices: [
       EventChoice(
         text: '夜袭营地',
@@ -695,7 +695,7 @@ final gameEvents = <String, GameEventData>{
     name: '幽魂',
     description: '雾中传来低沉的哭声，你感到一股寒意袭来。',
     type: GameEventType.battle,
-    weight: 12,
+    weight: 8,
     choices: [
       EventChoice(
         text: '运功驱邪',
@@ -721,7 +721,7 @@ final gameEvents = <String, GameEventData>{
     name: '古墓入口',
     description: '雾气散开的一瞬间，你看到了一座布满青苔的石门。',
     type: GameEventType.adventure,
-    weight: 3,
+    weight: 8,
     choices: [
       EventChoice(
         text: '推门进入',
@@ -741,7 +741,7 @@ final gameEvents = <String, GameEventData>{
     name: '毒雾陷阱',
     description: '你踩到了一处暗板，四周突然涌出一股紫色的烟雾！',
     type: GameEventType.trap,
-    weight: 7,
+    weight: 10,
     choices: [
       EventChoice(
         text: '屏息突围',
@@ -783,7 +783,7 @@ final gameEvents = <String, GameEventData>{
     name: '弟子挑战',
     description: '一名天剑门外门弟子拦住你的去路："来者何人？先过我这一关再说！"',
     type: GameEventType.battle,
-    weight: 15,
+    weight: 10,
     choices: [
       EventChoice(
         text: '应战',
@@ -803,7 +803,7 @@ final gameEvents = <String, GameEventData>{
     name: '剑意洗礼',
     description: '走在通往天剑门的石阶上，一股凌厉的剑意扑面而来。这是前辈们留下的剑意残留。',
     type: GameEventType.scenery,
-    weight: 8,
+    weight: 12,
     rewardExp: 30,
     choices: [
       EventChoice(
@@ -824,7 +824,7 @@ final gameEvents = <String, GameEventData>{
     name: '古玉共鸣',
     description: '你靠近山门石阶时，怀中古玉微微发烫，似与门前阵纹产生了共鸣。',
     type: GameEventType.adventure,
-    weight: 5,
+    weight: 8,
     choices: [
       EventChoice(
         text: '顺着纹路探查',
@@ -882,7 +882,7 @@ final gameEvents = <String, GameEventData>{
     name: '浪人剑客',
     description: '一个衣衫褴褛的剑客坐在营地边缘，眼神锐利如刀。',
     type: GameEventType.battle,
-    weight: 15,
+    weight: 10,
     choices: [
       EventChoice(
         text: '上前切磋',
@@ -902,7 +902,7 @@ final gameEvents = <String, GameEventData>{
     name: '篝火故事',
     description: '夜幕降临，营地里的人们围坐在篝火旁，有人开始讲述江湖往事。',
     type: GameEventType.scenery,
-    weight: 8,
+    weight: 12,
     choices: [
       EventChoice(
         text: '认真倾听',
@@ -921,7 +921,7 @@ final gameEvents = <String, GameEventData>{
     name: '夜袭',
     description: '深夜，你听到营地外传来异响，似乎有什么东西在靠近。',
     type: GameEventType.battle,
-    weight: 10,
+    weight: 7,
     choices: [
       EventChoice(
         text: '提剑警戒',
@@ -943,7 +943,7 @@ final gameEvents = <String, GameEventData>{
     name: '血狼袭击',
     description: '浓雾中传来低沉的嚎叫，一头双眼赤红的血狼从雾中扑出！',
     type: GameEventType.battle,
-    weight: 12,
+    weight: 8,
     choices: [
       EventChoice(
         text: '迎战血狼',
@@ -964,7 +964,7 @@ final gameEvents = <String, GameEventData>{
     name: '古代傀儡',
     description: '雾气深处，一具铁甲傀儡缓缓转动，发出刺耳的金属摩擦声。',
     type: GameEventType.battle,
-    weight: 8,
+    weight: 6,
     choices: [
       EventChoice(
         text: '挑战傀儡',
