@@ -877,15 +877,15 @@ class _BattleArenaState extends State<BattleArenaWidget>
     final isBlade =
         type == BattleActionType.sword || type == BattleActionType.blade;
 
-    // 根据速度设置调整动画时长
+    // 根据速度设置调整动画时长 - 缩短基础时长使动画更紧凑
     final baseDuration = Duration(
       milliseconds: isHealBuff
-          ? 560
+          ? 480
           : type == BattleActionType.hidden
-          ? 920
+          ? 780
           : isBlade
-          ? 980
-          : 820,
+          ? 850
+          : 700,
     );
     _anim.duration = BattleSpeedSettings.adjustDuration(baseDuration);
 
@@ -962,68 +962,78 @@ class _BattleArenaState extends State<BattleArenaWidget>
     _speedT = -1;
 
     // 阶段划分（总比例=1.0）：
-    // 冲刺 0~0.24  蓄力 0.24~0.42  出招 0.42~0.62  击中 0.62~0.74  回退 0.74~0.94  归位 0.94~1.0
-    if (t < 0.24) {
-      // 冲刺
-      final p = t / 0.24;
-      final ep = Curves.easeInQuad.transform(p);
-      final runT = (math.sin(p * math.pi * 5) + 1) / 2; // 跑步频率更快
+    // 冲刺 0~0.20  蓄力 0.20~0.35  出招 0.35~0.50  击中 0.50~0.65  回退 0.65~0.90  归位 0.90~1.0
+    if (t < 0.20) {
+      // 冲刺 - 更快更有冲击力
+      final p = t / 0.20;
+      final ep = Curves.easeInCubic.transform(p);
+      final runT = (math.sin(p * math.pi * 6) + 1) / 2;
       _setAttacker(startX + (targetX - startX) * ep, _run1.lerp(_run2, runT));
       _setDefender(_idle);
-      _speedT = p;
+      _speedT = p * 1.2;
       _dmgTextT = -1;
-    } else if (t < 0.42) {
-      // 蓄力
-      final p = ((t - 0.24) / 0.18).clamp(0.0, 1.0);
+    } else if (t < 0.35) {
+      // 蓄力 - 更明显的蓄力动作
+      final p = ((t - 0.20) / 0.15).clamp(0.0, 1.0);
+      final windUpProgress = Curves.easeInOut.transform(p);
       _setAttacker(
         targetX,
-        _idle.lerp(windUpPose, Curves.easeOut.transform(p)),
+        _idle.lerp(windUpPose, windUpProgress),
       );
       _setDefender(_idle);
       _speedT = -1;
       _dmgTextT = -1;
-    } else if (t < 0.62) {
-      // 出招（蓄力→攻击姿势，快速）
-      final p = ((t - 0.42) / 0.20).clamp(0.0, 1.0);
+      // 蓄力时的能量聚集效果
+      if (p > 0.5) {
+        _glowT = (p - 0.5) * 2;
+        _glowOnPlayer = _attackerIsPlayer;
+        _glowColor = actionColor(_actionType);
+      }
+    } else if (t < 0.50) {
+      // 出招 - 爆发式攻击
+      final p = ((t - 0.35) / 0.15).clamp(0.0, 1.0);
+      final attackProgress = Curves.easeOutQuart.transform(p);
       _setAttacker(
         targetX,
-        windUpPose.lerp(attackPose, Curves.easeOutBack.transform(p)),
+        windUpPose.lerp(attackPose, attackProgress),
       );
       _setDefender(_idle);
       _speedT = 1.0;
+      _glowT = 1.0 - p;
       _dmgTextT = -1;
-    } else if (t < 0.74) {
-      // 击中：防御者受伤 + 显示伤害数字
-      final p = ((t - 0.62) / 0.12).clamp(0.0, 1.0);
+    } else if (t < 0.65) {
+      // 击中 - 更强烈的受击反馈
+      final p = ((t - 0.50) / 0.15).clamp(0.0, 1.0);
       _setAttacker(targetX, attackPose);
       if (_isDodged) {
-        _setDefender(_idle.lerp(_dodge, (p * 2).clamp(0.0, 1.0)));
+        final dodgeProgress = Curves.easeOutBack.transform((p * 1.5).clamp(0.0, 1.0));
+        _setDefender(_idle.lerp(_dodge, dodgeProgress));
       } else {
-        final knockAmp = _defenderDefeated ? 0.055 : 0.045;
+        final knockAmp = _defenderDefeated ? 0.08 : 0.06;
         final knock = (math.sin(p * math.pi) * knockAmp).clamp(0.0, knockAmp);
         if (_attackerIsPlayer) {
           _enemyX = 0.75 + knock;
         } else {
           _playerX = 0.25 - knock;
         }
-        // 受击分为：瞬间吃力 -> 后仰回弹 -> 踉跄，避免“木头人”感。
+
         if (_defenderDefeated) {
-          final fallP = Curves.easeIn.transform(p);
+          final fallP = Curves.easeInQuad.transform(p);
           _setDefender(_hurt.lerp(_down, fallP));
         } else {
-          if (p < 0.35) {
-            final hitP = Curves.easeOutCubic.transform(
-              (p / 0.35).clamp(0.0, 1.0),
+          if (p < 0.3) {
+            final hitP = Curves.easeOutQuart.transform(
+              (p / 0.3).clamp(0.0, 1.0),
             );
             _setDefender(_idle.lerp(_hurt, hitP));
-          } else if (p < 0.78) {
-            final recoilP = Curves.easeInOut.transform(
-              ((p - 0.35) / 0.43).clamp(0.0, 1.0),
+          } else if (p < 0.7) {
+            final recoilP = Curves.easeInOutCubic.transform(
+              ((p - 0.3) / 0.4).clamp(0.0, 1.0),
             );
             _setDefender(_hurt.lerp(_hurtRecoil, recoilP));
           } else {
             final staggerP = Curves.easeOut.transform(
-              ((p - 0.78) / 0.22).clamp(0.0, 1.0),
+              ((p - 0.7) / 0.3).clamp(0.0, 1.0),
             );
             _setDefender(_hurtRecoil.lerp(_hurtStagger, staggerP));
           }
@@ -1031,10 +1041,12 @@ class _BattleArenaState extends State<BattleArenaWidget>
         _impactT = p;
         _dmgTextT = p;
       }
-    } else if (t < 0.94) {
-      // 回退
-      final p = ((t - 0.74) / 0.20).clamp(0.0, 1.0);
-      final ep = Curves.easeOutQuad.transform(p);
+      _speedT = -1;
+      _glowT = -1;
+    } else if (t < 0.90) {
+      // 回退 - 更流畅的回退
+      final p = ((t - 0.65) / 0.25).clamp(0.0, 1.0);
+      final ep = Curves.easeOutCubic.transform(p);
       _setAttacker(
         targetX + (startX - targetX) * ep,
         attackPose.lerp(_idle, ep),
@@ -1043,19 +1055,19 @@ class _BattleArenaState extends State<BattleArenaWidget>
         _setDefender(_down);
       } else {
         final defPose = _isDodged ? _dodge : _hurtStagger;
-        _setDefender(defPose.lerp(_idle, ep));
+        _setDefender(defPose.lerp(_idle, Curves.easeOut.transform(ep)));
       }
       _impactT = -1;
       _speedT = -1;
-      // 伤害数字继续浮动上升
-      _dmgTextT = 1.0 + p * 0.6;
+      _dmgTextT = 1.0 + p * 0.5;
     } else {
+      // 归位
       _setAttacker(startX, _idle);
       _setDefender(_idle);
       _impactT = -1;
       _speedT = -1;
-      final p = ((t - 0.94) / 0.06).clamp(0.0, 1.0);
-      _dmgTextT = 1.6 + p * 0.4; // 淡出
+      final p = ((t - 0.90) / 0.10).clamp(0.0, 1.0);
+      _dmgTextT = 1.5 + p * 0.5;
     }
   }
 
@@ -1068,38 +1080,51 @@ class _BattleArenaState extends State<BattleArenaWidget>
     final startX = _attackerIsPlayer ? 0.25 : 0.75;
     final defX = _attackerIsPlayer ? 0.75 : 0.25;
 
-    if (t < 0.18) {
-      final p = (t / 0.18).clamp(0.0, 1.0);
+    if (t < 0.15) {
+      // 蓄力 - 更快
+      final p = (t / 0.15).clamp(0.0, 1.0);
+      final windUpProgress = Curves.easeInOut.transform(p);
       _setAttacker(
         startX,
-        _idle.lerp(_windUpPoseOf(_actionType, _actionSkillId), p),
+        _idle.lerp(_windUpPoseOf(_actionType, _actionSkillId), windUpProgress),
       );
       _setDefender(_idle);
       _showProj = false;
       _dmgTextT = -1;
-    } else if (t < 0.48) {
-      final p = ((t - 0.18) / 0.30).clamp(0.0, 1.0);
+      // 蓄力能量效果
+      if (p > 0.6) {
+        _glowT = (p - 0.6) * 2.5;
+        _glowOnPlayer = _attackerIsPlayer;
+        _glowColor = actionColor(_actionType);
+      }
+    } else if (t < 0.42) {
+      // 投掷 - 更快更流畅的飞行轨迹
+      final p = ((t - 0.15) / 0.27).clamp(0.0, 1.0);
       final throwPose = _attackPoseOf(_actionType, _actionSkillId);
       _setAttacker(startX, throwPose);
       _setDefender(_idle);
       _showProj = true;
-      _projX = startX + (defX - startX) * Curves.easeIn.transform(p);
-      final arc = _actionSkillId == 'swallow_dart' ? 0.14 : 0.09;
+      // 使用更快的曲线
+      _projX = startX + (defX - startX) * Curves.easeInQuad.transform(p);
+      final arc = _actionSkillId == 'swallow_dart' ? 0.16 : 0.11;
       final drift = _actionSkillId == 'shadow_strike' ? 0.02 : 0.0;
       _projY = 0.42 - math.sin(p * math.pi) * arc + drift;
-      _speedT = p;
+      _speedT = p * 1.3;
       _dmgTextT = -1;
-    } else if (t < 0.65) {
-      final p = ((t - 0.48) / 0.17).clamp(0.0, 1.0);
+      _glowT = 1.0 - p;
+    } else if (t < 0.60) {
+      // 击中 - 更强烈的反馈
+      final p = ((t - 0.42) / 0.18).clamp(0.0, 1.0);
       _setAttacker(
         startX,
-        _attackPoseOf(_actionType, _actionSkillId).lerp(_idle, p),
+        _attackPoseOf(_actionType, _actionSkillId).lerp(_idle, Curves.easeOut.transform(p)),
       );
       _showProj = false;
       if (_isDodged) {
-        _setDefender(_idle.lerp(_dodge, (p * 2).clamp(0.0, 1.0)));
+        final dodgeProgress = Curves.easeOutBack.transform((p * 1.8).clamp(0.0, 1.0));
+        _setDefender(_idle.lerp(_dodge, dodgeProgress));
       } else {
-        final knockAmp = _defenderDefeated ? 0.04 : 0.032;
+        final knockAmp = _defenderDefeated ? 0.055 : 0.042;
         final knock = (math.sin(p * math.pi) * knockAmp).clamp(0.0, knockAmp);
         if (_attackerIsPlayer) {
           _enemyX = 0.75 + knock;
@@ -1107,17 +1132,17 @@ class _BattleArenaState extends State<BattleArenaWidget>
           _playerX = 0.25 - knock;
         }
         if (_defenderDefeated) {
-          final fallP = Curves.easeIn.transform(p);
+          final fallP = Curves.easeInQuad.transform(p);
           _setDefender(_hurt.lerp(_down, fallP));
         } else {
-          if (p < 0.45) {
-            final hitP = Curves.easeOutCubic.transform(
-              (p / 0.45).clamp(0.0, 1.0),
+          if (p < 0.4) {
+            final hitP = Curves.easeOutQuart.transform(
+              (p / 0.4).clamp(0.0, 1.0),
             );
             _setDefender(_idle.lerp(_hurt, hitP));
           } else {
             final recoilP = Curves.easeOut.transform(
-              ((p - 0.45) / 0.55).clamp(0.0, 1.0),
+              ((p - 0.4) / 0.6).clamp(0.0, 1.0),
             );
             _setDefender(_hurt.lerp(_hurtRecoil, recoilP));
           }
@@ -1125,8 +1150,10 @@ class _BattleArenaState extends State<BattleArenaWidget>
         _impactT = p;
         _dmgTextT = p;
       }
+      _speedT = -1;
     } else {
-      final p = ((t - 0.65) / 0.35).clamp(0.0, 1.0);
+      // 恢复
+      final p = ((t - 0.60) / 0.40).clamp(0.0, 1.0);
       _setAttacker(startX, _idle);
       if (_defenderDefeated && !_isDodged) {
         _setDefender(_down);
@@ -1136,7 +1163,7 @@ class _BattleArenaState extends State<BattleArenaWidget>
       }
       _impactT = -1;
       _showProj = false;
-      _dmgTextT = 1.0 + p;
+      _dmgTextT = 1.0 + p * 0.8;
     }
   }
 
@@ -1296,15 +1323,16 @@ class _ArenaPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // 增强屏幕震动效果
     final shake = impactT >= 0 && !isDodged
-        ? (isCrit ? 6.0 : 3.2) *
-              (1.0 - ((impactT - 0.35).abs() * 2.2)).clamp(0.0, 1.0)
+        ? (isCrit ? 9.0 : 4.5) *
+              (1.0 - ((impactT - 0.4).abs() * 2.5)).clamp(0.0, 1.0)
         : 0.0;
     if (shake > 0) {
       canvas.save();
       canvas.translate(
-        math.sin(impactT * 70) * shake,
-        math.cos(impactT * 63) * shake * 0.55,
+        math.sin(impactT * 85) * shake,
+        math.cos(impactT * 75) * shake * 0.6,
       );
     }
 
@@ -1406,20 +1434,31 @@ class _ArenaPainter extends CustomPainter {
       }
     }
 
-    // 暴击/闪避文字
-    if (isCrit && impactT > 0.2 && !isDodged) {
+    // 暴击/闪避文字 - 增强显示效果
+    if (isCrit && impactT >= 0 && impactT < 0.8 && !isDodged) {
       final defX = impactOnDefender ? playerX : enemyX;
-      _drawFloatingText(canvas, size, '暴击!', defX, const Color(0xFFFFD54F), 14);
+      _drawFloatingText(
+        canvas,
+        size,
+        '暴击!',
+        defX,
+        const Color(0xFFFFD54F),
+        18,
+        impactT,
+        true,
+      );
     }
 
-    if (isDodged && dmgTextT >= 0) {
+    if (isDodged && dmgTextT >= 0 && dmgTextT < 1.5) {
       _drawFloatingText(
         canvas,
         size,
         '闪避',
         impactOnDefender ? playerX : enemyX,
-        Colors.white,
-        14,
+        const Color(0xFF40C4FF),
+        16,
+        dmgTextT,
+        false,
       );
     }
 
@@ -1449,26 +1488,30 @@ class _ArenaPainter extends CustomPainter {
     bool attackerIsPlayer,
   ) {
     final p = t.clamp(0.0, 1.0);
-    final alpha = (0.06 + 0.18 * (1 - (p - 0.5).abs() * 2)).clamp(0.0, 0.2);
+    // 增强速度线的可见度和动态感
+    final alpha = (0.10 + 0.25 * (1 - (p - 0.5).abs() * 2)).clamp(0.0, 0.35);
     final linePaint = Paint()
       ..color = Colors.white.withValues(alpha: alpha)
-      ..strokeWidth = 1.2
+      ..strokeWidth = 1.8
       ..strokeCap = StrokeCap.round;
-    final tilt = attackerIsPlayer ? -14.0 : 14.0;
-    for (var i = 0; i < 12; i++) {
-      final y = size.height * (0.2 + i * 0.055);
+    final tilt = attackerIsPlayer ? -16.0 : 16.0;
+    // 增加速度线数量
+    for (var i = 0; i < 16; i++) {
+      final y = size.height * (0.15 + i * 0.048);
       final baseX = attackerIsPlayer
-          ? size.width * (0.03 + i * 0.01)
-          : size.width * (0.97 - i * 0.01);
-      final len = size.width * (0.08 + (i % 3) * 0.015);
+          ? size.width * (0.02 + i * 0.012)
+          : size.width * (0.98 - i * 0.012);
+      final len = size.width * (0.10 + (i % 4) * 0.02);
       final dx = len * math.cos(tilt * _deg);
-      final dy = len * math.sin(tilt * _deg) * 0.15;
+      final dy = len * math.sin(tilt * _deg) * 0.18;
+      // 添加渐变效果
+      final lineAlpha = alpha * (0.6 + (i % 3) * 0.2);
       canvas.drawLine(
         Offset(baseX, y),
         attackerIsPlayer
             ? Offset(baseX + dx, y + dy)
             : Offset(baseX - dx, y + dy),
-        linePaint,
+        linePaint..color = Colors.white.withValues(alpha: lineAlpha),
       );
     }
   }
@@ -1615,6 +1658,7 @@ class _ArenaPainter extends CustomPainter {
       final isAttacking = speedT >= 0 || impactT >= 0;
       if (isAttacking) _drawWeaponTrail(canvas, rHand, wEnd, wColor, s);
 
+      // 剑柄
       final hiltEnd = rHand - dirN * (6.2 * s);
       canvas.drawLine(
         rHand,
@@ -1624,6 +1668,7 @@ class _ArenaPainter extends CustomPainter {
           ..strokeWidth = 3.2 * s
           ..strokeCap = StrokeCap.round,
       );
+      // 护手
       canvas.drawLine(
         rHand + perp * (4.3 * s),
         rHand - perp * (4.3 * s),
@@ -1632,63 +1677,113 @@ class _ArenaPainter extends CustomPainter {
           ..strokeWidth = 1.9 * s
           ..strokeCap = StrokeCap.round,
       );
+
+      // 剑刃光晕 - 攻击时更强
       canvas.drawLine(
         rHand,
         wEnd,
         Paint()
-          ..color = wColor.withValues(alpha: isAttacking ? 0.24 : 0.12)
-          ..strokeWidth = isAttacking ? 10 * s : 8 * s
+          ..color = wColor.withValues(alpha: isAttacking ? 0.35 : 0.15)
+          ..strokeWidth = isAttacking ? 12 * s : 9 * s
           ..strokeCap = StrokeCap.round,
       );
+      // 剑刃本体
       canvas.drawLine(
         rHand,
         wEnd,
         Paint()
-          ..color = const Color(0xFFE9EEF7).withValues(alpha: 0.95)
-          ..strokeWidth = 2.5 * s
+          ..color = const Color(0xFFE9EEF7).withValues(alpha: 0.98)
+          ..strokeWidth = 2.8 * s
           ..strokeCap = StrokeCap.round,
       );
+
+      // 攻击时的特效
       if (isAttacking) {
+        // 剑尖火花
         final spark = wEnd + dirN * (2.1 * s);
         canvas.drawCircle(
           spark,
-          2.1 * s,
-          Paint()..color = Colors.white.withValues(alpha: 0.72),
+          3.2 * s,
+          Paint()..color = wColor.withValues(alpha: 0.6),
         );
+        canvas.drawCircle(
+          spark,
+          2.1 * s,
+          Paint()..color = Colors.white.withValues(alpha: 0.85),
+        );
+
+        // 剑身能量流动
+        for (int i = 0; i < 3; i++) {
+          final t = (speedT * 2 + i * 0.3) % 1.0;
+          final pos = rHand + dir * t;
+          canvas.drawCircle(
+            pos,
+            (1.8 - i * 0.3) * s,
+            Paint()..color = wColor.withValues(alpha: 0.5 * (1 - t)),
+          );
+        }
       }
     }
 
     if (weapon == BattleActionType.palm) {
       final wc = actionColor(weapon!);
-      _drawPalmWave(canvas, rHand, wc, s);
+      final isAttacking = speedT >= 0 || impactT >= 0;
+      _drawPalmWave(canvas, rHand, wc, s, isAttacking);
+      // 掌力光晕 - 攻击时更强
       canvas.drawCircle(
         rHand,
-        10 * s,
-        Paint()..color = wc.withValues(alpha: 0.3),
+        isAttacking ? 14 * s : 10 * s,
+        Paint()..color = wc.withValues(alpha: isAttacking ? 0.45 : 0.3),
       );
       canvas.drawCircle(
         rHand,
-        5 * s,
-        Paint()..color = wc.withValues(alpha: 0.6),
+        isAttacking ? 8 * s : 5 * s,
+        Paint()..color = wc.withValues(alpha: isAttacking ? 0.75 : 0.6),
       );
+      // 核心白光
+      if (isAttacking) {
+        canvas.drawCircle(
+          rHand,
+          3 * s,
+          Paint()..color = Colors.white.withValues(alpha: 0.7),
+        );
+      }
     }
 
     if (weapon == BattleActionType.fist) {
       final wc = actionColor(weapon!);
+      final isAttacking = speedT >= 0 || impactT >= 0;
+      // 拳劲光晕
       canvas.drawCircle(
         rHand,
-        5 * s,
-        Paint()..color = wc.withValues(alpha: 0.45),
+        isAttacking ? 8 * s : 5 * s,
+        Paint()..color = wc.withValues(alpha: isAttacking ? 0.6 : 0.45),
       );
+      if (isAttacking) {
+        canvas.drawCircle(
+          rHand,
+          4 * s,
+          Paint()..color = wc.withValues(alpha: 0.8),
+        );
+      }
     }
 
     if (weapon == BattleActionType.kick) {
       final wc = actionColor(weapon!);
+      final isAttacking = speedT >= 0 || impactT >= 0;
+      // 腿法光晕
       canvas.drawCircle(
         rFoot,
-        6 * s,
-        Paint()..color = wc.withValues(alpha: 0.4),
+        isAttacking ? 9 * s : 6 * s,
+        Paint()..color = wc.withValues(alpha: isAttacking ? 0.55 : 0.4),
       );
+      if (isAttacking) {
+        canvas.drawCircle(
+          rFoot,
+          4.5 * s,
+          Paint()..color = wc.withValues(alpha: 0.7),
+        );
+      }
     }
 
     canvas.restore();
@@ -1783,12 +1878,13 @@ class _ArenaPainter extends CustomPainter {
     if (len <= 0.01) return;
     final nx = -normal.dy / len;
     final ny = normal.dx / len;
-    final spread = 6.5 * scale;
+    final spread = 8.5 * scale;
 
+    // 主拖尾
     final path = Path()
       ..moveTo(start.dx + nx * spread, start.dy + ny * spread)
-      ..lineTo(end.dx + nx * spread * 0.8, end.dy + ny * spread * 0.8)
-      ..lineTo(end.dx - nx * spread * 0.8, end.dy - ny * spread * 0.8)
+      ..lineTo(end.dx + nx * spread * 0.7, end.dy + ny * spread * 0.7)
+      ..lineTo(end.dx - nx * spread * 0.7, end.dy - ny * spread * 0.7)
       ..lineTo(start.dx - nx * spread, start.dy - ny * spread)
       ..close();
     canvas.drawPath(
@@ -1797,23 +1893,44 @@ class _ArenaPainter extends CustomPainter {
         ..shader = LinearGradient(
           colors: [
             color.withValues(alpha: 0.0),
-            color.withValues(alpha: 0.28),
+            color.withValues(alpha: 0.42),
             color.withValues(alpha: 0.0),
+          ],
+        ).createShader(Rect.fromPoints(start, end)),
+    );
+
+    // 额外的亮光拖尾
+    final innerPath = Path()
+      ..moveTo(start.dx + nx * spread * 0.4, start.dy + ny * spread * 0.4)
+      ..lineTo(end.dx + nx * spread * 0.3, end.dy + ny * spread * 0.3)
+      ..lineTo(end.dx - nx * spread * 0.3, end.dy - ny * spread * 0.3)
+      ..lineTo(start.dx - nx * spread * 0.4, start.dy - ny * spread * 0.4)
+      ..close();
+    canvas.drawPath(
+      innerPath,
+      Paint()
+        ..shader = LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.0),
+            Colors.white.withValues(alpha: 0.35),
+            Colors.white.withValues(alpha: 0.0),
           ],
         ).createShader(Rect.fromPoints(start, end)),
     );
   }
 
-  void _drawPalmWave(Canvas canvas, Offset center, Color color, double scale) {
-    for (var i = 0; i < 2; i++) {
-      final r = (8 + i * 6) * scale;
+  void _drawPalmWave(Canvas canvas, Offset center, Color color, double scale, bool isAttacking) {
+    final rings = isAttacking ? 3 : 2;
+    for (var i = 0; i < rings; i++) {
+      final r = (10 + i * 7) * scale;
+      final alpha = isAttacking ? 0.28 - i * 0.08 : 0.22 - i * 0.08;
       canvas.drawCircle(
         center,
         r,
         Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = (2.2 - i * 0.6) * scale
-          ..color = color.withValues(alpha: 0.22 - i * 0.08),
+          ..strokeWidth = (2.8 - i * 0.6) * scale
+          ..color = color.withValues(alpha: alpha),
       );
     }
   }
@@ -1830,11 +1947,21 @@ class _ArenaPainter extends CustomPainter {
     bool crit,
   ) {
     // t: 0~2.0 左右，0~1 为显示阶段，1~2 为上浮淡出阶段
-    final floatUp = t.clamp(0.0, 2.0) * 18;
+    final floatUp = t.clamp(0.0, 2.0) * 22;
     final alpha = (1.0 - (t - 0.8).clamp(0.0, 1.2) / 1.2).clamp(0.0, 1.0);
     if (alpha <= 0) return;
 
-    final fontSize = crit ? 20.0 : 16.0;
+    // 暴击时有弹跳效果
+    final scale = crit && t < 0.3
+        ? 1.0 + math.sin(t * math.pi * 10) * 0.15
+        : 1.0;
+    final fontSize = (crit ? 24.0 : 18.0) * scale;
+
+    // 暴击时有轻微晃动
+    final shake = crit && t < 0.4
+        ? math.sin(t * math.pi * 15) * 2
+        : 0.0;
+
     final tp = TextPainter(
       text: TextSpan(
         text: text,
@@ -1843,10 +1970,17 @@ class _ArenaPainter extends CustomPainter {
           fontSize: fontSize,
           fontWeight: FontWeight.w900,
           shadows: [
+            // 外发光
             Shadow(
-              color: Colors.black.withValues(alpha: alpha * 0.8),
-              blurRadius: 3,
-              offset: const Offset(1, 1),
+              color: color.withValues(alpha: alpha * 0.5),
+              blurRadius: crit ? 8 : 5,
+              offset: Offset.zero,
+            ),
+            // 阴影
+            Shadow(
+              color: Colors.black.withValues(alpha: alpha * 0.9),
+              blurRadius: 4,
+              offset: const Offset(2, 2),
             ),
           ],
         ),
@@ -1854,8 +1988,19 @@ class _ArenaPainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     )..layout();
 
-    final x = normX * size.width - tp.width / 2;
-    final y = size.height * 0.22 - floatUp;
+    final x = normX * size.width - tp.width / 2 + shake;
+    final y = size.height * 0.20 - floatUp;
+
+    // 暴击时绘制额外的光晕背景
+    if (crit && t < 0.5) {
+      final glowAlpha = alpha * (0.4 - t * 0.6);
+      canvas.drawCircle(
+        Offset(x + tp.width / 2, y + tp.height / 2),
+        tp.width * 0.8,
+        Paint()..color = color.withValues(alpha: glowAlpha),
+      );
+    }
+
     tp.paint(canvas, Offset(x, y));
   }
 
@@ -1864,62 +2009,90 @@ class _ArenaPainter extends CustomPainter {
   void _drawImpact(Canvas canvas, Offset center, double t) {
     if (t < 0 || t > 1) return;
     final a = (1.0 - t).clamp(0.0, 1.0);
-    final baseR = isCrit ? 20.0 : 14.0;
-    final r = baseR + 35 * t;
+    final baseR = isCrit ? 24.0 : 16.0;
+    final r = baseR + 45 * t;
 
+    // 外圈冲击波
     canvas.drawCircle(
       center,
       r,
-      Paint()..color = impactColor.withValues(alpha: a * 0.35),
+      Paint()..color = impactColor.withValues(alpha: a * 0.45),
     );
+    // 中圈
     canvas.drawCircle(
       center,
-      r * 0.3,
-      Paint()..color = Colors.white.withValues(alpha: a * 0.7),
+      r * 0.6,
+      Paint()..color = impactColor.withValues(alpha: a * 0.55),
+    );
+    // 核心白光
+    canvas.drawCircle(
+      center,
+      r * 0.25,
+      Paint()..color = Colors.white.withValues(alpha: a * 0.85),
     );
 
+    // 冲击线条
     final lp = Paint()
-      ..color = impactColor.withValues(alpha: a * 0.6)
-      ..strokeWidth = isCrit ? 2.8 : 2.0
+      ..color = impactColor.withValues(alpha: a * 0.7)
+      ..strokeWidth = isCrit ? 3.2 : 2.4
       ..strokeCap = StrokeCap.round;
-    final n = isCrit ? 8 : 5;
+    final n = isCrit ? 10 : 6;
     for (int i = 0; i < n; i++) {
-      final ang = i * 2 * math.pi / n + t * 0.8;
+      final ang = i * 2 * math.pi / n + t * 1.2;
       canvas.drawLine(
         Offset(
-          center.dx + r * 0.4 * math.cos(ang),
-          center.dy + r * 0.4 * math.sin(ang),
+          center.dx + r * 0.35 * math.cos(ang),
+          center.dy + r * 0.35 * math.sin(ang),
         ),
         Offset(
-          center.dx + r * 1.3 * math.cos(ang),
-          center.dy + r * 1.3 * math.sin(ang),
+          center.dx + r * 1.4 * math.cos(ang),
+          center.dy + r * 1.4 * math.sin(ang),
         ),
         lp,
       );
     }
 
-    final sparks = isCrit ? 12 : 7;
+    // 飞溅火花
+    final sparks = isCrit ? 16 : 9;
     for (int i = 0; i < sparks; i++) {
-      final ang = i * 2 * math.pi / sparks + t * 1.7;
-      final dist = r * (0.65 + (i % 3) * 0.22);
+      final ang = i * 2 * math.pi / sparks + t * 2.0;
+      final dist = r * (0.7 + (i % 4) * 0.2);
       final sparkCenter = Offset(
         center.dx + math.cos(ang) * dist,
         center.dy + math.sin(ang) * dist,
       );
+      final sparkSize = isCrit ? 3.0 : 2.2;
       canvas.drawCircle(
         sparkCenter,
-        isCrit ? 2.6 : 1.8,
-        Paint()..color = Colors.white.withValues(alpha: a * 0.65),
+        sparkSize,
+        Paint()..color = Colors.white.withValues(alpha: a * 0.75),
       );
+      // 火花拖尾
+      if (i % 2 == 0) {
+        canvas.drawCircle(
+          Offset(
+            sparkCenter.dx - math.cos(ang) * 4,
+            sparkCenter.dy - math.sin(ang) * 4,
+          ),
+          sparkSize * 0.5,
+          Paint()..color = impactColor.withValues(alpha: a * 0.4),
+        );
+      }
     }
   }
 
   void _drawCritFlash(Canvas canvas, Size size, double t) {
-    final flash = (1.0 - (t - 0.1).abs() * 6).clamp(0.0, 1.0) * 0.2;
+    final flash = (1.0 - (t - 0.15).abs() * 5).clamp(0.0, 1.0) * 0.28;
     if (flash <= 0) return;
+    // 全屏闪光
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.width, size.height),
       Paint()..color = Colors.white.withValues(alpha: flash),
+    );
+    // 额外的黄色光晕
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      Paint()..color = const Color(0xFFFFD54F).withValues(alpha: flash * 0.3),
     );
   }
 
@@ -1932,35 +2105,76 @@ class _ArenaPainter extends CustomPainter {
     double defNormX,
     Color color,
     double fontSize,
+    double t,
+    bool isCrit,
   ) {
-    final rawT = dmgTextT.clamp(0.0, 2.0);
-    final alpha = (1.0 - (rawT - 0.5).clamp(0.0, 1.5) / 1.5).clamp(0.0, 1.0);
+    final rawT = t.clamp(0.0, 2.0);
+    // 暴击文字出现更快，持续更久
+    final alpha = isCrit
+        ? (1.0 - (rawT - 0.6).clamp(0.0, 1.0)).clamp(0.0, 1.0)
+        : (1.0 - (rawT - 0.4).clamp(0.0, 1.2) / 1.2).clamp(0.0, 1.0);
     if (alpha <= 0) return;
+
+    // 暴击文字有弹跳和缩放效果
+    final scale = isCrit && rawT < 0.25
+        ? 1.0 + math.sin(rawT * math.pi * 8) * 0.25
+        : 1.0;
+    final actualFontSize = fontSize * scale;
+
+    // 暴击文字有轻微旋转
+    final rotation = isCrit && rawT < 0.3
+        ? math.sin(rawT * math.pi * 6) * 0.1
+        : 0.0;
 
     final tp = TextPainter(
       text: TextSpan(
         text: text,
         style: TextStyle(
           color: color.withValues(alpha: alpha),
-          fontSize: fontSize,
-          fontWeight: FontWeight.bold,
+          fontSize: actualFontSize,
+          fontWeight: FontWeight.w900,
+          letterSpacing: isCrit ? 2.0 : 1.0,
           shadows: [
+            // 外发光
             Shadow(
-              color: Colors.black.withValues(alpha: alpha * 0.6),
-              blurRadius: 4,
+              color: color.withValues(alpha: alpha * 0.6),
+              blurRadius: isCrit ? 12 : 8,
+              offset: Offset.zero,
+            ),
+            // 强阴影
+            Shadow(
+              color: Colors.black.withValues(alpha: alpha * 0.9),
+              blurRadius: 5,
+              offset: const Offset(2, 2),
             ),
           ],
         ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    tp.paint(
-      canvas,
-      Offset(
-        defNormX * size.width - tp.width / 2,
-        size.height * 0.12 - rawT * 10,
-      ),
-    );
+
+    final x = defNormX * size.width - tp.width / 2;
+    final y = size.height * 0.10 - rawT * 15;
+
+    // 暴击时绘制背景光晕
+    if (isCrit && rawT < 0.5) {
+      final glowAlpha = alpha * (0.5 - rawT * 0.8);
+      canvas.drawCircle(
+        Offset(x + tp.width / 2, y + tp.height / 2),
+        tp.width * 0.9,
+        Paint()..color = color.withValues(alpha: glowAlpha),
+      );
+    }
+
+    if (rotation != 0) {
+      canvas.save();
+      canvas.translate(x + tp.width / 2, y + tp.height / 2);
+      canvas.rotate(rotation);
+      tp.paint(canvas, Offset(-tp.width / 2, -tp.height / 2));
+      canvas.restore();
+    } else {
+      tp.paint(canvas, Offset(x, y));
+    }
   }
 
   // ── 暗器 ──
@@ -1968,26 +2182,54 @@ class _ArenaPainter extends CustomPainter {
   void _drawProjectile(Canvas canvas, Size size) {
     final px = projX * size.width;
     final py = projY * size.height;
-    for (var i = 1; i <= 3; i++) {
-      final alpha = (0.2 - i * 0.05).clamp(0.04, 0.2);
+
+    // 拖尾效果 - 更长更明显
+    for (var i = 1; i <= 5; i++) {
+      final alpha = (0.28 - i * 0.05).clamp(0.02, 0.28);
+      final trailSize = 5.5 - i * 0.7;
       canvas.drawCircle(
-        Offset(px - i * 8, py + i * 1.2),
-        4.4 - i * 0.8,
+        Offset(px - i * 10, py + i * 1.5),
+        trailSize,
         Paint()..color = projColor.withValues(alpha: alpha),
       );
     }
+
+    // 暗器本体 - 更大更明显
     final path = Path()
-      ..moveTo(px, py - 6)
-      ..lineTo(px + 4, py)
-      ..lineTo(px, py + 6)
-      ..lineTo(px - 4, py)
+      ..moveTo(px, py - 8)
+      ..lineTo(px + 5, py)
+      ..lineTo(px, py + 8)
+      ..lineTo(px - 5, py)
       ..close();
-    canvas.drawPath(path, Paint()..color = projColor);
+
+    // 外发光
     canvas.drawPath(
       path,
       Paint()
-        ..color = projColor.withValues(alpha: 0.3)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+        ..color = projColor.withValues(alpha: 0.5)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+    );
+
+    // 本体
+    canvas.drawPath(path, Paint()..color = projColor);
+
+    // 核心白光
+    final corePath = Path()
+      ..moveTo(px, py - 4)
+      ..lineTo(px + 2.5, py)
+      ..lineTo(px, py + 4)
+      ..lineTo(px - 2.5, py)
+      ..close();
+    canvas.drawPath(
+      corePath,
+      Paint()..color = Colors.white.withValues(alpha: 0.85),
+    );
+
+    // 前方光点
+    canvas.drawCircle(
+      Offset(px + 3, py),
+      2.5,
+      Paint()..color = Colors.white.withValues(alpha: 0.7),
     );
   }
 
@@ -1995,31 +2237,69 @@ class _ArenaPainter extends CustomPainter {
 
   void _drawGlow(Canvas canvas, Offset center, double t, Color color) {
     final a = t.clamp(0.0, 1.0);
-    final pulse = 1.0 + 0.15 * math.sin(t * math.pi * 4);
-    final r = 30 * pulse;
+    final pulse = 1.0 + 0.20 * math.sin(t * math.pi * 5);
+    final r = 35 * pulse;
 
+    // 外圈光晕
+    canvas.drawCircle(
+      center,
+      r * 1.2,
+      Paint()..color = color.withValues(alpha: a * 0.15),
+    );
     canvas.drawCircle(
       center,
       r,
-      Paint()..color = color.withValues(alpha: a * 0.2),
+      Paint()..color = color.withValues(alpha: a * 0.28),
     );
     canvas.drawCircle(
       center,
-      r * 0.5,
-      Paint()..color = color.withValues(alpha: a * 0.35),
+      r * 0.6,
+      Paint()..color = color.withValues(alpha: a * 0.42),
+    );
+    // 核心光点
+    canvas.drawCircle(
+      center,
+      r * 0.3,
+      Paint()..color = Colors.white.withValues(alpha: a * 0.5),
     );
 
+    // 能量粒子上升效果
     if (t > 0.15 && t < 0.85) {
-      for (int i = 0; i < 6; i++) {
+      for (int i = 0; i < 8; i++) {
         final tt = (t - 0.15) / 0.7;
-        final ang = i * 0.95 + tt * math.pi * 2;
-        final wave = math.sin(tt * math.pi * 2 + i) * 10;
-        final px = center.dx + math.cos(ang) * (12 + i * 2);
-        final py = center.dy - 28 * tt - wave * 0.2 - i * 2;
+        final ang = i * 0.785 + tt * math.pi * 2.5;
+        final wave = math.sin(tt * math.pi * 3 + i) * 12;
+        final px = center.dx + math.cos(ang) * (14 + i * 2.5);
+        final py = center.dy - 32 * tt - wave * 0.25 - i * 2.5;
+        final particleSize = 2.8 + (i % 3) * 0.8;
+        // 粒子光晕
         canvas.drawCircle(
           Offset(px, py),
-          2.2 + (i % 2) * 0.8,
-          Paint()..color = color.withValues(alpha: a * (0.32 + i * 0.03)),
+          particleSize * 1.5,
+          Paint()..color = color.withValues(alpha: a * (0.15 + i * 0.02)),
+        );
+        // 粒子核心
+        canvas.drawCircle(
+          Offset(px, py),
+          particleSize,
+          Paint()..color = color.withValues(alpha: a * (0.38 + i * 0.04)),
+        );
+      }
+    }
+
+    // 环形能量波纹
+    if (t > 0.2 && t < 0.8) {
+      final waveT = (t - 0.2) / 0.6;
+      for (int i = 0; i < 3; i++) {
+        final waveR = r * (0.8 + waveT * 0.6 + i * 0.15);
+        final waveAlpha = a * (0.25 - waveT * 0.2 - i * 0.05);
+        canvas.drawCircle(
+          center,
+          waveR,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2.0
+            ..color = color.withValues(alpha: waveAlpha.clamp(0.0, 1.0)),
         );
       }
     }

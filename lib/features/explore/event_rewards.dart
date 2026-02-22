@@ -6,6 +6,7 @@ import '../../models/game_event.dart';
 import '../character/character_provider.dart';
 import '../inventory/inventory_provider.dart';
 import '../quest/quest_provider.dart';
+import '../sect/sect_provider.dart';
 import 'explore_provider.dart';
 
 /// 通用事件奖励结算，EventPage 和 home_page 底部弹窗共用
@@ -55,9 +56,18 @@ void applyEventRewards(
       '获得物品: ${items[itemId]?.name ?? itemId}',
       type: LogType.item,
     );
+    // 检查普通任务的物品收集目标
     ref
         .read(questNotifierProvider.notifier)
         .checkAndUpdateObjectives(
+          character.id,
+          QuestObjectiveType.collect,
+          itemId,
+        );
+    // 检查师门任务的物品收集目标
+    ref
+        .read(sectNotifierProvider.notifier)
+        .checkAndUpdateSectObjectives(
           character.id,
           QuestObjectiveType.collect,
           itemId,

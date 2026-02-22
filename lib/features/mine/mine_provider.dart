@@ -3,11 +3,15 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/mine_data.dart';
+import '../../data/item_data.dart';
+import '../../models/enums.dart';
 import '../../models/game_event.dart';
 import '../../models/mine_spot.dart';
 import '../character/character_provider.dart';
 import '../explore/explore_provider.dart';
 import '../inventory/inventory_provider.dart';
+import '../quest/quest_provider.dart';
+import '../sect/sect_provider.dart';
 
 /// 当前地点的矿点
 final currentMineSpotProvider = Provider<MineSpot?>((ref) {
@@ -57,16 +61,35 @@ class MineNotifier extends StateNotifier<AsyncValue<void>> {
 
     final count = picked.minCount == picked.maxCount
         ? picked.minCount
-        : picked.minCount + _random.nextInt(picked.maxCount - picked.minCount + 1);
+        : picked.minCount +
+              _random.nextInt(picked.maxCount - picked.minCount + 1);
 
     // 添加到背包
     await _ref
         .read(inventoryNotifierProvider.notifier)
         .addItem(characterId, picked.itemId, count: count);
 
-    _ref.read(gameLogProvider.notifier).addLog(
-          '挖矿获得 ${picked.itemId} x$count',
-          type: LogType.item,
+    final itemName = items[picked.itemId]?.name ?? picked.itemId;
+    _ref
+        .read(gameLogProvider.notifier)
+        .addLog('挖矿获得 $itemName x$count', type: LogType.item);
+
+    // 更新收集类任务目标
+    _ref
+        .read(questNotifierProvider.notifier)
+        .checkAndUpdateObjectives(
+          characterId,
+          QuestObjectiveType.collect,
+          picked.itemId,
+          delta: count,
+        );
+    _ref
+        .read(sectNotifierProvider.notifier)
+        .checkAndUpdateSectObjectives(
+          characterId,
+          QuestObjectiveType.collect,
+          picked.itemId,
+          delta: count,
         );
 
     return MineResult(picked.itemId, count);
@@ -75,5 +98,5 @@ class MineNotifier extends StateNotifier<AsyncValue<void>> {
 
 final mineNotifierProvider =
     StateNotifierProvider<MineNotifier, AsyncValue<void>>((ref) {
-  return MineNotifier(ref);
-});
+      return MineNotifier(ref);
+    });

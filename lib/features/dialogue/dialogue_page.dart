@@ -11,6 +11,7 @@ import '../character/character_provider.dart';
 import '../explore/explore_provider.dart';
 import '../inventory/inventory_provider.dart';
 import '../quest/quest_provider.dart';
+import '../sect/sect_provider.dart';
 import '../skill/skill_provider.dart';
 import 'npc_provider.dart';
 
@@ -47,7 +48,16 @@ class _DialoguePageState extends ConsumerState<DialoguePage> {
       _talkObjectiveUpdated = true;
       final character = ref.read(currentCharacterProvider).valueOrNull;
       if (character != null) {
-        ref.read(questNotifierProvider.notifier).checkAndUpdateObjectives(
+        ref
+            .read(questNotifierProvider.notifier)
+            .checkAndUpdateObjectives(
+              character.id,
+              QuestObjectiveType.talk,
+              widget.npcId,
+            );
+        ref
+            .read(sectNotifierProvider.notifier)
+            .checkAndUpdateSectObjectives(
               character.id,
               QuestObjectiveType.talk,
               widget.npcId,
@@ -72,11 +82,9 @@ class _DialoguePageState extends ConsumerState<DialoguePage> {
 
     // 好感度
     if (node.affectionChange != 0) {
-      ref.read(npcNotifierProvider.notifier).changeAffection(
-            character.id,
-            widget.npcId,
-            node.affectionChange,
-          );
+      ref
+          .read(npcNotifierProvider.notifier)
+          .changeAffection(character.id, widget.npcId, node.affectionChange);
     }
 
     // 经验
@@ -98,18 +106,31 @@ class _DialoguePageState extends ConsumerState<DialoguePage> {
 
     // 教技能
     if (node.teachSkillId != null) {
-      ref.read(skillNotifierProvider.notifier)
+      ref
+          .read(skillNotifierProvider.notifier)
           .learnSkill(character.id, node.teachSkillId!);
-      logNotifier.addLog(
-        '学会了新技能',
-        type: LogType.dialogue,
-      );
+      logNotifier.addLog('学会了新技能', type: LogType.dialogue);
     }
 
     // 奖励物品
     if (node.rewardItemId != null) {
-      ref.read(inventoryNotifierProvider.notifier)
+      ref
+          .read(inventoryNotifierProvider.notifier)
           .addItem(character.id, node.rewardItemId!);
+      ref
+          .read(questNotifierProvider.notifier)
+          .checkAndUpdateObjectives(
+            character.id,
+            QuestObjectiveType.collect,
+            node.rewardItemId!,
+          );
+      ref
+          .read(sectNotifierProvider.notifier)
+          .checkAndUpdateSectObjectives(
+            character.id,
+            QuestObjectiveType.collect,
+            node.rewardItemId!,
+          );
     }
   }
 
@@ -117,18 +138,18 @@ class _DialoguePageState extends ConsumerState<DialoguePage> {
     final character = ref.read(currentCharacterProvider).valueOrNull;
     if (character == null) return;
 
-    _history.add(_DialogueEntry(
-      speaker: character.name,
-      text: choice.text,
-      isPlayer: true,
-    ));
+    _history.add(
+      _DialogueEntry(
+        speaker: character.name,
+        text: choice.text,
+        isPlayer: true,
+      ),
+    );
 
     if (choice.affectionChange != 0) {
-      ref.read(npcNotifierProvider.notifier).changeAffection(
-            character.id,
-            widget.npcId,
-            choice.affectionChange,
-          );
+      ref
+          .read(npcNotifierProvider.notifier)
+          .changeAffection(character.id, widget.npcId, choice.affectionChange);
     }
 
     _setNode(choice.nextId);
@@ -141,13 +162,13 @@ class _DialoguePageState extends ConsumerState<DialoguePage> {
 
     // 读取已完成任务集合，用于过滤受剧情门控的选项
     final progress = ref.watch(questProgressProvider).valueOrNull ?? [];
-    final completedQuestIds =
-        progress.where((p) => p.status == 2).map((p) => p.questId).toSet();
+    final completedQuestIds = progress
+        .where((p) => p.status == 2)
+        .map((p) => p.questId)
+        .toSet();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.npc.name),
-      ),
+      appBar: AppBar(title: Text(widget.npc.name)),
       body: Column(
         children: [
           // 对话历史
@@ -196,13 +217,15 @@ class _DialoguePageState extends ConsumerState<DialoguePage> {
                   if (node.choices.isNotEmpty)
                     ...node.choices
                         .where((c) => _isChoiceVisible(c, completedQuestIds))
-                        .map((c) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: ElevatedButton(
-                                onPressed: () => _selectChoice(c),
-                                child: Text(c.text),
-                              ),
-                            )),
+                        .map(
+                          (c) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: ElevatedButton(
+                              onPressed: () => _selectChoice(c),
+                              child: Text(c.text),
+                            ),
+                          ),
+                        ),
                   if (node.choices.isEmpty && node.nextId != null)
                     ElevatedButton(
                       onPressed: () => _setNode(node.nextId!),

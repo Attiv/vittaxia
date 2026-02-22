@@ -3,6 +3,9 @@ class BattleSpeedSettings {
   /// 动画速度倍率 (1.0 = 正常, 2.0 = 2倍速, 0 = 跳过)
   static double animationSpeed = 1.0;
 
+  /// 自动战斗开关（全局设置）
+  static bool autoEnabled = false;
+
   /// 是否跳过动画
   static bool get skipAnimation => animationSpeed == 0;
 

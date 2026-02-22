@@ -150,3 +150,17 @@ enum GameEventType {
   final String label;
   const GameEventType(this.label);
 }
+
+/// 师门类型
+enum SectType {
+  sword('剑宗'),
+  blade('刀派'),
+  fist('拳门'),
+  palm('掌门'),
+  hidden('暗器'),
+  medicine('医道'),
+  scholar('文士');
+
+  final String label;
+  const SectType(this.label);
+}

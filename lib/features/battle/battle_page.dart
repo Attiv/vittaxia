@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/battle_speed_settings.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/game_audio.dart';
 import '../../data/enemy_data.dart';
 import '../../data/item_data.dart';
 import '../../data/skill_data.dart';
@@ -19,6 +20,7 @@ import '../skill/skill_provider.dart';
 import 'battle_animation.dart';
 import 'battle_engine.dart';
 import '../quest/quest_provider.dart';
+import '../sect/sect_provider.dart';
 
 class BattlePage extends ConsumerStatefulWidget {
   final String enemyId;
@@ -34,6 +36,8 @@ class _BattlePageState extends ConsumerState<BattlePage> {
   final _scrollController = ScrollController();
   final _arenaController = BattleArenaController();
   bool _isAnimating = false;
+  bool _isAutoBattle = false; // 自动战斗开关
+  bool _battleResolved = false;
   String? _battleInitSnapshot;
   ProviderSubscription<AsyncValue<dynamic>>? _characterSub;
   ProviderSubscription<AsyncValue<dynamic>>? _learnedSkillsSub;
@@ -41,6 +45,8 @@ class _BattlePageState extends ConsumerState<BattlePage> {
   @override
   void initState() {
     super.initState();
+    // 从全局设置恢复自动战斗状态
+    _isAutoBattle = BattleSpeedSettings.autoEnabled;
     _characterSub = ref.listenManual(currentCharacterProvider, (_, __) {
       _tryInitBattle();
     });
@@ -52,6 +58,8 @@ class _BattlePageState extends ConsumerState<BattlePage> {
 
   @override
   void dispose() {
+    // 保存自动战斗状态到全局设置
+    BattleSpeedSettings.autoEnabled = _isAutoBattle;
     _characterSub?.close();
     _learnedSkillsSub?.close();
     _scrollController.dispose();
@@ -113,7 +121,17 @@ class _BattlePageState extends ConsumerState<BattlePage> {
     setState(() {
       _battleInitSnapshot = snapshot;
       _engine = BattleEngine(player: player, enemy: enemy);
+      _battleResolved = false;
     });
+
+    // 如果开启了自动战斗，立即开始
+    if (_isAutoBattle && !_isAnimating) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _isAutoBattle && !_isAnimating) {
+          _autoSelectAndUseSkill();
+        }
+      });
+    }
   }
 
   Future<void> _useSkill(Skill skill) async {
@@ -139,7 +157,61 @@ class _BattlePageState extends ConsumerState<BattlePage> {
 
     if (engine.isOver) {
       _resolveBattle();
+    } else if (_isAutoBattle) {
+      // 自动战斗模式：继续下一回合
+      // 根据动画速度调整延迟
+      final delay = BattleSpeedSettings.skipAnimation
+          ? const Duration(milliseconds: 100)
+          : BattleSpeedSettings.currentSpeed == BattleSpeed.fast
+          ? const Duration(milliseconds: 200)
+          : const Duration(milliseconds: 400);
+      await Future.delayed(delay);
+      if (mounted && _isAutoBattle) {
+        _autoSelectAndUseSkill();
+      }
     }
+  }
+
+  /// 自动选择并使用技能
+  void _autoSelectAndUseSkill() {
+    final engine = _engine;
+    if (engine == null || engine.isOver || _isAnimating) return;
+
+    // 智能选择技能
+    final skill = _selectBestSkill(engine);
+    if (skill != null) {
+      _useSkill(skill);
+    }
+  }
+
+  /// 智能选择最佳技能
+  Skill? _selectBestSkill(BattleEngine engine) {
+    final player = engine.player;
+    final usableSkills = player.skills
+        .where((s) => s.mpCost <= player.mp)
+        .toList();
+
+    if (usableSkills.isEmpty) return null;
+
+    // 策略：血量低于30%优先回复，否则优先高伤害技能
+    final hpRatio = player.hp / player.maxHp;
+
+    if (hpRatio < 0.3) {
+      // 寻找回复技能
+      final healSkills = usableSkills.where((s) => s.healAmount > 0).toList();
+      if (healSkills.isNotEmpty) {
+        return healSkills.first;
+      }
+    }
+
+    // 优先使用高伤害技能
+    usableSkills.sort((a, b) {
+      final aDmg = a.baseDamage + player.effectiveAtk * a.damageMultiplier;
+      final bDmg = b.baseDamage + player.effectiveAtk * b.damageMultiplier;
+      return bDmg.compareTo(aDmg);
+    });
+
+    return usableSkills.first;
   }
 
   BattleActionType _resolvePlayerActionType(Skill skill) {
@@ -202,12 +274,63 @@ class _BattlePageState extends ConsumerState<BattlePage> {
     }
 
     if (engine.lastPlayerFirst) {
+      _playActionSfx(
+        acted: true,
+        crit: engine.lastPlayerAttackCrit,
+        dodged: engine.lastPlayerAttackDodged,
+        damage: engine.lastPlayerDamage,
+        heal: engine.lastPlayerHeal,
+      );
       await playerAnim();
+      _playActionSfx(
+        acted: engine.lastEnemyActed,
+        crit: engine.lastEnemyAttackCrit,
+        dodged: engine.lastEnemyAttackDodged,
+        damage: engine.lastEnemyDamage,
+        heal: engine.lastEnemyHeal,
+      );
       await enemyAnim();
     } else {
+      _playActionSfx(
+        acted: engine.lastEnemyActed,
+        crit: engine.lastEnemyAttackCrit,
+        dodged: engine.lastEnemyAttackDodged,
+        damage: engine.lastEnemyDamage,
+        heal: engine.lastEnemyHeal,
+      );
       await enemyAnim();
+      _playActionSfx(
+        acted: true,
+        crit: engine.lastPlayerAttackCrit,
+        dodged: engine.lastPlayerAttackDodged,
+        damage: engine.lastPlayerDamage,
+        heal: engine.lastPlayerHeal,
+      );
       await playerAnim();
     }
+  }
+
+  void _playActionSfx({
+    required bool acted,
+    required bool crit,
+    required bool dodged,
+    required int damage,
+    required int heal,
+  }) {
+    if (!acted) return;
+    if (dodged) {
+      GameAudio.battleDodge();
+      return;
+    }
+    if (crit) {
+      GameAudio.battleCrit();
+      return;
+    }
+    if (damage > 0 || heal > 0) {
+      GameAudio.battleHit();
+      return;
+    }
+    GameAudio.tap();
   }
 
   void _scrollToBottom() {
@@ -225,6 +348,8 @@ class _BattlePageState extends ConsumerState<BattlePage> {
   Future<void> _resolveBattle() async {
     final engine = _engine;
     if (engine == null) return;
+    if (_battleResolved) return;
+    _battleResolved = true;
 
     final character = ref.read(currentCharacterProvider).valueOrNull;
     if (character == null) return;
@@ -240,6 +365,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
     );
 
     if (engine.playerWon) {
+      GameAudio.battleWin();
       final template = enemies[widget.enemyId]!;
       charNotifier.updateStats(
         characterId: character.id,
@@ -263,8 +389,17 @@ class _BattlePageState extends ConsumerState<BattlePage> {
           ref
               .read(inventoryNotifierProvider.notifier)
               .addItem(character.id, template.dropItemId!);
-          final itemName =
-              items[template.dropItemId]?.name ?? template.dropItemId!;
+          final droppedItem = items[template.dropItemId];
+          final itemName = droppedItem?.name ?? template.dropItemId!;
+          final isRareDrop =
+              template.dropRate <= 0.2 ||
+              droppedItem?.rarity == ItemRarity.epic ||
+              droppedItem?.rarity == ItemRarity.legendary;
+          if (isRareDrop) {
+            GameAudio.rareDrop();
+          } else {
+            GameAudio.success();
+          }
           logNotifier.addLog('获得了物品: $itemName', type: LogType.item);
         }
       }
@@ -284,10 +419,25 @@ class _BattlePageState extends ConsumerState<BattlePage> {
             QuestObjectiveType.kill,
             widget.enemyId,
           );
+      ref
+          .read(sectNotifierProvider.notifier)
+          .checkAndUpdateSectObjectives(
+            character.id,
+            QuestObjectiveType.kill,
+            widget.enemyId,
+          );
     } else {
+      GameAudio.battleLose();
       logNotifier.addLog('战斗失败，你勉强逃了出来。', type: LogType.combat);
       // 保底1血
       charNotifier.updateStats(characterId: character.id, currentHp: 1);
+    }
+
+    if (BattleSpeedSettings.autoEnabled) {
+      Future<void>.delayed(const Duration(seconds: 2), () {
+        if (!mounted) return;
+        Navigator.of(context).pop(engine.playerWon);
+      });
     }
   }
 
@@ -304,6 +454,25 @@ class _BattlePageState extends ConsumerState<BattlePage> {
         title: Text('战斗 - ${engine.enemy.name}'),
         automaticallyImplyLeading: false,
         actions: [
+          // 自动战斗按钮
+          IconButton(
+            icon: Icon(
+              _isAutoBattle ? Icons.pause_circle : Icons.play_circle,
+              color: _isAutoBattle ? AppColors.success : AppColors.accent,
+            ),
+            tooltip: _isAutoBattle ? '停止自动' : '自动战斗',
+            onPressed: engine.isOver
+                ? null
+                : () {
+                    setState(() {
+                      _isAutoBattle = !_isAutoBattle;
+                    });
+                    BattleSpeedSettings.autoEnabled = _isAutoBattle;
+                    if (_isAutoBattle && !_isAnimating) {
+                      _autoSelectAndUseSkill();
+                    }
+                  },
+          ),
           // 战斗速度切换按钮
           PopupMenuButton<BattleSpeed>(
             icon: Icon(
@@ -437,24 +606,66 @@ class _BattlePageState extends ConsumerState<BattlePage> {
             Container(
               padding: const EdgeInsets.all(12),
               color: AppColors.surface,
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: engine.player.skills.map((skill) {
-                  final canUse =
-                      skill.mpCost <= engine.player.mp && !_isAnimating;
-                  return Tooltip(
-                    message:
-                        '${skill.description}\n消耗内力: ${skill.mpCost}  当前: ${engine.player.mp}',
-                    child: ElevatedButton(
-                      onPressed: canUse ? () => _useSkill(skill) : null,
-                      child: Text(
-                        '${skill.name}${skill.mpCost > 0 ? " (${skill.mpCost})" : ""}',
-                        style: const TextStyle(fontSize: 13),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 自动战斗状态提示
+                  if (_isAutoBattle)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: AppColors.success.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.autorenew,
+                            size: 16,
+                            color: AppColors.success,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '自动战斗中...',
+                            style: TextStyle(
+                              color: AppColors.success,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  );
-                }).toList(),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: engine.player.skills.map((skill) {
+                      final canUse =
+                          skill.mpCost <= engine.player.mp &&
+                          !_isAnimating &&
+                          !_isAutoBattle;
+                      return Tooltip(
+                        message:
+                            '${skill.description}\n消耗内力: ${skill.mpCost}  当前: ${engine.player.mp}',
+                        child: ElevatedButton(
+                          onPressed: canUse ? () => _useSkill(skill) : null,
+                          child: Text(
+                            '${skill.name}${skill.mpCost > 0 ? " (${skill.mpCost})" : ""}',
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
               ),
             ),
           // 战斗结束
@@ -474,6 +685,16 @@ class _BattlePageState extends ConsumerState<BattlePage> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                  if (BattleSpeedSettings.autoEnabled) ...[
+                    const SizedBox(height: 8),
+                    const Text(
+                      '自动战斗已开启，2秒后自动返回',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   ElevatedButton(
                     onPressed: () =>

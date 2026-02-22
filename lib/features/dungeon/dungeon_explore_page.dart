@@ -7,11 +7,14 @@ import '../../data/enemy_data.dart';
 import '../../data/item_data.dart';
 import '../../data/skill_data.dart';
 import '../../models/dungeon.dart';
+import '../../models/enums.dart';
 import '../../models/game_event.dart';
 import '../battle/battle_page.dart';
 import '../character/character_provider.dart';
 import '../explore/explore_provider.dart';
 import '../inventory/inventory_provider.dart';
+import '../quest/quest_provider.dart';
+import '../sect/sect_provider.dart';
 import '../skill/skill_provider.dart';
 import 'dungeon_provider.dart';
 
@@ -138,6 +141,23 @@ class _DungeonExplorePageState extends ConsumerState<DungeonExplorePage> {
         '洞府获得 $name x${floor.rewardItemCount}',
         type: LogType.item,
       );
+      // 更新收集类任务目标
+      ref
+          .read(questNotifierProvider.notifier)
+          .checkAndUpdateObjectives(
+            character.id,
+            QuestObjectiveType.collect,
+            floor.rewardItemId!,
+            delta: floor.rewardItemCount,
+          );
+      ref
+          .read(sectNotifierProvider.notifier)
+          .checkAndUpdateSectObjectives(
+            character.id,
+            QuestObjectiveType.collect,
+            floor.rewardItemId!,
+            delta: floor.rewardItemCount,
+          );
     }
     if (floor.rewardSkillId != null) {
       await ref

@@ -9,6 +9,7 @@ import '../character/character_provider.dart';
 import '../explore/explore_provider.dart';
 import '../../models/game_event.dart';
 import '../quest/quest_provider.dart';
+import '../sect/sect_provider.dart';
 
 class MapPage extends ConsumerWidget {
   const MapPage({super.key});
@@ -25,9 +26,7 @@ class MapPage extends ConsumerWidget {
         .toSet();
 
     if (character == null || currentLoc == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -45,8 +44,11 @@ class MapPage extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.location_on,
-                          color: AppColors.accent, size: 20),
+                      const Icon(
+                        Icons.location_on,
+                        color: AppColors.accent,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         '当前: ${currentLoc.name}',
@@ -110,7 +112,9 @@ class MapPage extends ConsumerWidget {
             Text(
               loc.name,
               style: TextStyle(
-                color: canEnter ? AppColors.textPrimary : AppColors.textSecondary,
+                color: canEnter
+                    ? AppColors.textPrimary
+                    : AppColors.textSecondary,
               ),
             ),
             const SizedBox(width: 8),
@@ -128,12 +132,13 @@ class MapPage extends ConsumerWidget {
           ),
         ),
         trailing: canEnter
-            ? const Icon(Icons.arrow_forward_ios,
-                size: 16, color: AppColors.accent)
+            ? const Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: AppColors.accent,
+              )
             : const Icon(Icons.lock, size: 16, color: AppColors.textSecondary),
-        onTap: canEnter
-            ? () => _moveTo(context, ref, loc, character)
-            : null,
+        onTap: canEnter ? () => _moveTo(context, ref, loc, character) : null,
       ),
     );
   }
@@ -172,20 +177,30 @@ class MapPage extends ConsumerWidget {
     return '';
   }
 
-
-  void _moveTo(BuildContext context, WidgetRef ref, MapLocation loc,
-      dynamic character) {
-    ref.read(characterNotifierProvider.notifier).updateStats(
-          characterId: character.id,
-          locationId: loc.id,
-        );
-    ref.read(gameLogProvider.notifier).addLog(
-          '你来到了${loc.name}。${loc.description}',
-          type: LogType.explore,
-        );
+  void _moveTo(
+    BuildContext context,
+    WidgetRef ref,
+    MapLocation loc,
+    dynamic character,
+  ) {
+    ref
+        .read(characterNotifierProvider.notifier)
+        .updateStats(characterId: character.id, locationId: loc.id);
+    ref
+        .read(gameLogProvider.notifier)
+        .addLog('你来到了${loc.name}。${loc.description}', type: LogType.explore);
 
     // 更新探索类任务目标
-    ref.read(questNotifierProvider.notifier).checkAndUpdateObjectives(
+    ref
+        .read(questNotifierProvider.notifier)
+        .checkAndUpdateObjectives(
+          character.id,
+          QuestObjectiveType.explore,
+          loc.id,
+        );
+    ref
+        .read(sectNotifierProvider.notifier)
+        .checkAndUpdateSectObjectives(
           character.id,
           QuestObjectiveType.explore,
           loc.id,
@@ -210,10 +225,7 @@ class MapPage extends ConsumerWidget {
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
-      child: Text(
-        '危险$level',
-        style: TextStyle(color: color, fontSize: 10),
-      ),
+      child: Text('危险$level', style: TextStyle(color: color, fontSize: 10)),
     );
   }
 

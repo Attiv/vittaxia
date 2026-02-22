@@ -56,6 +56,16 @@ class QuestNotifier extends StateNotifier<AsyncValue<void>> {
 
   QuestNotifier(this._db, this._ref) : super(const AsyncValue.data(null));
 
+  Future<int> _getInventoryCount(String characterId, String itemId) async {
+    final row =
+        await (_db.select(_db.inventoryItems)..where(
+              (t) =>
+                  t.characterId.equals(characterId) & t.itemId.equals(itemId),
+            ))
+            .getSingleOrNull();
+    return row?.quantity ?? 0;
+  }
+
   /// 接取任务
   Future<void> acceptQuest(String characterId, String questId) async {
     final quest = quests[questId];
@@ -63,33 +73,49 @@ class QuestNotifier extends StateNotifier<AsyncValue<void>> {
 
     final objectivesMap = <String, int>{};
     for (final obj in quest.objectives) {
-      objectivesMap[obj.id] = 0;
+      if (obj.type == QuestObjectiveType.collect) {
+        final targetId = obj.targetId;
+        if (targetId == null || targetId.isEmpty) {
+          objectivesMap[obj.id] = 0;
+        } else {
+          final owned = await _getInventoryCount(characterId, targetId);
+          objectivesMap[obj.id] = owned.clamp(0, obj.requiredCount);
+        }
+      } else {
+        objectivesMap[obj.id] = 0;
+      }
     }
 
-    await _db.upsertQuestProgress(QuestProgressCompanion.insert(
-      id: const Uuid().v4(),
-      characterId: characterId,
-      questId: questId,
-      status: const Value(1),
-      objectivesJson: Value(jsonEncode(objectivesMap)),
-    ));
+    await _db.upsertQuestProgress(
+      QuestProgressCompanion.insert(
+        id: const Uuid().v4(),
+        characterId: characterId,
+        questId: questId,
+        status: const Value(1),
+        objectivesJson: Value(jsonEncode(objectivesMap)),
+      ),
+    );
 
-    _ref.read(gameLogProvider.notifier).addLog(
-          '接取任务: ${quest.name}',
-          type: LogType.quest,
-        );
+    _ref
+        .read(gameLogProvider.notifier)
+        .addLog('接取任务: ${quest.name}', type: LogType.quest);
   }
 
   /// 统一检查并更新与 [type]+[targetId] 匹配的所有进行中任务目标
   Future<void> checkAndUpdateObjectives(
     String characterId,
     QuestObjectiveType type,
-    String targetId,
-  ) async {
+    String targetId, {
+    int delta = 1,
+  }) async {
+    if (delta <= 0) return;
+
     // 查所有进行中的任务
-    final progressList = await (_db.select(_db.questProgress)
-          ..where((t) => t.characterId.equals(characterId) & t.status.equals(1)))
-        .get();
+    final progressList =
+        await (_db.select(_db.questProgress)..where(
+              (t) => t.characterId.equals(characterId) & t.status.equals(1),
+            ))
+            .get();
 
     for (final progress in progressList) {
       final quest = quests[progress.questId];
@@ -99,7 +125,7 @@ class QuestNotifier extends StateNotifier<AsyncValue<void>> {
         if (obj.type != type) continue;
         if (obj.targetId != targetId) continue;
 
-        await updateObjective(characterId, quest.id, obj.id, 1);
+        await updateObjective(characterId, quest.id, obj.id, delta);
         await tryCompleteQuest(characterId, quest.id);
       }
     }
@@ -107,23 +133,30 @@ class QuestNotifier extends StateNotifier<AsyncValue<void>> {
 
   /// 更新任务目标进度
   Future<void> updateObjective(
-      String characterId, String questId, String objectiveId, int delta) async {
-    final progressList = await (_db.select(_db.questProgress)
-          ..where((t) =>
-              t.characterId.equals(characterId) & t.questId.equals(questId)))
-        .get();
+    String characterId,
+    String questId,
+    String objectiveId,
+    int delta,
+  ) async {
+    final progressList =
+        await (_db.select(_db.questProgress)..where(
+              (t) =>
+                  t.characterId.equals(characterId) & t.questId.equals(questId),
+            ))
+            .get();
     if (progressList.isEmpty) return;
     final progress = progressList.first;
 
-    final objectives =
-        Map<String, int>.from(jsonDecode(progress.objectivesJson));
+    final objectives = Map<String, int>.from(
+      jsonDecode(progress.objectivesJson),
+    );
     objectives[objectiveId] = (objectives[objectiveId] ?? 0) + delta;
 
-    await (_db.update(_db.questProgress)
-          ..where((t) => t.id.equals(progress.id)))
-        .write(QuestProgressCompanion(
-      objectivesJson: Value(jsonEncode(objectives)),
-    ));
+    await (_db.update(
+      _db.questProgress,
+    )..where((t) => t.id.equals(progress.id))).write(
+      QuestProgressCompanion(objectivesJson: Value(jsonEncode(objectives))),
+    );
   }
 
   /// 检查并完成任务
@@ -131,20 +164,43 @@ class QuestNotifier extends StateNotifier<AsyncValue<void>> {
     final quest = quests[questId];
     if (quest == null) return false;
 
-    final progressList = await (_db.select(_db.questProgress)
-          ..where((t) =>
-              t.characterId.equals(characterId) & t.questId.equals(questId)))
-        .get();
+    final progressList =
+        await (_db.select(_db.questProgress)..where(
+              (t) =>
+                  t.characterId.equals(characterId) & t.questId.equals(questId),
+            ))
+            .get();
     if (progressList.isEmpty) return false;
     final progress = progressList.first;
 
-    final objectives =
-        Map<String, int>.from(jsonDecode(progress.objectivesJson));
+    final objectives = Map<String, int>.from(
+      jsonDecode(progress.objectivesJson),
+    );
+    var objectivesSynced = false;
 
     // 检查所有目标是否完成
     for (final obj in quest.objectives) {
-      final current = objectives[obj.id] ?? 0;
+      var current = objectives[obj.id] ?? 0;
+      if (obj.type == QuestObjectiveType.collect) {
+        final targetId = obj.targetId;
+        if (targetId != null && targetId.isNotEmpty) {
+          final owned = await _getInventoryCount(characterId, targetId);
+          if (owned > current) {
+            current = owned;
+            objectives[obj.id] = owned;
+            objectivesSynced = true;
+          }
+        }
+      }
       if (current < obj.requiredCount) return false;
+    }
+
+    if (objectivesSynced) {
+      await (_db.update(
+        _db.questProgress,
+      )..where((t) => t.id.equals(progress.id))).write(
+        QuestProgressCompanion(objectivesJson: Value(jsonEncode(objectives))),
+      );
     }
 
     // 标记完成
@@ -193,7 +249,8 @@ class QuestNotifier extends StateNotifier<AsyncValue<void>> {
       rewardParts.add('物品[$itemName]');
     }
     if (quest.rewardSkillId != null) {
-      final skillName = skills[quest.rewardSkillId]?.name ?? quest.rewardSkillId!;
+      final skillName =
+          skills[quest.rewardSkillId]?.name ?? quest.rewardSkillId!;
       rewardParts.add('技能【$skillName】');
     }
     logNotifier.addLog(
@@ -209,12 +266,14 @@ class QuestNotifier extends StateNotifier<AsyncValue<void>> {
 
   /// 自动接取所有满足前置条件的主线任务
   Future<void> autoAcceptMainQuests(String characterId) async {
-    final progressList = await (_db.select(_db.questProgress)
-          ..where((t) => t.characterId.equals(characterId)))
-        .get();
+    final progressList = await (_db.select(
+      _db.questProgress,
+    )..where((t) => t.characterId.equals(characterId))).get();
 
-    final completedIds =
-        progressList.where((p) => p.status == 2).map((p) => p.questId).toSet();
+    final completedIds = progressList
+        .where((p) => p.status == 2)
+        .map((p) => p.questId)
+        .toSet();
     final allIds = progressList.map((p) => p.questId).toSet();
 
     for (final quest in quests.values) {
@@ -225,16 +284,15 @@ class QuestNotifier extends StateNotifier<AsyncValue<void>> {
         continue;
       }
       await acceptQuest(characterId, quest.id);
-      _ref.read(gameLogProvider.notifier).addLog(
-            '自动接取主线任务: ${quest.name}',
-            type: LogType.quest,
-          );
+      _ref
+          .read(gameLogProvider.notifier)
+          .addLog('自动接取主线任务: ${quest.name}', type: LogType.quest);
     }
   }
 }
 
 final questNotifierProvider =
     StateNotifierProvider<QuestNotifier, AsyncValue<void>>((ref) {
-  final db = ref.watch(databaseProvider);
-  return QuestNotifier(db, ref);
-});
+      final db = ref.watch(databaseProvider);
+      return QuestNotifier(db, ref);
+    });

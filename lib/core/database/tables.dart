@@ -94,3 +94,27 @@ class DungeonProgress extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// 师门成员表
+class SectMembers extends Table {
+  TextColumn get characterId => text().references(Characters, #id)();
+  TextColumn get sectId => text()();
+  IntColumn get contribution => integer().withDefault(const Constant(0))();
+  DateTimeColumn get joinedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {characterId};
+}
+
+/// 师门任务进度表
+class SectQuestProgress extends Table {
+  TextColumn get id => text()();
+  TextColumn get characterId => text().references(Characters, #id)();
+  TextColumn get questId => text()();
+  IntColumn get status => integer().withDefault(const Constant(0))(); // 0=未接 1=进行中 2=完成
+  TextColumn get objectivesJson => text().withDefault(const Constant('{}'))();
+  DateTimeColumn get lastCompletedTime => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

@@ -3,11 +3,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/utils/game_audio.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/quest_data.dart';
 import '../../models/enums.dart';
 import '../../models/quest.dart';
 import '../character/character_provider.dart';
+import '../inventory/inventory_provider.dart';
+import 'quest_dialogs.dart';
 import 'quest_provider.dart';
 
 class QuestPage extends ConsumerWidget {
@@ -18,6 +21,7 @@ class QuestPage extends ConsumerWidget {
     final progressAsync = ref.watch(questProgressProvider);
     final available = ref.watch(availableQuestsProvider);
     final active = ref.watch(activeQuestsProvider);
+    final inventory = ref.watch(inventoryProvider).valueOrNull ?? [];
 
     return DefaultTabController(
       length: 3,
@@ -36,8 +40,7 @@ class QuestPage extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('$e')),
           data: (allProgress) {
-            final completed =
-                allProgress.where((p) => p.status == 2).toList();
+            final completed = allProgress.where((p) => p.status == 2).toList();
 
             return TabBarView(
               children: [
@@ -46,6 +49,7 @@ class QuestPage extends ConsumerWidget {
                   context,
                   ref,
                   active,
+                  inventory: inventory,
                   isActive: true,
                 ),
                 // 可接取
@@ -64,6 +68,7 @@ class QuestPage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     List<dynamic> progressList, {
+    required List<dynamic> inventory,
     required bool isActive,
   }) {
     if (progressList.isEmpty) {
@@ -77,8 +82,9 @@ class QuestPage extends ConsumerWidget {
         final quest = quests[progress.questId];
         if (quest == null) return const SizedBox.shrink();
 
-        final objectives =
-            Map<String, int>.from(jsonDecode(progress.objectivesJson));
+        final objectives = Map<String, int>.from(
+          jsonDecode(progress.objectivesJson),
+        );
 
         return Card(
           child: Padding(
@@ -102,11 +108,13 @@ class QuestPage extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(quest.description,
-                    style: const TextStyle(fontSize: 13, height: 1.5)),
+                Text(
+                  quest.description,
+                  style: const TextStyle(fontSize: 13, height: 1.5),
+                ),
                 const SizedBox(height: 8),
                 ...quest.objectives.map((obj) {
-                  final current = objectives[obj.id] ?? 0;
+                  final current = _objectiveCurrent(obj, objectives, inventory);
                   final done = current >= obj.requiredCount;
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 2),
@@ -114,14 +122,18 @@ class QuestPage extends ConsumerWidget {
                       children: [
                         Icon(
                           done ? Icons.check_circle : Icons.circle_outlined,
-                          color: done ? AppColors.success : AppColors.textSecondary,
+                          color: done
+                              ? AppColors.success
+                              : AppColors.textSecondary,
                           size: 16,
                         ),
                         const SizedBox(width: 6),
                         Text(
                           '${obj.description} ($current/${obj.requiredCount})',
                           style: TextStyle(
-                            color: done ? AppColors.success : AppColors.textSecondary,
+                            color: done
+                                ? AppColors.success
+                                : AppColors.textSecondary,
                             fontSize: 13,
                           ),
                         ),
@@ -132,28 +144,44 @@ class QuestPage extends ConsumerWidget {
                 // 完成按钮
                 if (isActive) ...[
                   const SizedBox(height: 8),
-                  Builder(builder: (_) {
-                    final allDone = quest.objectives.every((obj) {
-                      final current = objectives[obj.id] ?? 0;
-                      return current >= obj.requiredCount;
-                    });
-                    return Align(
-                      alignment: Alignment.centerRight,
-                      child: ElevatedButton(
-                        onPressed: allDone
-                            ? () async {
-                                final character =
-                                    ref.read(currentCharacterProvider).valueOrNull;
-                                if (character == null) return;
-                                await ref
-                                    .read(questNotifierProvider.notifier)
-                                    .tryCompleteQuest(character.id, quest.id);
-                              }
-                            : null,
-                        child: const Text('交付'),
-                      ),
-                    );
-                  }),
+                  Builder(
+                    builder: (_) {
+                      final allDone = quest.objectives.every((obj) {
+                        final current = _objectiveCurrent(
+                          obj,
+                          objectives,
+                          inventory,
+                        );
+                        return current >= obj.requiredCount;
+                      });
+                      return Align(
+                        alignment: Alignment.centerRight,
+                        child: ElevatedButton(
+                          onPressed: allDone
+                              ? () async {
+                                  final character = ref
+                                      .read(currentCharacterProvider)
+                                      .valueOrNull;
+                                  if (character == null) return;
+
+                                  final completed = await ref
+                                      .read(questNotifierProvider.notifier)
+                                      .tryCompleteQuest(character.id, quest.id);
+
+                                  if (completed && context.mounted) {
+                                    GameAudio.success();
+                                    await showQuestCompleteDialog(
+                                      context,
+                                      quest,
+                                    );
+                                  }
+                                }
+                              : null,
+                          child: const Text('交付'),
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ],
             ),
@@ -164,11 +192,16 @@ class QuestPage extends ConsumerWidget {
   }
 
   Widget _buildAvailableList(
-      BuildContext context, WidgetRef ref, List<Quest> available) {
+    BuildContext context,
+    WidgetRef ref,
+    List<Quest> available,
+  ) {
     if (available.isEmpty) {
       return const Center(
-        child: Text('暂无可接取任务',
-            style: TextStyle(color: AppColors.textSecondary)),
+        child: Text(
+          '暂无可接取任务',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
       );
     }
     return ListView(
@@ -196,21 +229,31 @@ class QuestPage extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(quest.description,
-                    style: const TextStyle(fontSize: 13, height: 1.5)),
+                Text(
+                  quest.description,
+                  style: const TextStyle(fontSize: 13, height: 1.5),
+                ),
                 const SizedBox(height: 8),
                 _rewardRow(quest),
                 const SizedBox(height: 8),
                 Align(
                   alignment: Alignment.centerRight,
                   child: ElevatedButton(
-                    onPressed: () {
-                      final character =
-                          ref.read(currentCharacterProvider).valueOrNull;
+                    onPressed: () async {
+                      final character = ref
+                          .read(currentCharacterProvider)
+                          .valueOrNull;
                       if (character == null) return;
-                      ref
-                          .read(questNotifierProvider.notifier)
-                          .acceptQuest(character.id, quest.id);
+
+                      final confirmed = await showQuestAcceptDialog(
+                        context,
+                        quest,
+                      );
+                      if (confirmed == true) {
+                        ref
+                            .read(questNotifierProvider.notifier)
+                            .acceptQuest(character.id, quest.id);
+                      }
                     },
                     child: const Text('接取'),
                   ),
@@ -226,8 +269,10 @@ class QuestPage extends ConsumerWidget {
   Widget _buildCompletedList(BuildContext context, List<dynamic> completed) {
     if (completed.isEmpty) {
       return const Center(
-        child: Text('尚未完成任何任务',
-            style: TextStyle(color: AppColors.textSecondary)),
+        child: Text(
+          '尚未完成任何任务',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
       );
     }
     return ListView(
@@ -239,8 +284,11 @@ class QuestPage extends ConsumerWidget {
           child: ListTile(
             leading: const Icon(Icons.check_circle, color: AppColors.success),
             title: Text(quest.name),
-            subtitle: Text(quest.description,
-                maxLines: 1, overflow: TextOverflow.ellipsis),
+            subtitle: Text(
+              quest.description,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         );
       }).toList(),
@@ -260,10 +308,7 @@ class QuestPage extends ConsumerWidget {
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
-      child: Text(
-        type.label,
-        style: TextStyle(color: color, fontSize: 10),
-      ),
+      child: Text(type.label, style: TextStyle(color: color, fontSize: 10)),
     );
   }
 
@@ -279,5 +324,21 @@ class QuestPage extends ConsumerWidget {
       '奖励: ${parts.join("、")}',
       style: const TextStyle(color: AppColors.exp, fontSize: 12),
     );
+  }
+
+  int _objectiveCurrent(
+    QuestObjective obj,
+    Map<String, int> objectives,
+    List<dynamic> inventory,
+  ) {
+    final recorded = objectives[obj.id] ?? 0;
+    if (obj.type != QuestObjectiveType.collect) return recorded;
+    final targetId = obj.targetId;
+    if (targetId == null || targetId.isEmpty) return recorded;
+
+    final owned = inventory
+        .where((inv) => inv.itemId == targetId)
+        .fold<int>(0, (sum, inv) => sum + (inv.quantity as int));
+    return owned > recorded ? owned : recorded;
   }
 }

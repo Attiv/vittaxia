@@ -1,0 +1,231 @@
+import '../models/enums.dart';
+import '../models/sect.dart';
+
+/// 师门数据
+final sects = <String, Sect>{
+  'tianjian_sect': const Sect(
+    id: 'tianjian_sect',
+    name: '天剑门',
+    description: '江湖第一大派，以剑法闻名天下。门中弟子个个剑术精湛，讲究以剑入道，剑心通明。',
+    type: SectType.sword,
+    requiredRealm: RealmTier.xianTian,
+    requiredReputation: 50,
+    requiredQuestId: 'main_08',
+    specialtySkills: ['tianjian_basic', 'tianjian_advanced', 'tianjian_ultimate'],
+    teacherNpcIds: ['tianjian_elder'],
+    atkBonus: 15,
+    speedBonus: 10,
+  ),
+  'luoxia_blade': const Sect(
+    id: 'luoxia_blade',
+    name: '落霞刀派',
+    description: '以刀法称雄一方的门派，刀势如落霞般绚烂凌厉。门中弟子性格豪爽，重情重义。',
+    type: SectType.blade,
+    requiredRealm: RealmTier.houTian,
+    requiredReputation: 30,
+    specialtySkills: ['luoxia_blade_basic', 'luoxia_blade_advanced'],
+    teacherNpcIds: ['qin_zhu'],
+    atkBonus: 20,
+    defBonus: 5,
+  ),
+  'qingfeng_fist': const Sect(
+    id: 'qingfeng_fist',
+    name: '清风拳门',
+    description: '以拳法和内功见长的门派，讲究刚柔并济，以柔克刚。门中弟子多为侠义之士。',
+    type: SectType.fist,
+    requiredRealm: RealmTier.houTian,
+    requiredReputation: 20,
+    specialtySkills: ['qingfeng_fist_basic', 'iron_body'],
+    teacherNpcIds: ['zhang_dashu'],
+    defBonus: 15,
+    atkBonus: 10,
+  ),
+  'wangyue_scholar': const Sect(
+    id: 'wangyue_scholar',
+    name: '望月文士',
+    description: '以琴棋书画和内功心法闻名的隐世门派。门中弟子多为文人雅士，但内功修为深不可测。',
+    type: SectType.scholar,
+    requiredRealm: RealmTier.houTian,
+    requiredReputation: 40,
+    requiredQuestId: 'main_04',
+    specialtySkills: ['moongazing_art', 'scholar_insight'],
+    teacherNpcIds: ['su_wanyin'],
+    speedBonus: 15,
+    defBonus: 10,
+  ),
+};
+
+/// 师门任务数据
+final sectQuests = <String, SectQuest>{
+  // 天剑门任务
+  'tianjian_daily_01': const SectQuest(
+    id: 'tianjian_daily_01',
+    sectId: 'tianjian_sect',
+    name: '剑道修行',
+    description: '击败强敌以磨练剑术。',
+    objectives: [
+      SectQuestObjective(
+        id: 'obj_1',
+        description: '击败天剑门弟子',
+        type: QuestObjectiveType.kill,
+        targetId: 'tianjian_disciple',
+        requiredCount: 3,
+      ),
+    ],
+    rewardExp: 100,
+    rewardSilver: 50,
+    rewardContribution: 10,
+    repeatable: true,
+    cooldownHours: 24,
+  ),
+  'tianjian_quest_01': const SectQuest(
+    id: 'tianjian_quest_01',
+    sectId: 'tianjian_sect',
+    name: '剑心试炼',
+    description: '前往迷雾谷，在危险中磨练剑心。',
+    objectives: [
+      SectQuestObjective(
+        id: 'obj_1',
+        description: '探索迷雾谷',
+        type: QuestObjectiveType.explore,
+        targetId: 'miwu_valley',
+        requiredCount: 5,
+      ),
+    ],
+    rewardExp: 200,
+    rewardSilver: 100,
+    rewardContribution: 30,
+    rewardSkillId: 'tianjian_basic',
+    requiredContribution: 0,
+    requiredRealm: RealmTier.xianTian,
+  ),
+
+  // 落霞刀派任务
+  'luoxia_daily_01': const SectQuest(
+    id: 'luoxia_daily_01',
+    sectId: 'luoxia_blade',
+    name: '清剿山贼',
+    description: '清理落霞山脉的山贼，保护矿路安全。',
+    objectives: [
+      SectQuestObjective(
+        id: 'obj_1',
+        description: '击败山贼',
+        type: QuestObjectiveType.kill,
+        targetId: 'bandit',
+        requiredCount: 5,
+      ),
+    ],
+    rewardExp: 80,
+    rewardSilver: 60,
+    rewardContribution: 8,
+    repeatable: true,
+    cooldownHours: 24,
+  ),
+  'luoxia_quest_01': const SectQuest(
+    id: 'luoxia_quest_01',
+    sectId: 'luoxia_blade',
+    name: '刀法传承',
+    description: '收集寒铁矿，铸造一把好刀以学习刀法。',
+    objectives: [
+      SectQuestObjective(
+        id: 'obj_1',
+        description: '收集寒铁矿',
+        type: QuestObjectiveType.collect,
+        targetId: 'cold_iron',
+        requiredCount: 3,
+      ),
+    ],
+    rewardExp: 150,
+    rewardSilver: 80,
+    rewardContribution: 25,
+    rewardSkillId: 'luoxia_blade_basic',
+    requiredContribution: 0,
+    requiredRealm: RealmTier.houTian,
+  ),
+
+  // 清风拳门任务
+  'qingfeng_daily_01': const SectQuest(
+    id: 'qingfeng_daily_01',
+    sectId: 'qingfeng_fist',
+    name: '拳法修炼',
+    description: '击败醉汉以磨练拳法。',
+    objectives: [
+      SectQuestObjective(
+        id: 'obj_1',
+        description: '击败醉汉',
+        type: QuestObjectiveType.kill,
+        targetId: 'drunkard',
+        requiredCount: 5,
+      ),
+    ],
+    rewardExp: 70,
+    rewardSilver: 40,
+    rewardContribution: 7,
+    repeatable: true,
+    cooldownHours: 24,
+  ),
+  'qingfeng_quest_01': const SectQuest(
+    id: 'qingfeng_quest_01',
+    sectId: 'qingfeng_fist',
+    name: '铁布衫入门',
+    description: '采集碧心草炼制药膏，辅助修炼铁布衫。',
+    objectives: [
+      SectQuestObjective(
+        id: 'obj_1',
+        description: '收集碧心草',
+        type: QuestObjectiveType.collect,
+        targetId: 'bixin_herb',
+        requiredCount: 5,
+      ),
+    ],
+    rewardExp: 120,
+    rewardSilver: 60,
+    rewardContribution: 20,
+    rewardSkillId: 'iron_body',
+    requiredContribution: 0,
+    requiredRealm: RealmTier.houTian,
+  ),
+
+  // 望月文士任务
+  'wangyue_daily_01': const SectQuest(
+    id: 'wangyue_daily_01',
+    sectId: 'wangyue_scholar',
+    name: '月下修行',
+    description: '在望月楼修炼内功心法。',
+    objectives: [
+      SectQuestObjective(
+        id: 'obj_1',
+        description: '探索望月楼',
+        type: QuestObjectiveType.explore,
+        targetId: 'wangyue_tower',
+        requiredCount: 3,
+      ),
+    ],
+    rewardExp: 90,
+    rewardSilver: 50,
+    rewardContribution: 9,
+    repeatable: true,
+    cooldownHours: 24,
+  ),
+  'wangyue_quest_01': const SectQuest(
+    id: 'wangyue_quest_01',
+    sectId: 'wangyue_scholar',
+    name: '月华心法',
+    description: '收集月见花，领悟月华心法。',
+    objectives: [
+      SectQuestObjective(
+        id: 'obj_1',
+        description: '收集月见花',
+        type: QuestObjectiveType.collect,
+        targetId: 'moonflower',
+        requiredCount: 3,
+      ),
+    ],
+    rewardExp: 180,
+    rewardSilver: 90,
+    rewardContribution: 28,
+    rewardSkillId: 'scholar_insight',
+    requiredContribution: 0,
+    requiredRealm: RealmTier.houTian,
+  ),
+};

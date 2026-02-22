@@ -7,8 +7,10 @@ import 'package:vittaxia/core/theme/app_theme.dart';
 
 import '../../core/constants/game_constants.dart';
 import '../../core/database/database_provider.dart';
+import '../../core/utils/game_audio.dart';
 import '../../data/item_data.dart';
 import '../../data/mine_data.dart';
+import '../../models/enums.dart';
 import '../../models/game_event.dart';
 import '../../models/game_event_data.dart';
 import '../battle/battle_page.dart';
@@ -29,6 +31,8 @@ import '../map/map_page.dart';
 import '../mine/mine_page.dart';
 import '../quest/quest_page.dart';
 import '../quest/quest_provider.dart';
+import '../sect/sect_page.dart';
+import '../sect/sect_provider.dart';
 import '../skill/skill_page.dart';
 import '../../shared/widgets/status_panel.dart';
 
@@ -98,6 +102,11 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: Icon(GameAudio.enabled ? Icons.volume_up : Icons.volume_off),
+            tooltip: '声音设置',
+            onPressed: _openAudioSettings,
+          ),
           IconButton(
             icon: const Icon(Icons.help_outline),
             tooltip: '新手攻略',
@@ -210,6 +219,80 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
     if (!mounted) return;
     await IdleRewardDialog.show(context, reward);
+  }
+
+  Future<void> _openAudioSettings() async {
+    var soundEnabled = GameAudio.enabled;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      '声音设置',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.accent,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SwitchListTile(
+                      value: soundEnabled,
+                      onChanged: (value) async {
+                        await GameAudio.setEnabled(value);
+                        setSheetState(() {
+                          soundEnabled = value;
+                        });
+                        if (mounted) {
+                          setState(() {});
+                          _showActionTip(value ? '音效已开启' : '音效已关闭');
+                        }
+                        if (value) {
+                          GameAudio.success();
+                        }
+                      },
+                      title: const Text('系统音效'),
+                      subtitle: const Text('按钮反馈、战斗提示、掉落提示'),
+                      activeColor: AppColors.accent,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _openQuestPanel() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final maxHeight = MediaQuery.of(sheetContext).size.height * 0.92;
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          child: SizedBox(height: maxHeight, child: const QuestPage()),
+        );
+      },
+    );
   }
 
   Widget _buildWelcome(BuildContext context, ThemeData theme) {
@@ -372,20 +455,23 @@ class _HomePageState extends ConsumerState<HomePage> {
                     );
                   }, hint: '修炼与装备'),
                   _actionButton(Icons.assignment, '任务', () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const QuestPage()),
-                    );
+                    _openQuestPanel();
                   }, hint: '主线与支线'),
-                  _actionButton(Icons.map, '地图', () {
+                  _actionButton(Icons.temple_buddhist, '师门', () {
                     Navigator.of(
                       context,
-                    ).push(MaterialPageRoute(builder: (_) => const MapPage()));
-                  }, hint: '切换地点'),
+                    ).push(MaterialPageRoute(builder: (_) => const SectPage()));
+                  }, hint: '拜师学艺'),
                 ],
               ),
               const SizedBox(height: 4),
               Row(
                 children: [
+                  _actionButton(Icons.map, '地图', () {
+                    Navigator.of(
+                      context,
+                    ).push(MaterialPageRoute(builder: (_) => const MapPage()));
+                  }, hint: '切换地点'),
                   _actionButton(
                     Icons.self_improvement,
                     '打坐',
@@ -408,8 +494,11 @@ class _HomePageState extends ConsumerState<HomePage> {
                     currentStamina: character.stamina,
                     hint: '长按连续恢复',
                   ),
-                  const Spacer(),
-                  const Spacer(),
+                  _actionButton(Icons.info_outline, '帮助', () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const GuidePage()),
+                    );
+                  }, hint: '新手攻略'),
                 ],
               ),
             ],
@@ -751,10 +840,27 @@ class _HomePageState extends ConsumerState<HomePage> {
         .consumeStamina(character.id, 5);
     if (!ok) {
       if (mounted) {
+        GameAudio.warning();
         _showActionTip('体力不足');
       }
       return;
     }
+
+    // 探索成功执行一次，按当前位置更新探索类任务
+    ref
+        .read(questNotifierProvider.notifier)
+        .checkAndUpdateObjectives(
+          character.id,
+          QuestObjectiveType.explore,
+          character.locationId,
+        );
+    ref
+        .read(sectNotifierProvider.notifier)
+        .checkAndUpdateSectObjectives(
+          character.id,
+          QuestObjectiveType.explore,
+          character.locationId,
+        );
 
     final engine = ref.read(eventEngineProvider);
     final logNotifier = ref.read(gameLogProvider.notifier);
@@ -844,6 +950,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           onLongPress: canTap ? onLongPress : null,
           onPressed: canTap
               ? () {
+                  GameAudio.tap();
                   HapticFeedback.selectionClick();
                   onTap();
                 }

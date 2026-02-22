@@ -3362,6 +3362,769 @@ class DungeonProgressCompanion extends UpdateCompanion<DungeonProgressData> {
   }
 }
 
+class $SectMembersTable extends SectMembers
+    with TableInfo<$SectMembersTable, SectMember> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SectMembersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _characterIdMeta = const VerificationMeta(
+    'characterId',
+  );
+  @override
+  late final GeneratedColumn<String> characterId = GeneratedColumn<String>(
+    'character_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES characters (id)',
+    ),
+  );
+  static const VerificationMeta _sectIdMeta = const VerificationMeta('sectId');
+  @override
+  late final GeneratedColumn<String> sectId = GeneratedColumn<String>(
+    'sect_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contributionMeta = const VerificationMeta(
+    'contribution',
+  );
+  @override
+  late final GeneratedColumn<int> contribution = GeneratedColumn<int>(
+    'contribution',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _joinedAtMeta = const VerificationMeta(
+    'joinedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> joinedAt = GeneratedColumn<DateTime>(
+    'joined_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    characterId,
+    sectId,
+    contribution,
+    joinedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sect_members';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SectMember> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('character_id')) {
+      context.handle(
+        _characterIdMeta,
+        characterId.isAcceptableOrUnknown(
+          data['character_id']!,
+          _characterIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_characterIdMeta);
+    }
+    if (data.containsKey('sect_id')) {
+      context.handle(
+        _sectIdMeta,
+        sectId.isAcceptableOrUnknown(data['sect_id']!, _sectIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sectIdMeta);
+    }
+    if (data.containsKey('contribution')) {
+      context.handle(
+        _contributionMeta,
+        contribution.isAcceptableOrUnknown(
+          data['contribution']!,
+          _contributionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('joined_at')) {
+      context.handle(
+        _joinedAtMeta,
+        joinedAt.isAcceptableOrUnknown(data['joined_at']!, _joinedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {characterId};
+  @override
+  SectMember map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SectMember(
+      characterId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}character_id'],
+      )!,
+      sectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sect_id'],
+      )!,
+      contribution: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}contribution'],
+      )!,
+      joinedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}joined_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SectMembersTable createAlias(String alias) {
+    return $SectMembersTable(attachedDatabase, alias);
+  }
+}
+
+class SectMember extends DataClass implements Insertable<SectMember> {
+  final String characterId;
+  final String sectId;
+  final int contribution;
+  final DateTime joinedAt;
+  const SectMember({
+    required this.characterId,
+    required this.sectId,
+    required this.contribution,
+    required this.joinedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['character_id'] = Variable<String>(characterId);
+    map['sect_id'] = Variable<String>(sectId);
+    map['contribution'] = Variable<int>(contribution);
+    map['joined_at'] = Variable<DateTime>(joinedAt);
+    return map;
+  }
+
+  SectMembersCompanion toCompanion(bool nullToAbsent) {
+    return SectMembersCompanion(
+      characterId: Value(characterId),
+      sectId: Value(sectId),
+      contribution: Value(contribution),
+      joinedAt: Value(joinedAt),
+    );
+  }
+
+  factory SectMember.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SectMember(
+      characterId: serializer.fromJson<String>(json['characterId']),
+      sectId: serializer.fromJson<String>(json['sectId']),
+      contribution: serializer.fromJson<int>(json['contribution']),
+      joinedAt: serializer.fromJson<DateTime>(json['joinedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'characterId': serializer.toJson<String>(characterId),
+      'sectId': serializer.toJson<String>(sectId),
+      'contribution': serializer.toJson<int>(contribution),
+      'joinedAt': serializer.toJson<DateTime>(joinedAt),
+    };
+  }
+
+  SectMember copyWith({
+    String? characterId,
+    String? sectId,
+    int? contribution,
+    DateTime? joinedAt,
+  }) => SectMember(
+    characterId: characterId ?? this.characterId,
+    sectId: sectId ?? this.sectId,
+    contribution: contribution ?? this.contribution,
+    joinedAt: joinedAt ?? this.joinedAt,
+  );
+  SectMember copyWithCompanion(SectMembersCompanion data) {
+    return SectMember(
+      characterId: data.characterId.present
+          ? data.characterId.value
+          : this.characterId,
+      sectId: data.sectId.present ? data.sectId.value : this.sectId,
+      contribution: data.contribution.present
+          ? data.contribution.value
+          : this.contribution,
+      joinedAt: data.joinedAt.present ? data.joinedAt.value : this.joinedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SectMember(')
+          ..write('characterId: $characterId, ')
+          ..write('sectId: $sectId, ')
+          ..write('contribution: $contribution, ')
+          ..write('joinedAt: $joinedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(characterId, sectId, contribution, joinedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SectMember &&
+          other.characterId == this.characterId &&
+          other.sectId == this.sectId &&
+          other.contribution == this.contribution &&
+          other.joinedAt == this.joinedAt);
+}
+
+class SectMembersCompanion extends UpdateCompanion<SectMember> {
+  final Value<String> characterId;
+  final Value<String> sectId;
+  final Value<int> contribution;
+  final Value<DateTime> joinedAt;
+  final Value<int> rowid;
+  const SectMembersCompanion({
+    this.characterId = const Value.absent(),
+    this.sectId = const Value.absent(),
+    this.contribution = const Value.absent(),
+    this.joinedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SectMembersCompanion.insert({
+    required String characterId,
+    required String sectId,
+    this.contribution = const Value.absent(),
+    this.joinedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : characterId = Value(characterId),
+       sectId = Value(sectId);
+  static Insertable<SectMember> custom({
+    Expression<String>? characterId,
+    Expression<String>? sectId,
+    Expression<int>? contribution,
+    Expression<DateTime>? joinedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (characterId != null) 'character_id': characterId,
+      if (sectId != null) 'sect_id': sectId,
+      if (contribution != null) 'contribution': contribution,
+      if (joinedAt != null) 'joined_at': joinedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SectMembersCompanion copyWith({
+    Value<String>? characterId,
+    Value<String>? sectId,
+    Value<int>? contribution,
+    Value<DateTime>? joinedAt,
+    Value<int>? rowid,
+  }) {
+    return SectMembersCompanion(
+      characterId: characterId ?? this.characterId,
+      sectId: sectId ?? this.sectId,
+      contribution: contribution ?? this.contribution,
+      joinedAt: joinedAt ?? this.joinedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (characterId.present) {
+      map['character_id'] = Variable<String>(characterId.value);
+    }
+    if (sectId.present) {
+      map['sect_id'] = Variable<String>(sectId.value);
+    }
+    if (contribution.present) {
+      map['contribution'] = Variable<int>(contribution.value);
+    }
+    if (joinedAt.present) {
+      map['joined_at'] = Variable<DateTime>(joinedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SectMembersCompanion(')
+          ..write('characterId: $characterId, ')
+          ..write('sectId: $sectId, ')
+          ..write('contribution: $contribution, ')
+          ..write('joinedAt: $joinedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SectQuestProgressTable extends SectQuestProgress
+    with TableInfo<$SectQuestProgressTable, SectQuestProgressData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SectQuestProgressTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _characterIdMeta = const VerificationMeta(
+    'characterId',
+  );
+  @override
+  late final GeneratedColumn<String> characterId = GeneratedColumn<String>(
+    'character_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES characters (id)',
+    ),
+  );
+  static const VerificationMeta _questIdMeta = const VerificationMeta(
+    'questId',
+  );
+  @override
+  late final GeneratedColumn<String> questId = GeneratedColumn<String>(
+    'quest_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<int> status = GeneratedColumn<int>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _objectivesJsonMeta = const VerificationMeta(
+    'objectivesJson',
+  );
+  @override
+  late final GeneratedColumn<String> objectivesJson = GeneratedColumn<String>(
+    'objectives_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  static const VerificationMeta _lastCompletedTimeMeta = const VerificationMeta(
+    'lastCompletedTime',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastCompletedTime =
+      GeneratedColumn<DateTime>(
+        'last_completed_time',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    characterId,
+    questId,
+    status,
+    objectivesJson,
+    lastCompletedTime,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sect_quest_progress';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SectQuestProgressData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('character_id')) {
+      context.handle(
+        _characterIdMeta,
+        characterId.isAcceptableOrUnknown(
+          data['character_id']!,
+          _characterIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_characterIdMeta);
+    }
+    if (data.containsKey('quest_id')) {
+      context.handle(
+        _questIdMeta,
+        questId.isAcceptableOrUnknown(data['quest_id']!, _questIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_questIdMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('objectives_json')) {
+      context.handle(
+        _objectivesJsonMeta,
+        objectivesJson.isAcceptableOrUnknown(
+          data['objectives_json']!,
+          _objectivesJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_completed_time')) {
+      context.handle(
+        _lastCompletedTimeMeta,
+        lastCompletedTime.isAcceptableOrUnknown(
+          data['last_completed_time']!,
+          _lastCompletedTimeMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SectQuestProgressData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SectQuestProgressData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      characterId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}character_id'],
+      )!,
+      questId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}quest_id'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}status'],
+      )!,
+      objectivesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}objectives_json'],
+      )!,
+      lastCompletedTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_completed_time'],
+      ),
+    );
+  }
+
+  @override
+  $SectQuestProgressTable createAlias(String alias) {
+    return $SectQuestProgressTable(attachedDatabase, alias);
+  }
+}
+
+class SectQuestProgressData extends DataClass
+    implements Insertable<SectQuestProgressData> {
+  final String id;
+  final String characterId;
+  final String questId;
+  final int status;
+  final String objectivesJson;
+  final DateTime? lastCompletedTime;
+  const SectQuestProgressData({
+    required this.id,
+    required this.characterId,
+    required this.questId,
+    required this.status,
+    required this.objectivesJson,
+    this.lastCompletedTime,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['character_id'] = Variable<String>(characterId);
+    map['quest_id'] = Variable<String>(questId);
+    map['status'] = Variable<int>(status);
+    map['objectives_json'] = Variable<String>(objectivesJson);
+    if (!nullToAbsent || lastCompletedTime != null) {
+      map['last_completed_time'] = Variable<DateTime>(lastCompletedTime);
+    }
+    return map;
+  }
+
+  SectQuestProgressCompanion toCompanion(bool nullToAbsent) {
+    return SectQuestProgressCompanion(
+      id: Value(id),
+      characterId: Value(characterId),
+      questId: Value(questId),
+      status: Value(status),
+      objectivesJson: Value(objectivesJson),
+      lastCompletedTime: lastCompletedTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastCompletedTime),
+    );
+  }
+
+  factory SectQuestProgressData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SectQuestProgressData(
+      id: serializer.fromJson<String>(json['id']),
+      characterId: serializer.fromJson<String>(json['characterId']),
+      questId: serializer.fromJson<String>(json['questId']),
+      status: serializer.fromJson<int>(json['status']),
+      objectivesJson: serializer.fromJson<String>(json['objectivesJson']),
+      lastCompletedTime: serializer.fromJson<DateTime?>(
+        json['lastCompletedTime'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'characterId': serializer.toJson<String>(characterId),
+      'questId': serializer.toJson<String>(questId),
+      'status': serializer.toJson<int>(status),
+      'objectivesJson': serializer.toJson<String>(objectivesJson),
+      'lastCompletedTime': serializer.toJson<DateTime?>(lastCompletedTime),
+    };
+  }
+
+  SectQuestProgressData copyWith({
+    String? id,
+    String? characterId,
+    String? questId,
+    int? status,
+    String? objectivesJson,
+    Value<DateTime?> lastCompletedTime = const Value.absent(),
+  }) => SectQuestProgressData(
+    id: id ?? this.id,
+    characterId: characterId ?? this.characterId,
+    questId: questId ?? this.questId,
+    status: status ?? this.status,
+    objectivesJson: objectivesJson ?? this.objectivesJson,
+    lastCompletedTime: lastCompletedTime.present
+        ? lastCompletedTime.value
+        : this.lastCompletedTime,
+  );
+  SectQuestProgressData copyWithCompanion(SectQuestProgressCompanion data) {
+    return SectQuestProgressData(
+      id: data.id.present ? data.id.value : this.id,
+      characterId: data.characterId.present
+          ? data.characterId.value
+          : this.characterId,
+      questId: data.questId.present ? data.questId.value : this.questId,
+      status: data.status.present ? data.status.value : this.status,
+      objectivesJson: data.objectivesJson.present
+          ? data.objectivesJson.value
+          : this.objectivesJson,
+      lastCompletedTime: data.lastCompletedTime.present
+          ? data.lastCompletedTime.value
+          : this.lastCompletedTime,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SectQuestProgressData(')
+          ..write('id: $id, ')
+          ..write('characterId: $characterId, ')
+          ..write('questId: $questId, ')
+          ..write('status: $status, ')
+          ..write('objectivesJson: $objectivesJson, ')
+          ..write('lastCompletedTime: $lastCompletedTime')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    characterId,
+    questId,
+    status,
+    objectivesJson,
+    lastCompletedTime,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SectQuestProgressData &&
+          other.id == this.id &&
+          other.characterId == this.characterId &&
+          other.questId == this.questId &&
+          other.status == this.status &&
+          other.objectivesJson == this.objectivesJson &&
+          other.lastCompletedTime == this.lastCompletedTime);
+}
+
+class SectQuestProgressCompanion
+    extends UpdateCompanion<SectQuestProgressData> {
+  final Value<String> id;
+  final Value<String> characterId;
+  final Value<String> questId;
+  final Value<int> status;
+  final Value<String> objectivesJson;
+  final Value<DateTime?> lastCompletedTime;
+  final Value<int> rowid;
+  const SectQuestProgressCompanion({
+    this.id = const Value.absent(),
+    this.characterId = const Value.absent(),
+    this.questId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.objectivesJson = const Value.absent(),
+    this.lastCompletedTime = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SectQuestProgressCompanion.insert({
+    required String id,
+    required String characterId,
+    required String questId,
+    this.status = const Value.absent(),
+    this.objectivesJson = const Value.absent(),
+    this.lastCompletedTime = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       characterId = Value(characterId),
+       questId = Value(questId);
+  static Insertable<SectQuestProgressData> custom({
+    Expression<String>? id,
+    Expression<String>? characterId,
+    Expression<String>? questId,
+    Expression<int>? status,
+    Expression<String>? objectivesJson,
+    Expression<DateTime>? lastCompletedTime,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (characterId != null) 'character_id': characterId,
+      if (questId != null) 'quest_id': questId,
+      if (status != null) 'status': status,
+      if (objectivesJson != null) 'objectives_json': objectivesJson,
+      if (lastCompletedTime != null) 'last_completed_time': lastCompletedTime,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SectQuestProgressCompanion copyWith({
+    Value<String>? id,
+    Value<String>? characterId,
+    Value<String>? questId,
+    Value<int>? status,
+    Value<String>? objectivesJson,
+    Value<DateTime?>? lastCompletedTime,
+    Value<int>? rowid,
+  }) {
+    return SectQuestProgressCompanion(
+      id: id ?? this.id,
+      characterId: characterId ?? this.characterId,
+      questId: questId ?? this.questId,
+      status: status ?? this.status,
+      objectivesJson: objectivesJson ?? this.objectivesJson,
+      lastCompletedTime: lastCompletedTime ?? this.lastCompletedTime,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (characterId.present) {
+      map['character_id'] = Variable<String>(characterId.value);
+    }
+    if (questId.present) {
+      map['quest_id'] = Variable<String>(questId.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<int>(status.value);
+    }
+    if (objectivesJson.present) {
+      map['objectives_json'] = Variable<String>(objectivesJson.value);
+    }
+    if (lastCompletedTime.present) {
+      map['last_completed_time'] = Variable<DateTime>(lastCompletedTime.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SectQuestProgressCompanion(')
+          ..write('id: $id, ')
+          ..write('characterId: $characterId, ')
+          ..write('questId: $questId, ')
+          ..write('status: $status, ')
+          ..write('objectivesJson: $objectivesJson, ')
+          ..write('lastCompletedTime: $lastCompletedTime, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3373,6 +4136,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $DungeonProgressTable dungeonProgress = $DungeonProgressTable(
     this,
   );
+  late final $SectMembersTable sectMembers = $SectMembersTable(this);
+  late final $SectQuestProgressTable sectQuestProgress =
+      $SectQuestProgressTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3384,6 +4150,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     npcRelations,
     questProgress,
     dungeonProgress,
+    sectMembers,
+    sectQuestProgress,
   ];
 }
 
@@ -3553,6 +4321,54 @@ final class $$CharactersTableReferences
 
     final cache = $_typedResult.readTableOrNull(
       _dungeonProgressRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$SectMembersTable, List<SectMember>>
+  _sectMembersRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.sectMembers,
+    aliasName: $_aliasNameGenerator(
+      db.characters.id,
+      db.sectMembers.characterId,
+    ),
+  );
+
+  $$SectMembersTableProcessedTableManager get sectMembersRefs {
+    final manager = $$SectMembersTableTableManager(
+      $_db,
+      $_db.sectMembers,
+    ).filter((f) => f.characterId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_sectMembersRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $SectQuestProgressTable,
+    List<SectQuestProgressData>
+  >
+  _sectQuestProgressRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.sectQuestProgress,
+        aliasName: $_aliasNameGenerator(
+          db.characters.id,
+          db.sectQuestProgress.characterId,
+        ),
+      );
+
+  $$SectQuestProgressTableProcessedTableManager get sectQuestProgressRefs {
+    final manager = $$SectQuestProgressTableTableManager(
+      $_db,
+      $_db.sectQuestProgress,
+    ).filter((f) => f.characterId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _sectQuestProgressRefsTable($_db),
     );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
@@ -3815,6 +4631,56 @@ class $$CharactersTableFilterComposer
           }) => $$DungeonProgressTableFilterComposer(
             $db: $db,
             $table: $db.dungeonProgress,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> sectMembersRefs(
+    Expression<bool> Function($$SectMembersTableFilterComposer f) f,
+  ) {
+    final $$SectMembersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.sectMembers,
+      getReferencedColumn: (t) => t.characterId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SectMembersTableFilterComposer(
+            $db: $db,
+            $table: $db.sectMembers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> sectQuestProgressRefs(
+    Expression<bool> Function($$SectQuestProgressTableFilterComposer f) f,
+  ) {
+    final $$SectQuestProgressTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.sectQuestProgress,
+      getReferencedColumn: (t) => t.characterId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SectQuestProgressTableFilterComposer(
+            $db: $db,
+            $table: $db.sectQuestProgress,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4194,6 +5060,57 @@ class $$CharactersTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> sectMembersRefs<T extends Object>(
+    Expression<T> Function($$SectMembersTableAnnotationComposer a) f,
+  ) {
+    final $$SectMembersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.sectMembers,
+      getReferencedColumn: (t) => t.characterId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SectMembersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.sectMembers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> sectQuestProgressRefs<T extends Object>(
+    Expression<T> Function($$SectQuestProgressTableAnnotationComposer a) f,
+  ) {
+    final $$SectQuestProgressTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.sectQuestProgress,
+          getReferencedColumn: (t) => t.characterId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$SectQuestProgressTableAnnotationComposer(
+                $db: $db,
+                $table: $db.sectQuestProgress,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$CharactersTableTableManager
@@ -4215,6 +5132,8 @@ class $$CharactersTableTableManager
             bool npcRelationsRefs,
             bool questProgressRefs,
             bool dungeonProgressRefs,
+            bool sectMembersRefs,
+            bool sectQuestProgressRefs,
           })
         > {
   $$CharactersTableTableManager(_$AppDatabase db, $CharactersTable table)
@@ -4359,6 +5278,8 @@ class $$CharactersTableTableManager
                 npcRelationsRefs = false,
                 questProgressRefs = false,
                 dungeonProgressRefs = false,
+                sectMembersRefs = false,
+                sectQuestProgressRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -4368,6 +5289,8 @@ class $$CharactersTableTableManager
                     if (npcRelationsRefs) db.npcRelations,
                     if (questProgressRefs) db.questProgress,
                     if (dungeonProgressRefs) db.dungeonProgress,
+                    if (sectMembersRefs) db.sectMembers,
+                    if (sectQuestProgressRefs) db.sectQuestProgress,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -4477,6 +5400,48 @@ class $$CharactersTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (sectMembersRefs)
+                        await $_getPrefetchedData<
+                          Character,
+                          $CharactersTable,
+                          SectMember
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CharactersTableReferences
+                              ._sectMembersRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CharactersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).sectMembersRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.characterId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (sectQuestProgressRefs)
+                        await $_getPrefetchedData<
+                          Character,
+                          $CharactersTable,
+                          SectQuestProgressData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CharactersTableReferences
+                              ._sectQuestProgressRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CharactersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).sectQuestProgressRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.characterId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -4503,6 +5468,8 @@ typedef $$CharactersTableProcessedTableManager =
         bool npcRelationsRefs,
         bool questProgressRefs,
         bool dungeonProgressRefs,
+        bool sectMembersRefs,
+        bool sectQuestProgressRefs,
       })
     >;
 typedef $$InventoryItemsTableCreateCompanionBuilder =
@@ -6181,6 +7148,669 @@ typedef $$DungeonProgressTableProcessedTableManager =
       DungeonProgressData,
       PrefetchHooks Function({bool characterId})
     >;
+typedef $$SectMembersTableCreateCompanionBuilder =
+    SectMembersCompanion Function({
+      required String characterId,
+      required String sectId,
+      Value<int> contribution,
+      Value<DateTime> joinedAt,
+      Value<int> rowid,
+    });
+typedef $$SectMembersTableUpdateCompanionBuilder =
+    SectMembersCompanion Function({
+      Value<String> characterId,
+      Value<String> sectId,
+      Value<int> contribution,
+      Value<DateTime> joinedAt,
+      Value<int> rowid,
+    });
+
+final class $$SectMembersTableReferences
+    extends BaseReferences<_$AppDatabase, $SectMembersTable, SectMember> {
+  $$SectMembersTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $CharactersTable _characterIdTable(_$AppDatabase db) =>
+      db.characters.createAlias(
+        $_aliasNameGenerator(db.sectMembers.characterId, db.characters.id),
+      );
+
+  $$CharactersTableProcessedTableManager get characterId {
+    final $_column = $_itemColumn<String>('character_id')!;
+
+    final manager = $$CharactersTableTableManager(
+      $_db,
+      $_db.characters,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_characterIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SectMembersTableFilterComposer
+    extends Composer<_$AppDatabase, $SectMembersTable> {
+  $$SectMembersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get sectId => $composableBuilder(
+    column: $table.sectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get contribution => $composableBuilder(
+    column: $table.contribution,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get joinedAt => $composableBuilder(
+    column: $table.joinedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CharactersTableFilterComposer get characterId {
+    final $$CharactersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.characterId,
+      referencedTable: $db.characters,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CharactersTableFilterComposer(
+            $db: $db,
+            $table: $db.characters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SectMembersTableOrderingComposer
+    extends Composer<_$AppDatabase, $SectMembersTable> {
+  $$SectMembersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get sectId => $composableBuilder(
+    column: $table.sectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get contribution => $composableBuilder(
+    column: $table.contribution,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get joinedAt => $composableBuilder(
+    column: $table.joinedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CharactersTableOrderingComposer get characterId {
+    final $$CharactersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.characterId,
+      referencedTable: $db.characters,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CharactersTableOrderingComposer(
+            $db: $db,
+            $table: $db.characters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SectMembersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SectMembersTable> {
+  $$SectMembersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get sectId =>
+      $composableBuilder(column: $table.sectId, builder: (column) => column);
+
+  GeneratedColumn<int> get contribution => $composableBuilder(
+    column: $table.contribution,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get joinedAt =>
+      $composableBuilder(column: $table.joinedAt, builder: (column) => column);
+
+  $$CharactersTableAnnotationComposer get characterId {
+    final $$CharactersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.characterId,
+      referencedTable: $db.characters,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CharactersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.characters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SectMembersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SectMembersTable,
+          SectMember,
+          $$SectMembersTableFilterComposer,
+          $$SectMembersTableOrderingComposer,
+          $$SectMembersTableAnnotationComposer,
+          $$SectMembersTableCreateCompanionBuilder,
+          $$SectMembersTableUpdateCompanionBuilder,
+          (SectMember, $$SectMembersTableReferences),
+          SectMember,
+          PrefetchHooks Function({bool characterId})
+        > {
+  $$SectMembersTableTableManager(_$AppDatabase db, $SectMembersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SectMembersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SectMembersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SectMembersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> characterId = const Value.absent(),
+                Value<String> sectId = const Value.absent(),
+                Value<int> contribution = const Value.absent(),
+                Value<DateTime> joinedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SectMembersCompanion(
+                characterId: characterId,
+                sectId: sectId,
+                contribution: contribution,
+                joinedAt: joinedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String characterId,
+                required String sectId,
+                Value<int> contribution = const Value.absent(),
+                Value<DateTime> joinedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SectMembersCompanion.insert(
+                characterId: characterId,
+                sectId: sectId,
+                contribution: contribution,
+                joinedAt: joinedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SectMembersTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({characterId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (characterId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.characterId,
+                                referencedTable: $$SectMembersTableReferences
+                                    ._characterIdTable(db),
+                                referencedColumn: $$SectMembersTableReferences
+                                    ._characterIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SectMembersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SectMembersTable,
+      SectMember,
+      $$SectMembersTableFilterComposer,
+      $$SectMembersTableOrderingComposer,
+      $$SectMembersTableAnnotationComposer,
+      $$SectMembersTableCreateCompanionBuilder,
+      $$SectMembersTableUpdateCompanionBuilder,
+      (SectMember, $$SectMembersTableReferences),
+      SectMember,
+      PrefetchHooks Function({bool characterId})
+    >;
+typedef $$SectQuestProgressTableCreateCompanionBuilder =
+    SectQuestProgressCompanion Function({
+      required String id,
+      required String characterId,
+      required String questId,
+      Value<int> status,
+      Value<String> objectivesJson,
+      Value<DateTime?> lastCompletedTime,
+      Value<int> rowid,
+    });
+typedef $$SectQuestProgressTableUpdateCompanionBuilder =
+    SectQuestProgressCompanion Function({
+      Value<String> id,
+      Value<String> characterId,
+      Value<String> questId,
+      Value<int> status,
+      Value<String> objectivesJson,
+      Value<DateTime?> lastCompletedTime,
+      Value<int> rowid,
+    });
+
+final class $$SectQuestProgressTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $SectQuestProgressTable,
+          SectQuestProgressData
+        > {
+  $$SectQuestProgressTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $CharactersTable _characterIdTable(_$AppDatabase db) =>
+      db.characters.createAlias(
+        $_aliasNameGenerator(
+          db.sectQuestProgress.characterId,
+          db.characters.id,
+        ),
+      );
+
+  $$CharactersTableProcessedTableManager get characterId {
+    final $_column = $_itemColumn<String>('character_id')!;
+
+    final manager = $$CharactersTableTableManager(
+      $_db,
+      $_db.characters,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_characterIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SectQuestProgressTableFilterComposer
+    extends Composer<_$AppDatabase, $SectQuestProgressTable> {
+  $$SectQuestProgressTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get questId => $composableBuilder(
+    column: $table.questId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get objectivesJson => $composableBuilder(
+    column: $table.objectivesJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastCompletedTime => $composableBuilder(
+    column: $table.lastCompletedTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CharactersTableFilterComposer get characterId {
+    final $$CharactersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.characterId,
+      referencedTable: $db.characters,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CharactersTableFilterComposer(
+            $db: $db,
+            $table: $db.characters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SectQuestProgressTableOrderingComposer
+    extends Composer<_$AppDatabase, $SectQuestProgressTable> {
+  $$SectQuestProgressTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get questId => $composableBuilder(
+    column: $table.questId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get objectivesJson => $composableBuilder(
+    column: $table.objectivesJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastCompletedTime => $composableBuilder(
+    column: $table.lastCompletedTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CharactersTableOrderingComposer get characterId {
+    final $$CharactersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.characterId,
+      referencedTable: $db.characters,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CharactersTableOrderingComposer(
+            $db: $db,
+            $table: $db.characters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SectQuestProgressTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SectQuestProgressTable> {
+  $$SectQuestProgressTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get questId =>
+      $composableBuilder(column: $table.questId, builder: (column) => column);
+
+  GeneratedColumn<int> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get objectivesJson => $composableBuilder(
+    column: $table.objectivesJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastCompletedTime => $composableBuilder(
+    column: $table.lastCompletedTime,
+    builder: (column) => column,
+  );
+
+  $$CharactersTableAnnotationComposer get characterId {
+    final $$CharactersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.characterId,
+      referencedTable: $db.characters,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CharactersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.characters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SectQuestProgressTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SectQuestProgressTable,
+          SectQuestProgressData,
+          $$SectQuestProgressTableFilterComposer,
+          $$SectQuestProgressTableOrderingComposer,
+          $$SectQuestProgressTableAnnotationComposer,
+          $$SectQuestProgressTableCreateCompanionBuilder,
+          $$SectQuestProgressTableUpdateCompanionBuilder,
+          (SectQuestProgressData, $$SectQuestProgressTableReferences),
+          SectQuestProgressData,
+          PrefetchHooks Function({bool characterId})
+        > {
+  $$SectQuestProgressTableTableManager(
+    _$AppDatabase db,
+    $SectQuestProgressTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SectQuestProgressTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SectQuestProgressTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SectQuestProgressTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> characterId = const Value.absent(),
+                Value<String> questId = const Value.absent(),
+                Value<int> status = const Value.absent(),
+                Value<String> objectivesJson = const Value.absent(),
+                Value<DateTime?> lastCompletedTime = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SectQuestProgressCompanion(
+                id: id,
+                characterId: characterId,
+                questId: questId,
+                status: status,
+                objectivesJson: objectivesJson,
+                lastCompletedTime: lastCompletedTime,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String characterId,
+                required String questId,
+                Value<int> status = const Value.absent(),
+                Value<String> objectivesJson = const Value.absent(),
+                Value<DateTime?> lastCompletedTime = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SectQuestProgressCompanion.insert(
+                id: id,
+                characterId: characterId,
+                questId: questId,
+                status: status,
+                objectivesJson: objectivesJson,
+                lastCompletedTime: lastCompletedTime,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SectQuestProgressTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({characterId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (characterId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.characterId,
+                                referencedTable:
+                                    $$SectQuestProgressTableReferences
+                                        ._characterIdTable(db),
+                                referencedColumn:
+                                    $$SectQuestProgressTableReferences
+                                        ._characterIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SectQuestProgressTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SectQuestProgressTable,
+      SectQuestProgressData,
+      $$SectQuestProgressTableFilterComposer,
+      $$SectQuestProgressTableOrderingComposer,
+      $$SectQuestProgressTableAnnotationComposer,
+      $$SectQuestProgressTableCreateCompanionBuilder,
+      $$SectQuestProgressTableUpdateCompanionBuilder,
+      (SectQuestProgressData, $$SectQuestProgressTableReferences),
+      SectQuestProgressData,
+      PrefetchHooks Function({bool characterId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6197,4 +7827,8 @@ class $AppDatabaseManager {
       $$QuestProgressTableTableManager(_db, _db.questProgress);
   $$DungeonProgressTableTableManager get dungeonProgress =>
       $$DungeonProgressTableTableManager(_db, _db.dungeonProgress);
+  $$SectMembersTableTableManager get sectMembers =>
+      $$SectMembersTableTableManager(_db, _db.sectMembers);
+  $$SectQuestProgressTableTableManager get sectQuestProgress =>
+      $$SectQuestProgressTableTableManager(_db, _db.sectQuestProgress);
 }
