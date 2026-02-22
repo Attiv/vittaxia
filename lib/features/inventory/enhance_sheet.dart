@@ -39,7 +39,9 @@ class _EnhanceSheetState extends ConsumerState<EnhanceSheet> {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 16, right: 16, top: 20,
+        left: 16,
+        right: 16,
+        top: 20,
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
       child: Column(
@@ -48,16 +50,20 @@ class _EnhanceSheetState extends ConsumerState<EnhanceSheet> {
         children: [
           Text(
             '强化 - ${item.name} +${widget.currentLevel}',
-            style: const TextStyle(
-              color: AppColors.accent, fontSize: 18, fontWeight: FontWeight.bold,
+            style: TextStyle(
+              color: AppColors.accent,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 12),
           _bonusPreview(item, widget.currentLevel, nextLevel),
           const SizedBox(height: 12),
           if (recipe == null)
-            const Text('已达最高强化等级',
-                style: TextStyle(color: AppColors.warning, fontSize: 14))
+            Text(
+              '已达最高强化等级',
+              style: TextStyle(color: AppColors.warning, fontSize: 14),
+            )
           else ...[
             _recipeInfo(recipe, character),
             const SizedBox(height: 16),
@@ -68,13 +74,15 @@ class _EnhanceSheetState extends ConsumerState<EnhanceSheet> {
                   color: AppColors.background,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(_resultText!,
-                    style: TextStyle(
-                      color: _resultText!.contains('成功')
-                          ? AppColors.success
-                          : AppColors.danger,
-                      fontSize: 15,
-                    )),
+                child: Text(
+                  _resultText!,
+                  style: TextStyle(
+                    color: _resultText!.contains('成功')
+                        ? AppColors.success
+                        : AppColors.danger,
+                    fontSize: 15,
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
               ElevatedButton(
@@ -100,6 +108,7 @@ class _EnhanceSheetState extends ConsumerState<EnhanceSheet> {
       final next = base + (base * nextLv * 0.1).ceil();
       lines.add('$label: $cur -> $next');
     }
+
     check('攻击', item.atkBonus);
     check('防御', item.defBonus);
     check('气血', item.hpBonus);
@@ -109,9 +118,12 @@ class _EnhanceSheetState extends ConsumerState<EnhanceSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: lines
-          .map((l) => Text(l,
-              style: const TextStyle(
-                  color: AppColors.textPrimary, fontSize: 13)))
+          .map(
+            (l) => Text(
+              l,
+              style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+            ),
+          )
           .toList(),
     );
   }
@@ -125,16 +137,21 @@ class _EnhanceSheetState extends ConsumerState<EnhanceSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('需要: $materialName x${recipe.materialCount}',
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-        Text('银两: ${recipe.silverCost}',
-            style: TextStyle(
-                color: hasEnoughSilver
-                    ? AppColors.textSecondary
-                    : AppColors.danger,
-                fontSize: 13)),
-        Text('成功率: $rate%',
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+        Text(
+          '需要: $materialName x${recipe.materialCount}',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+        ),
+        Text(
+          '银两: ${recipe.silverCost}',
+          style: TextStyle(
+            color: hasEnoughSilver ? AppColors.textSecondary : AppColors.danger,
+            fontSize: 13,
+          ),
+        ),
+        Text(
+          '成功率: $rate%',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+        ),
       ],
     );
   }

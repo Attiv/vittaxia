@@ -243,7 +243,7 @@ class _DungeonExplorePageState extends ConsumerState<DungeonExplorePage> {
       appBar: AppBar(
         title: Text('${template.name} ${curFloor + 1}/${template.totalFloors}'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
@@ -253,7 +253,7 @@ class _DungeonExplorePageState extends ConsumerState<DungeonExplorePage> {
               child: Center(
                 child: Text(
                   '体力 ${character.stamina}/${totalMaxStamina(character)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.warning,
                     fontSize: 13,
                   ),
@@ -305,7 +305,7 @@ class _DungeonExplorePageState extends ConsumerState<DungeonExplorePage> {
                   const SizedBox(height: 8),
                   Text(
                     floor.description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 14,
                       height: 1.6,
@@ -325,7 +325,7 @@ class _DungeonExplorePageState extends ConsumerState<DungeonExplorePage> {
               ),
               child: Text(
                 _message!,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 14,
                 ),
@@ -426,7 +426,7 @@ class _DungeonExplorePageState extends ConsumerState<DungeonExplorePage> {
           .map(
             (p) => Text(
               p,
-              style: const TextStyle(color: AppColors.exp, fontSize: 13),
+              style: TextStyle(color: AppColors.exp, fontSize: 13),
             ),
           )
           .toList(),

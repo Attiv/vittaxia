@@ -16,12 +16,14 @@ class DungeonListPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('探险')),
       body: dungeons.isEmpty
-          ? const Center(
-              child: Text('此处无洞府',
-                  style: TextStyle(color: AppColors.textSecondary)))
+          ? Center(
+              child: Text(
+                '此处无洞府',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            )
           : progressAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text('$e')),
               data: (progressList) {
                 return ListView.builder(
@@ -40,23 +42,33 @@ class DungeonListPage extends ConsumerWidget {
                       child: ListTile(
                         title: Row(
                           children: [
-                            Text(dungeon.name,
-                                style: const TextStyle(
-                                    color: AppColors.accent,
-                                    fontWeight: FontWeight.bold)),
+                            Text(
+                              dungeon.name,
+                              style: TextStyle(
+                                color: AppColors.accent,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             const SizedBox(width: 8),
                             if (status == 2)
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2),
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.success.withValues(alpha: 0.2),
+                                  color: AppColors.success.withValues(
+                                    alpha: 0.2,
+                                  ),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
-                                child: const Text('已通关',
-                                    style: TextStyle(
-                                        color: AppColors.success,
-                                        fontSize: 10)),
+                                child: Text(
+                                  '已通关',
+                                  style: TextStyle(
+                                    color: AppColors.success,
+                                    fontSize: 10,
+                                  ),
+                                ),
                               ),
                           ],
                         ),
@@ -64,16 +76,19 @@ class DungeonListPage extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 4),
-                            Text(dungeon.description,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 12)),
+                            Text(
+                              dungeon.description,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 12),
+                            ),
                             const SizedBox(height: 4),
                             Text(
                               '层数: ${dungeon.totalFloors}  进度: $curFloor/${dungeon.totalFloors}  最深: $bestFloor',
-                              style: const TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 11),
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 11,
+                              ),
                             ),
                           ],
                         ),
@@ -81,14 +96,14 @@ class DungeonListPage extends ConsumerWidget {
                           onPressed: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) => DungeonExplorePage(
-                                    dungeonId: dungeon.id),
+                                builder: (_) =>
+                                    DungeonExplorePage(dungeonId: dungeon.id),
                               ),
                             );
                           },
                           child: Text(
                             status == 2 ? '重探' : (curFloor > 0 ? '继续' : '进入'),
-                            style: const TextStyle(fontSize: 12),
+                            style: TextStyle(fontSize: 12),
                           ),
                         ),
                       ),

@@ -72,7 +72,7 @@ class QuestPage extends ConsumerWidget {
     required bool isActive,
   }) {
     if (progressList.isEmpty) {
-      return const Center(
+      return Center(
         child: Text('暂无任务', style: TextStyle(color: AppColors.textSecondary)),
       );
     }
@@ -99,7 +99,7 @@ class QuestPage extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         quest.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.accent,
                           fontWeight: FontWeight.bold,
                         ),
@@ -110,7 +110,7 @@ class QuestPage extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Text(
                   quest.description,
-                  style: const TextStyle(fontSize: 13, height: 1.5),
+                  style: TextStyle(fontSize: 13, height: 1.5),
                 ),
                 const SizedBox(height: 8),
                 ...quest.objectives.map((obj) {
@@ -197,7 +197,7 @@ class QuestPage extends ConsumerWidget {
     List<Quest> available,
   ) {
     if (available.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           '暂无可接取任务',
           style: TextStyle(color: AppColors.textSecondary),
@@ -220,7 +220,7 @@ class QuestPage extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         quest.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.accent,
                           fontWeight: FontWeight.bold,
                         ),
@@ -231,7 +231,7 @@ class QuestPage extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Text(
                   quest.description,
-                  style: const TextStyle(fontSize: 13, height: 1.5),
+                  style: TextStyle(fontSize: 13, height: 1.5),
                 ),
                 const SizedBox(height: 8),
                 _rewardRow(quest),
@@ -268,7 +268,7 @@ class QuestPage extends ConsumerWidget {
 
   Widget _buildCompletedList(BuildContext context, List<dynamic> completed) {
     if (completed.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           '尚未完成任何任务',
           style: TextStyle(color: AppColors.textSecondary),
@@ -282,7 +282,7 @@ class QuestPage extends ConsumerWidget {
         if (quest == null) return const SizedBox.shrink();
         return Card(
           child: ListTile(
-            leading: const Icon(Icons.check_circle, color: AppColors.success),
+            leading: Icon(Icons.check_circle, color: AppColors.success),
             title: Text(quest.name),
             subtitle: Text(
               quest.description,
@@ -322,7 +322,7 @@ class QuestPage extends ConsumerWidget {
 
     return Text(
       '奖励: ${parts.join("、")}',
-      style: const TextStyle(color: AppColors.exp, fontSize: 12),
+      style: TextStyle(color: AppColors.exp, fontSize: 12),
     );
   }
 

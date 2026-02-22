@@ -45,7 +45,7 @@ class StatusPanel extends StatelessWidget {
                     children: [
                       Text(
                         c.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.accent,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -65,7 +65,7 @@ class StatusPanel extends StatelessWidget {
                         ),
                         child: Text(
                           '${tier.label}${stage.label} · Lv.${c.level}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.accent,
                             fontSize: 11,
                           ),
@@ -108,12 +108,12 @@ class StatusPanel extends StatelessWidget {
               children: [
                 Text(
                   '${c.silver} 两',
-                  style: const TextStyle(color: AppColors.accent, fontSize: 13),
+                  style: TextStyle(color: AppColors.accent, fontSize: 13),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '声望 ${c.reputation}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 11,
                   ),

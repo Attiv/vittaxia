@@ -77,7 +77,7 @@ class ShopPage extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(2, 4, 2, 6),
           child: Text(
             '${type.label} (${group.length})',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondary,
@@ -162,11 +162,11 @@ class ShopPage extends ConsumerWidget {
                     children: [
                       IconButton(
                         onPressed: qty > 1 ? () => setState(() => qty--) : null,
-                        icon: const Icon(Icons.remove_circle_outline),
+                        icon: Icon(Icons.remove_circle_outline),
                       ),
                       Text(
                         '$qty',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -175,7 +175,7 @@ class ShopPage extends ConsumerWidget {
                         onPressed: qty < maxQty
                             ? () => setState(() => qty++)
                             : null,
-                        icon: const Icon(Icons.add_circle_outline),
+                        icon: Icon(Icons.add_circle_outline),
                       ),
                     ],
                   ),
@@ -192,7 +192,7 @@ class ShopPage extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Text(
                     '最多可买 $maxQty 个',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
                     ),

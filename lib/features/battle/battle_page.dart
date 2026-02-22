@@ -493,7 +493,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
                 child: Row(
                   children: [
                     if (BattleSpeedSettings.currentSpeed == BattleSpeed.normal)
-                      const Icon(Icons.check, size: 18),
+                      Icon(Icons.check, size: 18),
                     if (BattleSpeedSettings.currentSpeed != BattleSpeed.normal)
                       const SizedBox(width: 18),
                     const SizedBox(width: 8),
@@ -506,7 +506,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
                 child: Row(
                   children: [
                     if (BattleSpeedSettings.currentSpeed == BattleSpeed.fast)
-                      const Icon(Icons.check, size: 18),
+                      Icon(Icons.check, size: 18),
                     if (BattleSpeedSettings.currentSpeed != BattleSpeed.fast)
                       const SizedBox(width: 18),
                     const SizedBox(width: 8),
@@ -519,7 +519,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
                 child: Row(
                   children: [
                     if (BattleSpeedSettings.currentSpeed == BattleSpeed.skip)
-                      const Icon(Icons.check, size: 18),
+                      Icon(Icons.check, size: 18),
                     if (BattleSpeedSettings.currentSpeed != BattleSpeed.skip)
                       const SizedBox(width: 18),
                     const SizedBox(width: 8),
@@ -540,7 +540,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
               children: [
                 Expanded(child: _fighterStatus(engine.player, true)),
                 const SizedBox(width: 12),
-                const Text(
+                Text(
                   'VS',
                   style: TextStyle(
                     color: AppColors.accent,
@@ -659,7 +659,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
                           onPressed: canUse ? () => _useSkill(skill) : null,
                           child: Text(
                             '${skill.name}${skill.mpCost > 0 ? " (${skill.mpCost})" : ""}',
-                            style: const TextStyle(fontSize: 13),
+                            style: TextStyle(fontSize: 13),
                           ),
                         ),
                       );
@@ -687,7 +687,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
                   ),
                   if (BattleSpeedSettings.autoEnabled) ...[
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       '自动战斗已开启，2秒后自动返回',
                       style: TextStyle(
                         color: AppColors.textSecondary,

@@ -88,16 +88,16 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
                 fillColor: AppColors.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: AppColors.primaryLight),
+                  borderSide: BorderSide(color: AppColors.primaryLight),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: AppColors.primaryLight),
+                  borderSide: BorderSide(color: AppColors.primaryLight),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide:
-                      const BorderSide(color: AppColors.accent, width: 1.5),
+                      BorderSide(color: AppColors.accent, width: 1.5),
                 ),
               ),
               onSubmitted: (_) => _createCharacter(),

@@ -44,7 +44,7 @@ class MapPage extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.location_on,
                         color: AppColors.accent,
                         size: 20,
@@ -132,12 +132,12 @@ class MapPage extends ConsumerWidget {
           ),
         ),
         trailing: canEnter
-            ? const Icon(
+            ? Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
                 color: AppColors.accent,
               )
-            : const Icon(Icons.lock, size: 16, color: AppColors.textSecondary),
+            : Icon(Icons.lock, size: 16, color: AppColors.textSecondary),
         onTap: canEnter ? () => _moveTo(context, ref, loc, character) : null,
       ),
     );

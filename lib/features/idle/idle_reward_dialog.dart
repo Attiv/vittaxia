@@ -23,7 +23,7 @@ class IdleRewardDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: AppColors.surface,
-      title: const Text(
+      title: Text(
         '离线收益',
         style: TextStyle(color: AppColors.accent),
         textAlign: TextAlign.center,
@@ -33,10 +33,10 @@ class IdleRewardDialog extends StatelessWidget {
         children: [
           Text(
             '你离开了 ${IdleCalculator.formatDuration(reward.minutesIdle)}',
-            style: const TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(color: AppColors.textSecondary),
           ),
           if (reward.wasCapped)
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(top: 4),
               child: Text(
                 '(已达离线上限12小时)',
@@ -48,13 +48,10 @@ class IdleRewardDialog extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
-                  '修炼经验 ',
-                  style: TextStyle(color: AppColors.textPrimary),
-                ),
+                Text('修炼经验 ', style: TextStyle(color: AppColors.textPrimary)),
                 Text(
                   '+${reward.exp}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.exp,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -67,7 +64,7 @@ class IdleRewardDialog extends StatelessWidget {
               padding: const EdgeInsets.only(top: 8),
               child: Text(
                 '银两 +${reward.silver}',
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.accent,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -76,7 +73,7 @@ class IdleRewardDialog extends StatelessWidget {
             ),
           if (reward.items.isNotEmpty) ...[
             const SizedBox(height: 10),
-            const Align(
+            Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 '补给收获',
@@ -90,10 +87,7 @@ class IdleRewardDialog extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   '• $itemName x${entry.value}',
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
                 ),
               );
             }),

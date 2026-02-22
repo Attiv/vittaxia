@@ -25,7 +25,7 @@ class _MinePageState extends ConsumerState<MinePage> {
     return Scaffold(
       appBar: AppBar(title: const Text('挖矿')),
       body: spot == null
-          ? const Center(
+          ? Center(
               child: Text(
                 '此处无矿脉',
                 style: TextStyle(color: AppColors.textSecondary),
@@ -45,7 +45,7 @@ class _MinePageState extends ConsumerState<MinePage> {
                         children: [
                           Text(
                             spot.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.accent,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -54,13 +54,13 @@ class _MinePageState extends ConsumerState<MinePage> {
                           const SizedBox(height: 8),
                           Text(
                             '消耗体力: ${spot.staminaCost}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 13,
                             ),
                           ),
                           const SizedBox(height: 12),
-                          const Text(
+                          Text(
                             '可能产出:',
                             style: TextStyle(
                               color: AppColors.textPrimary,
@@ -78,7 +78,7 @@ class _MinePageState extends ConsumerState<MinePage> {
                               padding: const EdgeInsets.symmetric(vertical: 2),
                               child: Text(
                                 '  $name x$countText',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: AppColors.textSecondary,
                                   fontSize: 12,
                                 ),
@@ -136,10 +136,10 @@ class _MinePageState extends ConsumerState<MinePage> {
         context: context,
         builder: (_) => AlertDialog(
           backgroundColor: AppColors.surface,
-          title: const Text('挖矿成果', style: TextStyle(color: AppColors.accent)),
+          title: Text('挖矿成果', style: TextStyle(color: AppColors.accent)),
           content: Text(
             '获得 $itemName x${result.count}',
-            style: const TextStyle(color: AppColors.textPrimary),
+            style: TextStyle(color: AppColors.textPrimary),
           ),
           actions: [
             TextButton(

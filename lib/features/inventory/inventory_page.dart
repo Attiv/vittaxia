@@ -149,7 +149,7 @@ class InventoryPage extends ConsumerWidget {
         subtitle: item != null
             ? Text(
                 _itemBonusText(item, enhLv),
-                style: const TextStyle(fontSize: 11),
+                style: TextStyle(fontSize: 11),
               )
             : null,
         trailing: item != null
@@ -201,7 +201,7 @@ class InventoryPage extends ConsumerWidget {
               const SizedBox(width: 4),
               Text(
                 'x${inv.quantity}',
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 12,
                 ),
@@ -215,7 +215,7 @@ class InventoryPage extends ConsumerWidget {
               : item.description,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 12),
+          style: TextStyle(fontSize: 12),
         ),
         trailing: _itemActions(context, ref, inv, item, character),
       ),
@@ -237,7 +237,7 @@ class InventoryPage extends ConsumerWidget {
             onPressed: () => _confirmSell(context, ref, inv, item, character),
             child: Text(
               '售${item.sellPrice}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 color: AppColors.textSecondary,
               ),
@@ -417,7 +417,7 @@ class InventoryPage extends ConsumerWidget {
         const SizedBox(width: 6),
         Text(
           '${type.label} ($count)',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: AppColors.textSecondary,

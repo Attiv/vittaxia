@@ -45,13 +45,13 @@ class SectPage extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Icons.lock_outline,
                 size: 64,
                 color: AppColors.textSecondary,
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 '暂无可加入的师门',
                 style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
               ),
@@ -73,7 +73,7 @@ class SectPage extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
-        const Padding(
+        Padding(
           padding: EdgeInsets.all(8),
           child: Text(
             '选择师门',
@@ -121,7 +121,7 @@ class SectPage extends ConsumerWidget {
                   ),
                   child: Text(
                     sect.type.label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.accent,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -132,7 +132,7 @@ class SectPage extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     sect.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: AppColors.accent,
@@ -142,10 +142,7 @@ class SectPage extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Text(
-              sect.description,
-              style: const TextStyle(fontSize: 14, height: 1.5),
-            ),
+            Text(sect.description, style: TextStyle(fontSize: 14, height: 1.5)),
             const SizedBox(height: 12),
             _buildSectInfo(sect),
             const SizedBox(height: 12),
@@ -177,7 +174,7 @@ class SectPage extends ConsumerWidget {
                         .joinSect(character.id, sect.id);
                   }
                 },
-                icon: const Icon(Icons.check_circle_outline),
+                icon: Icon(Icons.check_circle_outline),
                 label: const Text('加入师门'),
               ),
             ),
@@ -198,7 +195,7 @@ class SectPage extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '师门特色',
             style: TextStyle(
               fontWeight: FontWeight.bold,
@@ -230,10 +227,7 @@ class SectPage extends ConsumerWidget {
           const SizedBox(height: 4),
           Text(
             '特色技能: ${sect.specialtySkills.length}个',
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -252,7 +246,7 @@ class SectPage extends ConsumerWidget {
         children: [
           Icon(icon, size: 16, color: color),
           const SizedBox(width: 6),
-          Text(label, style: const TextStyle(fontSize: 13)),
+          Text(label, style: TextStyle(fontSize: 13)),
           const SizedBox(width: 4),
           Text(
             value,
@@ -303,7 +297,7 @@ class SectPage extends ConsumerWidget {
                       ),
                       child: Text(
                         sect.type.label,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.accent,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -314,7 +308,7 @@ class SectPage extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         sect.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: AppColors.accent,
@@ -326,13 +320,13 @@ class SectPage extends ConsumerWidget {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    const Icon(Icons.star, color: AppColors.warning, size: 20),
+                    Icon(Icons.star, color: AppColors.warning, size: 20),
                     const SizedBox(width: 6),
                     const Text('贡献度:', style: TextStyle(fontSize: 14)),
                     const SizedBox(width: 4),
                     Text(
                       '${member.contribution}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: AppColors.warning,
@@ -372,7 +366,7 @@ class SectPage extends ConsumerWidget {
       padding: const EdgeInsets.all(12),
       children: [
         if (activeQuests.isNotEmpty) ...[
-          const Text(
+          Text(
             '进行中',
             style: TextStyle(
               fontSize: 16,
@@ -388,7 +382,7 @@ class SectPage extends ConsumerWidget {
           }),
           const SizedBox(height: 16),
         ],
-        const Text(
+        Text(
           '可接取',
           style: TextStyle(
             fontSize: 16,
@@ -398,7 +392,7 @@ class SectPage extends ConsumerWidget {
         ),
         const SizedBox(height: 8),
         if (availableQuests.isEmpty)
-          const Center(
+          Center(
             child: Padding(
               padding: EdgeInsets.all(24),
               child: Text(
@@ -441,7 +435,7 @@ class SectPage extends ConsumerWidget {
           children: [
             Text(
               quest.name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: AppColors.accent,
@@ -450,7 +444,7 @@ class SectPage extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               quest.description,
-              style: const TextStyle(fontSize: 13, height: 1.5),
+              style: TextStyle(fontSize: 13, height: 1.5),
             ),
             const SizedBox(height: 8),
             // 显示任务目标进度
@@ -486,10 +480,7 @@ class SectPage extends ConsumerWidget {
               children: [
                 Text(
                   '奖励: 贡献度+${quest.rewardContribution}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.warning,
-                  ),
+                  style: TextStyle(fontSize: 12, color: AppColors.warning),
                 ),
                 ElevatedButton(
                   onPressed: allDone
@@ -509,7 +500,7 @@ class SectPage extends ConsumerWidget {
                             await showDialog(
                               context: context,
                               builder: (context) => AlertDialog(
-                                title: const Row(
+                                title: Row(
                                   children: [
                                     Icon(
                                       Icons.check_circle,
@@ -525,7 +516,7 @@ class SectPage extends ConsumerWidget {
                                   children: [
                                     Text(
                                       quest.name,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                         color: AppColors.accent,
@@ -627,7 +618,7 @@ class SectPage extends ConsumerWidget {
                         color: AppColors.mp.withValues(alpha: 0.5),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       '日常',
                       style: TextStyle(color: AppColors.mp, fontSize: 10),
                     ),
@@ -636,7 +627,7 @@ class SectPage extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     quest.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: AppColors.accent,
@@ -648,12 +639,12 @@ class SectPage extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               quest.description,
-              style: const TextStyle(fontSize: 13, height: 1.5),
+              style: TextStyle(fontSize: 13, height: 1.5),
             ),
             const SizedBox(height: 8),
             Text(
               '奖励: 贡献度+${quest.rewardContribution}、经验+${quest.rewardExp}',
-              style: const TextStyle(fontSize: 12, color: AppColors.warning),
+              style: TextStyle(fontSize: 12, color: AppColors.warning),
             ),
             const SizedBox(height: 8),
             Align(
@@ -681,7 +672,7 @@ class SectPage extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text(
+        Text(
           '师门介绍',
           style: TextStyle(
             fontSize: 16,
@@ -690,10 +681,7 @@ class SectPage extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          sect.description,
-          style: const TextStyle(fontSize: 14, height: 1.6),
-        ),
+        Text(sect.description, style: TextStyle(fontSize: 14, height: 1.6)),
         const SizedBox(height: 16),
         _buildSectInfo(sect),
       ],
@@ -728,7 +716,7 @@ class SectPage extends ConsumerWidget {
         children: [
           Icon(icon, size: 18, color: color),
           const SizedBox(width: 8),
-          Text('$label: ', style: const TextStyle(fontSize: 14)),
+          Text('$label: ', style: TextStyle(fontSize: 14)),
           Text(
             value,
             style: TextStyle(

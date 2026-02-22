@@ -133,7 +133,7 @@ class CharacterDetailPage extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(color: AppColors.textSecondary)),
+            Text(label, style: TextStyle(color: AppColors.textSecondary)),
             Text(
               '$current/$max',
               style: TextStyle(color: color, fontWeight: FontWeight.w600),
@@ -160,10 +160,10 @@ class CharacterDetailPage extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: AppColors.textSecondary)),
+          Text(label, style: TextStyle(color: AppColors.textSecondary)),
           Text(
             '$value',
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w600,
             ),

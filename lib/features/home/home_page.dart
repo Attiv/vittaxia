@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vittaxia/core/theme/app_theme.dart';
+import 'package:vittaxia/core/theme/theme_settings.dart';
 
 import '../../core/constants/game_constants.dart';
 import '../../core/database/database_provider.dart';
@@ -103,12 +104,12 @@ class _HomePageState extends ConsumerState<HomePage> {
         ),
         actions: [
           IconButton(
-            icon: Icon(GameAudio.enabled ? Icons.volume_up : Icons.volume_off),
-            tooltip: '声音设置',
-            onPressed: _openAudioSettings,
+            icon: Icon(Icons.palette_outlined),
+            tooltip: '系统设置',
+            onPressed: _openSettingsPanel,
           ),
           IconButton(
-            icon: const Icon(Icons.help_outline),
+            icon: Icon(Icons.help_outline),
             tooltip: '新手攻略',
             onPressed: () {
               Navigator.of(
@@ -221,32 +222,34 @@ class _HomePageState extends ConsumerState<HomePage> {
     await IdleRewardDialog.show(context, reward);
   }
 
-  Future<void> _openAudioSettings() async {
+  Future<void> _openSettingsPanel() async {
     var soundEnabled = GameAudio.enabled;
+    var selectedTheme = ThemeSettings.current;
 
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppColors.surface,
+      backgroundColor:
+          Theme.of(context).bottomSheetTheme.modalBackgroundColor ??
+          Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (sheetContext) {
+        final sheetTheme = Theme.of(sheetContext);
         return StatefulBuilder(
           builder: (context, setSheetState) {
             return SafeArea(
-              child: Padding(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
-                      '声音设置',
+                    Text(
+                      '系统设置',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: sheetTheme.textTheme.titleLarge?.copyWith(
                         color: AppColors.accent,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -269,6 +272,58 @@ class _HomePageState extends ConsumerState<HomePage> {
                       subtitle: const Text('按钮反馈、战斗提示、掉落提示'),
                       activeColor: AppColors.accent,
                     ),
+                    const SizedBox(height: 6),
+                    Divider(
+                      color: AppColors.primaryLight.withValues(alpha: 0.45),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      '主题外观',
+                      style: sheetTheme.textTheme.titleMedium?.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '当前：${uiThemeSpecs[selectedTheme]!.label} · ${uiThemeSpecs[selectedTheme]!.subtitle}',
+                      style: sheetTheme.textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final width = (constraints.maxWidth - 8) / 2;
+                        return Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final preset in uiThemePresetOrder)
+                              SizedBox(
+                                width: width,
+                                child: _buildThemePresetButton(
+                                  preset: preset,
+                                  selectedTheme: selectedTheme,
+                                  onSelected: (nextTheme) async {
+                                    if (nextTheme == selectedTheme) return;
+                                    await ThemeSettings.setTheme(nextTheme);
+                                    setSheetState(() {
+                                      selectedTheme = nextTheme;
+                                    });
+                                    if (mounted) {
+                                      setState(() {});
+                                      _showActionTip(
+                                        '已切换为 ${uiThemeSpecs[nextTheme]!.label}',
+                                      );
+                                    }
+                                    GameAudio.tap();
+                                  },
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -276,6 +331,89 @@ class _HomePageState extends ConsumerState<HomePage> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildThemePresetButton({
+    required UiThemePreset preset,
+    required UiThemePreset selectedTheme,
+    required ValueChanged<UiThemePreset> onSelected,
+  }) {
+    final spec = uiThemeSpecs[preset]!;
+    final isSelected = preset == selectedTheme;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => onSelected(preset),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                spec.primaryDark.withValues(alpha: 0.94),
+                spec.surface.withValues(alpha: 0.94),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected
+                  ? spec.accent.withValues(alpha: 0.95)
+                  : spec.primaryLight.withValues(alpha: 0.6),
+              width: isSelected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: spec.accent,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: spec.textPrimary, width: 0.6),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      spec.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: spec.textPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      spec.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: spec.textSecondary, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              if (isSelected)
+                Icon(
+                  Icons.check_circle,
+                  size: 16,
+                  color: spec.accent.withValues(alpha: 0.96),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -302,7 +440,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('⚔', style: const TextStyle(fontSize: 64)),
+            Text('⚔', style: TextStyle(fontSize: 64)),
             const SizedBox(height: 24),
             Text('侠', style: theme.textTheme.headlineLarge),
             const SizedBox(height: 8),
@@ -382,126 +520,113 @@ class _HomePageState extends ConsumerState<HomePage> {
         ),
         // 操作区 (两行四列)
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColors.primaryDark.withValues(alpha: 0.28),
             border: Border(
-              top: BorderSide(
-                color: AppColors.primaryLight.withValues(alpha: 0.5),
-              ),
+              top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
             ),
           ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  _actionButton(
-                    Icons.explore,
-                    '探索',
-                    () {
-                      _doExplore(character);
-                    },
-                    staminaCost: 5,
-                    currentStamina: character.stamina,
-                    hint: '随机事件',
-                  ),
-                  _actionButton(
-                    Icons.hardware,
-                    '挖矿',
-                    () {
-                      final spot = mineSpot;
-                      if (spot == null) {
-                        _showActionTip('此处无矿脉');
-                        return;
-                      }
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const MinePage()),
-                      );
-                    },
-                    staminaCost: mineSpot?.staminaCost,
-                    currentStamina: character.stamina,
-                    hint: mineSpot == null ? '此地无矿脉' : null,
-                  ),
-                  _actionButton(Icons.terrain, '探险', () {
-                    final dungeons = ref.read(availableDungeonsProvider);
-                    if (dungeons.isEmpty) {
-                      _showActionTip('此处无洞府');
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                _actionButton(
+                  Icons.explore,
+                  '探索',
+                  () {
+                    _doExplore(character);
+                  },
+                  staminaCost: 5,
+                  currentStamina: character.stamina,
+                  hint: '随机事件',
+                ),
+                _actionButton(
+                  Icons.hardware,
+                  '挖矿',
+                  () {
+                    final spot = mineSpot;
+                    if (spot == null) {
+                      _showActionTip('此处无矿脉');
                       return;
                     }
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const DungeonListPage(),
-                      ),
-                    );
-                  }, hint: '洞府挑战'),
-                  _actionButton(Icons.people, '交谈', () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const NpcListPage()),
-                    );
-                  }, hint: 'NPC互动'),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  _actionButton(Icons.inventory_2, '背包', () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const InventoryPage()),
-                    );
-                  }, hint: '物品/装备'),
-                  _actionButton(Icons.auto_stories, '技能', () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SkillPage()),
-                    );
-                  }, hint: '修炼与装备'),
-                  _actionButton(Icons.assignment, '任务', () {
-                    _openQuestPanel();
-                  }, hint: '主线与支线'),
-                  _actionButton(Icons.temple_buddhist, '师门', () {
                     Navigator.of(
                       context,
-                    ).push(MaterialPageRoute(builder: (_) => const SectPage()));
-                  }, hint: '拜师学艺'),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  _actionButton(Icons.map, '地图', () {
-                    Navigator.of(
-                      context,
-                    ).push(MaterialPageRoute(builder: (_) => const MapPage()));
-                  }, hint: '切换地点'),
-                  _actionButton(
-                    Icons.self_improvement,
-                    '打坐',
-                    () {
-                      _doMeditate(character);
-                    },
-                    onLongPress: () => _doBatchRecover(isMeditate: true),
-                    staminaCost: GameConstants.meditateStaminaCost,
-                    currentStamina: character.stamina,
-                    hint: '长按连续恢复',
-                  ),
-                  _actionButton(
-                    Icons.hotel,
-                    '休息',
-                    () {
-                      _doRest(character);
-                    },
-                    onLongPress: () => _doBatchRecover(isMeditate: false),
-                    staminaCost: GameConstants.restStaminaCost,
-                    currentStamina: character.stamina,
-                    hint: '长按连续恢复',
-                  ),
-                  _actionButton(Icons.info_outline, '帮助', () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const GuidePage()),
-                    );
-                  }, hint: '新手攻略'),
-                ],
-              ),
-            ],
+                    ).push(MaterialPageRoute(builder: (_) => const MinePage()));
+                  },
+                  staminaCost: mineSpot?.staminaCost,
+                  currentStamina: character.stamina,
+                  hint: mineSpot == null ? '此地无矿脉' : null,
+                ),
+                _actionButton(Icons.terrain, '探险', () {
+                  final dungeons = ref.read(availableDungeonsProvider);
+                  if (dungeons.isEmpty) {
+                    _showActionTip('此处无洞府');
+                    return;
+                  }
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const DungeonListPage()),
+                  );
+                }, hint: '洞府挑战'),
+                _actionButton(Icons.people, '交谈', () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const NpcListPage()),
+                  );
+                }, hint: 'NPC互动'),
+                _actionButton(Icons.inventory_2, '背包', () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const InventoryPage()),
+                  );
+                }, hint: '物品/装备'),
+                _actionButton(Icons.auto_stories, '技能', () {
+                  Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => const SkillPage()));
+                }, hint: '修炼与装备'),
+                _actionButton(Icons.assignment, '任务', () {
+                  _openQuestPanel();
+                }, hint: '主线与支线'),
+                _actionButton(Icons.temple_buddhist, '师门', () {
+                  Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => const SectPage()));
+                }, hint: '拜师学艺'),
+                _actionButton(Icons.map, '地图', () {
+                  Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => const MapPage()));
+                }, hint: '切换地点'),
+                _actionButton(
+                  Icons.self_improvement,
+                  '打坐',
+                  () {
+                    _doMeditate(character);
+                  },
+                  onLongPress: () => _doBatchRecover(isMeditate: true),
+                  staminaCost: GameConstants.meditateStaminaCost,
+                  currentStamina: character.stamina,
+                  hint: '长按连续恢复',
+                ),
+                _actionButton(
+                  Icons.hotel,
+                  '休息',
+                  () {
+                    _doRest(character);
+                  },
+                  onLongPress: () => _doBatchRecover(isMeditate: false),
+                  staminaCost: GameConstants.restStaminaCost,
+                  currentStamina: character.stamina,
+                  hint: '长按连续恢复',
+                ),
+                _actionButton(Icons.info_outline, '帮助', () {
+                  Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => const GuidePage()));
+                }, hint: '新手攻略'),
+              ],
+            ),
           ),
         ),
       ],
@@ -943,39 +1068,136 @@ class _HomePageState extends ConsumerState<HomePage> {
       if (hint != null) hint,
       if (onLongPress != null) '长按可连续执行',
     ].join('\n');
-    return Expanded(
+
+    final labelLen = label.runes.length;
+    final width = (70 + labelLen * 12 + (staminaCost != null ? 22 : 0))
+        .toDouble()
+        .clamp(78.0, 112.0);
+
+    final borderColor = canTap
+        ? Colors.white.withValues(alpha: 0.16)
+        : Colors.white.withValues(alpha: 0.08);
+    final tileSurface = canTap
+        ? Colors.white.withValues(alpha: 0.055)
+        : Colors.white.withValues(alpha: 0.022);
+
+    return SizedBox(
+      width: width,
       child: Tooltip(
         message: tooltip,
-        child: TextButton(
-          onLongPress: canTap ? onLongPress : null,
-          onPressed: canTap
-              ? () {
-                  GameAudio.tap();
-                  HapticFeedback.selectionClick();
-                  onTap();
-                }
-              : null,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                color: canTap
-                    ? AppColors.accent
-                    : AppColors.textSecondary.withValues(alpha: 0.45),
-                size: 24,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  color: canTap
-                      ? AppColors.textSecondary
-                      : AppColors.textSecondary.withValues(alpha: 0.5),
-                  fontSize: 11,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 120),
+          opacity: canTap ? 1 : 0.78,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onLongPress: canTap ? onLongPress : null,
+              onTap: canTap
+                  ? () {
+                      GameAudio.tap();
+                      HapticFeedback.selectionClick();
+                      onTap();
+                    }
+                  : null,
+              child: Container(
+                height: 46,
+                padding: const EdgeInsets.symmetric(horizontal: 9),
+                decoration: BoxDecoration(
+                  color: tileSurface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: borderColor),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.white.withValues(alpha: canTap ? 0.08 : 0.035),
+                      Colors.white.withValues(alpha: canTap ? 0.025 : 0.01),
+                    ],
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: canTap
+                            ? AppColors.accent.withValues(alpha: 0.14)
+                            : AppColors.surfaceLight.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(7),
+                        border: Border.all(
+                          color: canTap
+                              ? AppColors.accent.withValues(alpha: 0.34)
+                              : AppColors.primaryLight.withValues(alpha: 0.24),
+                        ),
+                      ),
+                      child: Icon(
+                        icon,
+                        size: 13.5,
+                        color: canTap
+                            ? AppColors.textAccent.withValues(alpha: 0.96)
+                            : AppColors.textSecondary.withValues(alpha: 0.62),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: canTap
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary.withValues(alpha: 0.72),
+                          fontSize: 10.8,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.1,
+                        ),
+                      ),
+                    ),
+                    if (staminaCost != null) ...[
+                      const SizedBox(width: 5),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: canTap
+                              ? AppColors.accent.withValues(alpha: 0.2)
+                              : AppColors.surface.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          '$staminaCost',
+                          style: TextStyle(
+                            color: canTap
+                                ? AppColors.textAccent
+                                : AppColors.textSecondary.withValues(
+                                    alpha: 0.7,
+                                  ),
+                            fontSize: 7.8,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (onLongPress != null) ...[
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.repeat,
+                        size: 9,
+                        color: canTap
+                            ? AppColors.textSecondary.withValues(alpha: 0.6)
+                            : AppColors.textSecondary.withValues(alpha: 0.42),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -1043,7 +1265,7 @@ class _CheatActionSheet extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
+                    Text(
                       '江湖秘技',
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -1053,7 +1275,7 @@ class _CheatActionSheet extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Divider(height: 1, color: AppColors.primaryLight),
+                    Divider(height: 1, color: AppColors.primaryLight),
                     const SizedBox(height: 10),
                     ...actions.map(
                       (item) => Padding(
@@ -1126,7 +1348,7 @@ class _EventBottomSheetState extends ConsumerState<_EventBottomSheet> {
           // 标题
           Text(
             event.name,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.accent,
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -1135,7 +1357,7 @@ class _EventBottomSheetState extends ConsumerState<_EventBottomSheet> {
           const SizedBox(height: 12),
           Text(
             event.description,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.textPrimary,
               fontSize: 15,
               height: 1.6,
@@ -1155,10 +1377,7 @@ class _EventBottomSheetState extends ConsumerState<_EventBottomSheet> {
                 children: [
                   Text(
                     _resultText!,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      height: 1.6,
-                    ),
+                    style: TextStyle(color: AppColors.textPrimary, height: 1.6),
                   ),
                   if (_selectedChoice != null) ...[
                     const SizedBox(height: 8),

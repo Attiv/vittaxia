@@ -39,11 +39,11 @@ class NpcListPage extends ConsumerWidget {
                     ),
                     title: Row(
                       children: [
-                        Text(npc.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text(npc.name, style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(width: 8),
                         Text(
                           npc.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 12,
                           ),
@@ -79,7 +79,7 @@ class NpcListPage extends ConsumerWidget {
       children: [
         if (npc.dialogueIds.isNotEmpty)
           IconButton(
-            icon: const Icon(Icons.chat, color: AppColors.accent, size: 20),
+            icon: Icon(Icons.chat, color: AppColors.accent, size: 20),
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -91,7 +91,7 @@ class NpcListPage extends ConsumerWidget {
           ),
         if (npc.shopItemIds.isNotEmpty)
           IconButton(
-            icon: const Icon(Icons.store, color: AppColors.accent, size: 20),
+            icon: Icon(Icons.store, color: AppColors.accent, size: 20),
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(

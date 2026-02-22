@@ -123,7 +123,7 @@ class GuidePage extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.accent,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -135,7 +135,7 @@ class GuidePage extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Text(
                     item,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 14,
                       height: 1.6,

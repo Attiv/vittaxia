@@ -82,13 +82,13 @@ class EventPage extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
         title: Text(event.name,
-            style: const TextStyle(color: AppColors.accent)),
+            style: TextStyle(color: AppColors.accent)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(choice.resultText,
-                style: const TextStyle(
+                style: TextStyle(
                     color: AppColors.textPrimary, height: 1.6)),
             const SizedBox(height: 16),
             if (choice.rewardExp > 0)

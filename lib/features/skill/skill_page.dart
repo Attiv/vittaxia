@@ -28,8 +28,7 @@ class SkillPage extends ConsumerWidget {
         data: (learned) {
           if (learned.isEmpty) {
             return Center(
-              child: Text('尚未习得任何武功',
-                  style: theme.textTheme.bodyMedium),
+              child: Text('尚未习得任何武功', style: theme.textTheme.bodyMedium),
             );
           }
           return ListView(
@@ -60,7 +59,11 @@ class SkillPage extends ConsumerWidget {
   }
 
   Widget _buildSkillTile(
-      BuildContext context, WidgetRef ref, dynamic ls, bool isEquipped) {
+    BuildContext context,
+    WidgetRef ref,
+    dynamic ls,
+    bool isEquipped,
+  ) {
     final skill = skills[ls.skillId];
     if (skill == null) return const SizedBox.shrink();
 
@@ -98,7 +101,7 @@ class SkillPage extends ConsumerWidget {
                             const SizedBox(width: 6),
                             Text(
                               'Lv.${ls.level}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.textSecondary,
                                 fontSize: 12,
                               ),
@@ -110,7 +113,7 @@ class SkillPage extends ConsumerWidget {
                           skill.description,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12),
+                          style: TextStyle(fontSize: 12),
                         ),
                       ],
                     ),
@@ -120,29 +123,33 @@ class SkillPage extends ConsumerWidget {
                           onPressed: () => ref
                               .read(skillNotifierProvider.notifier)
                               .unequipSkill(ls.id),
-                          child:
-                              const Text('卸下', style: TextStyle(fontSize: 12)),
+                          child: const Text(
+                            '卸下',
+                            style: TextStyle(fontSize: 12),
+                          ),
                         )
                       : TextButton(
                           onPressed:
                               equipped.length < GameConstants.maxEquippedSkills
-                                  ? () => ref
-                                      .read(skillNotifierProvider.notifier)
-                                      .equipSkill(ls.id, equipped)
-                                  : () {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('装备栏已满，请先卸下一个技能'),
-                                        ),
-                                      );
-                                    },
+                              ? () => ref
+                                    .read(skillNotifierProvider.notifier)
+                                    .equipSkill(ls.id, equipped)
+                              : () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('装备栏已满，请先卸下一个技能'),
+                                    ),
+                                  );
+                                },
                           child: Text(
                             equipped.length < GameConstants.maxEquippedSkills
                                 ? '装备'
                                 : '已满',
                             style: TextStyle(
                               fontSize: 12,
-                              color: equipped.length < GameConstants.maxEquippedSkills
+                              color:
+                                  equipped.length <
+                                      GameConstants.maxEquippedSkills
                                   ? null
                                   : AppColors.textSecondary,
                             ),
@@ -154,9 +161,13 @@ class SkillPage extends ConsumerWidget {
               // 熟练度进度条
               Row(
                 children: [
-                  const Text('熟练',
-                      style: TextStyle(
-                          color: AppColors.textSecondary, fontSize: 10)),
+                  Text(
+                    '熟练',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 10,
+                    ),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: ClipRRect(
@@ -172,8 +183,10 @@ class SkillPage extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Text(
                     '${ls.proficiency}/100',
-                    style: const TextStyle(
-                        color: AppColors.textSecondary, fontSize: 10),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 10,
+                    ),
                   ),
                 ],
               ),
@@ -187,12 +200,16 @@ class SkillPage extends ConsumerWidget {
   }
 
   void _showPracticeSheet(
-      BuildContext context, WidgetRef ref, dynamic ls, Skill skill) {
+    BuildContext context,
+    WidgetRef ref,
+    dynamic ls,
+    Skill skill,
+  ) {
     // 被动技能不能修炼
     if (skill.type == SkillType.passive) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('被动技能无法修炼')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('被动技能无法修炼')));
       return;
     }
     showModalBottomSheet(
@@ -231,10 +248,7 @@ class SkillPage extends ConsumerWidget {
 
     return Text(
       parts.join(' | '),
-      style: const TextStyle(
-        color: AppColors.textSecondary,
-        fontSize: 11,
-      ),
+      style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
     );
   }
 
@@ -287,18 +301,21 @@ class _PracticeSheetState extends ConsumerState<_PracticeSheet> {
     }
 
     // 扣内力
-    ref.read(characterNotifierProvider.notifier).updateStats(
+    ref
+        .read(characterNotifierProvider.notifier)
+        .updateStats(
           characterId: character.id,
           currentMp: character.currentMp - _mpCost,
         );
 
     // 加熟练度
-    ref.read(skillNotifierProvider.notifier).upgradeProficiency(
-          widget.learnedSkill.id,
-          _profGain,
-        );
+    ref
+        .read(skillNotifierProvider.notifier)
+        .upgradeProficiency(widget.learnedSkill.id, _profGain);
 
-    ref.read(gameLogProvider.notifier).addLog(
+    ref
+        .read(gameLogProvider.notifier)
+        .addLog(
           '修炼【${widget.skill.name}】，熟练度 +$_profGain',
           type: LogType.system,
         );
@@ -324,7 +341,7 @@ class _PracticeSheetState extends ConsumerState<_PracticeSheet> {
         children: [
           Text(
             '修炼 · ${widget.skill.name}',
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.accent,
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -333,22 +350,19 @@ class _PracticeSheetState extends ConsumerState<_PracticeSheet> {
           const SizedBox(height: 12),
           Text(
             widget.skill.description,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              height: 1.5,
-            ),
+            style: TextStyle(color: AppColors.textPrimary, height: 1.5),
           ),
           const SizedBox(height: 12),
           Text(
             '当前等级: Lv.${widget.learnedSkill.level}  '
             '熟练度: ${widget.learnedSkill.proficiency}/100',
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
           ),
           const SizedBox(height: 6),
           Text(
             '消耗 $_mpCost 内力 → 熟练度 +$_profGain'
             '${character != null ? "  (当前内力: ${character.currentMp})" : ""}',
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
           ),
           const SizedBox(height: 16),
           if (_resultMsg != null) ...[
@@ -360,7 +374,7 @@ class _PracticeSheetState extends ConsumerState<_PracticeSheet> {
               ),
               child: Text(
                 _resultMsg!,
-                style: const TextStyle(color: AppColors.textPrimary, height: 1.5),
+                style: TextStyle(color: AppColors.textPrimary, height: 1.5),
               ),
             ),
             const SizedBox(height: 12),
