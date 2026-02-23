@@ -11,7 +11,11 @@ final sects = <String, Sect>{
     requiredRealm: RealmTier.xianTian,
     requiredReputation: 50,
     requiredQuestId: 'main_08',
-    specialtySkills: ['tianjian_basic', 'tianjian_advanced', 'tianjian_ultimate'],
+    specialtySkills: [
+      'tianjian_basic',
+      'tianjian_advanced',
+      'tianjian_ultimate',
+    ],
     teacherNpcIds: ['tianjian_elder'],
     atkBonus: 15,
     speedBonus: 10,
@@ -57,7 +61,7 @@ final sects = <String, Sect>{
 
 /// 师门任务数据
 final sectQuests = <String, SectQuest>{
-  // 天剑门任务
+  // ===== 天剑门任务 =====
   'tianjian_daily_01': const SectQuest(
     id: 'tianjian_daily_01',
     sectId: 'tianjian_sect',
@@ -75,6 +79,34 @@ final sectQuests = <String, SectQuest>{
     rewardExp: 100,
     rewardSilver: 50,
     rewardContribution: 10,
+    repeatable: true,
+    cooldownHours: 24,
+  ),
+  'tianjian_daily_02': const SectQuest(
+    id: 'tianjian_daily_02',
+    sectId: 'tianjian_sect',
+    name: '外阶巡守',
+    description: '巡查天剑门外石阶，清理沿路阻拦者。',
+    objectives: [
+      SectQuestObjective(
+        id: 'obj_1',
+        description: '探索天剑门外',
+        type: QuestObjectiveType.explore,
+        targetId: 'tianjian_gate',
+        requiredCount: 2,
+      ),
+      SectQuestObjective(
+        id: 'obj_2',
+        description: '击败天剑门弟子',
+        type: QuestObjectiveType.kill,
+        targetId: 'tianjian_disciple',
+        requiredCount: 2,
+      ),
+    ],
+    rewardExp: 120,
+    rewardSilver: 70,
+    rewardContribution: 12,
+    rewardItemId: 'spirit_pill',
     repeatable: true,
     cooldownHours: 24,
   ),
@@ -99,8 +131,65 @@ final sectQuests = <String, SectQuest>{
     requiredContribution: 0,
     requiredRealm: RealmTier.xianTian,
   ),
+  'tianjian_quest_02': const SectQuest(
+    id: 'tianjian_quest_02',
+    sectId: 'tianjian_sect',
+    name: '剑势合流',
+    description: '以实战打磨剑势，再以雾谷地形稳住步法，方可进阶。',
+    objectives: [
+      SectQuestObjective(
+        id: 'obj_1',
+        description: '击败天剑门弟子',
+        type: QuestObjectiveType.kill,
+        targetId: 'tianjian_disciple',
+        requiredCount: 6,
+      ),
+      SectQuestObjective(
+        id: 'obj_2',
+        description: '探索迷雾谷',
+        type: QuestObjectiveType.explore,
+        targetId: 'miwu_valley',
+        requiredCount: 4,
+      ),
+    ],
+    rewardExp: 260,
+    rewardSilver: 150,
+    rewardContribution: 45,
+    rewardSkillId: 'tianjian_advanced',
+    requiredContribution: 40,
+    requiredRealm: RealmTier.xianTian,
+  ),
+  'tianjian_quest_03': const SectQuest(
+    id: 'tianjian_quest_03',
+    sectId: 'tianjian_sect',
+    name: '剑心通明',
+    description: '以星陨铁淬剑，再完成十场剑斗，叩开绝学门槛。',
+    objectives: [
+      SectQuestObjective(
+        id: 'obj_1',
+        description: '收集星陨铁',
+        type: QuestObjectiveType.collect,
+        targetId: 'star_iron',
+        requiredCount: 2,
+      ),
+      SectQuestObjective(
+        id: 'obj_2',
+        description: '击败天剑门弟子',
+        type: QuestObjectiveType.kill,
+        targetId: 'tianjian_disciple',
+        requiredCount: 10,
+      ),
+    ],
+    rewardExp: 380,
+    rewardSilver: 260,
+    rewardContribution: 80,
+    rewardSkillId: 'tianjian_ultimate',
+    rewardItemId: 'wind_shadow_boots',
+    requiredContribution: 120,
+    requiredRealm: RealmTier.xianTian,
+  ),
 
-  // 落霞刀派任务
+  // ===== 落霞刀派任务 =====
   'luoxia_daily_01': const SectQuest(
     id: 'luoxia_daily_01',
     sectId: 'luoxia_blade',
@@ -118,6 +207,33 @@ final sectQuests = <String, SectQuest>{
     rewardExp: 80,
     rewardSilver: 60,
     rewardContribution: 8,
+    repeatable: true,
+    cooldownHours: 24,
+  ),
+  'luoxia_daily_02': const SectQuest(
+    id: 'luoxia_daily_02',
+    sectId: 'luoxia_blade',
+    name: '矿路补给',
+    description: '巡查矿路并补齐寒铁矿料，维持锻炉运转。',
+    objectives: [
+      SectQuestObjective(
+        id: 'obj_1',
+        description: '探索落霞山脉',
+        type: QuestObjectiveType.explore,
+        targetId: 'luoxia_mountains',
+        requiredCount: 2,
+      ),
+      SectQuestObjective(
+        id: 'obj_2',
+        description: '收集寒铁矿',
+        type: QuestObjectiveType.collect,
+        targetId: 'cold_iron',
+        requiredCount: 2,
+      ),
+    ],
+    rewardExp: 100,
+    rewardSilver: 80,
+    rewardContribution: 10,
     repeatable: true,
     cooldownHours: 24,
   ),
@@ -142,8 +258,37 @@ final sectQuests = <String, SectQuest>{
     requiredContribution: 0,
     requiredRealm: RealmTier.houTian,
   ),
+  'luoxia_quest_02': const SectQuest(
+    id: 'luoxia_quest_02',
+    sectId: 'luoxia_blade',
+    name: '断霞重刃',
+    description: '斩首山贼头子并以星铁补刃，方能承载进阶刀意。',
+    objectives: [
+      SectQuestObjective(
+        id: 'obj_1',
+        description: '击败山贼头子',
+        type: QuestObjectiveType.kill,
+        targetId: 'bandit_leader',
+        requiredCount: 2,
+      ),
+      SectQuestObjective(
+        id: 'obj_2',
+        description: '收集星陨铁',
+        type: QuestObjectiveType.collect,
+        targetId: 'star_iron',
+        requiredCount: 1,
+      ),
+    ],
+    rewardExp: 240,
+    rewardSilver: 160,
+    rewardContribution: 40,
+    rewardSkillId: 'luoxia_blade_advanced',
+    rewardItemId: 'cold_moon_blade',
+    requiredContribution: 35,
+    requiredRealm: RealmTier.houTian,
+  ),
 
-  // 清风拳门任务
+  // ===== 清风拳门任务 =====
   'qingfeng_daily_01': const SectQuest(
     id: 'qingfeng_daily_01',
     sectId: 'qingfeng_fist',
@@ -161,6 +306,33 @@ final sectQuests = <String, SectQuest>{
     rewardExp: 70,
     rewardSilver: 40,
     rewardContribution: 7,
+    repeatable: true,
+    cooldownHours: 24,
+  ),
+  'qingfeng_daily_02': const SectQuest(
+    id: 'qingfeng_daily_02',
+    sectId: 'qingfeng_fist',
+    name: '药膏备份',
+    description: '为拳门外练备足药材，顺便在竹林完成基础步法训练。',
+    objectives: [
+      SectQuestObjective(
+        id: 'obj_1',
+        description: '收集碧心草',
+        type: QuestObjectiveType.collect,
+        targetId: 'bixin_herb',
+        requiredCount: 2,
+      ),
+      SectQuestObjective(
+        id: 'obj_2',
+        description: '探索青竹林',
+        type: QuestObjectiveType.explore,
+        targetId: 'qingzhu_forest',
+        requiredCount: 2,
+      ),
+    ],
+    rewardExp: 90,
+    rewardSilver: 50,
+    rewardContribution: 9,
     repeatable: true,
     cooldownHours: 24,
   ),
@@ -185,8 +357,37 @@ final sectQuests = <String, SectQuest>{
     requiredContribution: 0,
     requiredRealm: RealmTier.houTian,
   ),
+  'qingfeng_quest_02': const SectQuest(
+    id: 'qingfeng_quest_02',
+    sectId: 'qingfeng_fist',
+    name: '百炼拳桩',
+    description: '以连战锻体，再辅以草药温养，拳桩方能入门。',
+    objectives: [
+      SectQuestObjective(
+        id: 'obj_1',
+        description: '击败醉汉',
+        type: QuestObjectiveType.kill,
+        targetId: 'drunkard',
+        requiredCount: 8,
+      ),
+      SectQuestObjective(
+        id: 'obj_2',
+        description: '收集碧心草',
+        type: QuestObjectiveType.collect,
+        targetId: 'bixin_herb',
+        requiredCount: 8,
+      ),
+    ],
+    rewardExp: 220,
+    rewardSilver: 140,
+    rewardContribution: 38,
+    rewardSkillId: 'qingfeng_fist_basic',
+    rewardItemId: 'stamina_pill',
+    requiredContribution: 30,
+    requiredRealm: RealmTier.houTian,
+  ),
 
-  // 望月文士任务
+  // ===== 望月文士任务 =====
   'wangyue_daily_01': const SectQuest(
     id: 'wangyue_daily_01',
     sectId: 'wangyue_scholar',
@@ -204,6 +405,34 @@ final sectQuests = <String, SectQuest>{
     rewardExp: 90,
     rewardSilver: 50,
     rewardContribution: 9,
+    repeatable: true,
+    cooldownHours: 24,
+  ),
+  'wangyue_daily_02': const SectQuest(
+    id: 'wangyue_daily_02',
+    sectId: 'wangyue_scholar',
+    name: '花影抄录',
+    description: '以月见花做墨引抄录残卷，再回楼中校对一遍。',
+    objectives: [
+      SectQuestObjective(
+        id: 'obj_1',
+        description: '收集月见花',
+        type: QuestObjectiveType.collect,
+        targetId: 'moonflower',
+        requiredCount: 2,
+      ),
+      SectQuestObjective(
+        id: 'obj_2',
+        description: '探索望月楼',
+        type: QuestObjectiveType.explore,
+        targetId: 'wangyue_tower',
+        requiredCount: 2,
+      ),
+    ],
+    rewardExp: 110,
+    rewardSilver: 70,
+    rewardContribution: 11,
+    rewardItemId: 'spirit_pill',
     repeatable: true,
     cooldownHours: 24,
   ),
@@ -227,5 +456,186 @@ final sectQuests = <String, SectQuest>{
     rewardSkillId: 'scholar_insight',
     requiredContribution: 0,
     requiredRealm: RealmTier.houTian,
+  ),
+  'wangyue_quest_02': const SectQuest(
+    id: 'wangyue_quest_02',
+    sectId: 'wangyue_scholar',
+    name: '镜月心印',
+    description: '在望月楼完成整套抄录与校勘，并由苏晚吟点拨心法关键。',
+    objectives: [
+      SectQuestObjective(
+        id: 'obj_1',
+        description: '探索望月楼',
+        type: QuestObjectiveType.explore,
+        targetId: 'wangyue_tower',
+        requiredCount: 6,
+      ),
+      SectQuestObjective(
+        id: 'obj_2',
+        description: '收集月见花',
+        type: QuestObjectiveType.collect,
+        targetId: 'moonflower',
+        requiredCount: 4,
+      ),
+      SectQuestObjective(
+        id: 'obj_3',
+        description: '与苏晚吟对话',
+        type: QuestObjectiveType.talk,
+        targetId: 'su_wanyin',
+        requiredCount: 1,
+      ),
+    ],
+    rewardExp: 260,
+    rewardSilver: 170,
+    rewardContribution: 42,
+    rewardSkillId: 'moongazing_art',
+    rewardItemId: 'jade_pendant',
+    requiredContribution: 36,
+    requiredRealm: RealmTier.houTian,
+  ),
+};
+
+class SectExchangeOffer {
+  final String id;
+  final String sectId;
+  final String name;
+  final String description;
+  final int contributionCost;
+  final int requiredContribution;
+  final String? rewardItemId;
+  final int rewardItemCount;
+  final String? rewardSkillId;
+  final bool unique;
+
+  const SectExchangeOffer({
+    required this.id,
+    required this.sectId,
+    required this.name,
+    required this.description,
+    required this.contributionCost,
+    this.requiredContribution = 0,
+    this.rewardItemId,
+    this.rewardItemCount = 1,
+    this.rewardSkillId,
+    this.unique = false,
+  });
+}
+
+/// 师门贡献兑换
+final sectExchangeOffers = <String, SectExchangeOffer>{
+  'tj_exchange_01': const SectExchangeOffer(
+    id: 'tj_exchange_01',
+    sectId: 'tianjian_sect',
+    name: '静心回气包',
+    description: '回气丹 x2',
+    contributionCost: 18,
+    rewardItemId: 'spirit_pill',
+    rewardItemCount: 2,
+  ),
+  'tj_exchange_02': const SectExchangeOffer(
+    id: 'tj_exchange_02',
+    sectId: 'tianjian_sect',
+    name: '剑锋磨材',
+    description: '精铁矿 x2',
+    contributionCost: 26,
+    requiredContribution: 20,
+    rewardItemId: 'fine_iron',
+    rewardItemCount: 2,
+  ),
+  'tj_exchange_03': const SectExchangeOffer(
+    id: 'tj_exchange_03',
+    sectId: 'tianjian_sect',
+    name: '踏风轻靴',
+    description: '风影靴 x1（限兑一次）',
+    contributionCost: 95,
+    requiredContribution: 80,
+    rewardItemId: 'wind_shadow_boots',
+    unique: true,
+  ),
+  'lx_exchange_01': const SectExchangeOffer(
+    id: 'lx_exchange_01',
+    sectId: 'luoxia_blade',
+    name: '应急伤药',
+    description: '金创药 x3',
+    contributionCost: 16,
+    rewardItemId: 'healing_pill',
+    rewardItemCount: 3,
+  ),
+  'lx_exchange_02': const SectExchangeOffer(
+    id: 'lx_exchange_02',
+    sectId: 'luoxia_blade',
+    name: '寒铁补仓',
+    description: '寒铁矿 x1',
+    contributionCost: 22,
+    requiredContribution: 20,
+    rewardItemId: 'cold_iron',
+  ),
+  'lx_exchange_03': const SectExchangeOffer(
+    id: 'lx_exchange_03',
+    sectId: 'luoxia_blade',
+    name: '制式战刀',
+    description: '冷月刀 x1（限兑一次）',
+    contributionCost: 90,
+    requiredContribution: 70,
+    rewardItemId: 'cold_moon_blade',
+    unique: true,
+  ),
+  'qf_exchange_01': const SectExchangeOffer(
+    id: 'qf_exchange_01',
+    sectId: 'qingfeng_fist',
+    name: '药圃采买',
+    description: '碧心草 x4',
+    contributionCost: 14,
+    rewardItemId: 'bixin_herb',
+    rewardItemCount: 4,
+  ),
+  'qf_exchange_02': const SectExchangeOffer(
+    id: 'qf_exchange_02',
+    sectId: 'qingfeng_fist',
+    name: '体能补剂',
+    description: '培元丹 x2',
+    contributionCost: 30,
+    requiredContribution: 25,
+    rewardItemId: 'stamina_pill',
+    rewardItemCount: 2,
+  ),
+  'qf_exchange_03': const SectExchangeOffer(
+    id: 'qf_exchange_03',
+    sectId: 'qingfeng_fist',
+    name: '护体加训',
+    description: '铁布衫心法（限兑一次）',
+    contributionCost: 85,
+    requiredContribution: 70,
+    rewardSkillId: 'iron_body',
+    unique: true,
+  ),
+  'wy_exchange_01': const SectExchangeOffer(
+    id: 'wy_exchange_01',
+    sectId: 'wangyue_scholar',
+    name: '花笺抄本',
+    description: '月见花 x2',
+    contributionCost: 22,
+    rewardItemId: 'moonflower',
+    rewardItemCount: 2,
+  ),
+  'wy_exchange_02': const SectExchangeOffer(
+    id: 'wy_exchange_02',
+    sectId: 'wangyue_scholar',
+    name: '静心玉佩',
+    description: '玉佩 x1（限兑一次）',
+    contributionCost: 72,
+    requiredContribution: 55,
+    rewardItemId: 'jade_pendant',
+    unique: true,
+  ),
+  'wy_exchange_03': const SectExchangeOffer(
+    id: 'wy_exchange_03',
+    sectId: 'wangyue_scholar',
+    name: '文士精要',
+    description: '文士心法（限兑一次）',
+    contributionCost: 100,
+    requiredContribution: 85,
+    rewardSkillId: 'scholar_insight',
+    unique: true,
   ),
 };

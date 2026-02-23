@@ -1,17 +1,19 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/utils/game_audio.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/game_audio.dart';
+import '../../data/item_data.dart';
 import '../../data/sect_data.dart';
 import '../../data/skill_data.dart';
-import '../../data/item_data.dart';
 import '../../models/enums.dart';
 import '../../models/sect.dart';
 import '../character/character_provider.dart';
 import '../inventory/inventory_provider.dart';
+import '../skill/skill_provider.dart';
 import 'sect_provider.dart';
-import 'dart:convert';
 
 class SectPage extends ConsumerWidget {
   const SectPage({super.key});
@@ -273,7 +275,7 @@ class SectPage extends ConsumerWidget {
     }
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Column(
         children: [
           Container(
@@ -340,6 +342,7 @@ class SectPage extends ConsumerWidget {
           const TabBar(
             tabs: [
               Tab(text: '师门任务'),
+              Tab(text: '贡献兑换'),
               Tab(text: '师门信息'),
             ],
           ),
@@ -347,6 +350,7 @@ class SectPage extends ConsumerWidget {
             child: TabBarView(
               children: [
                 _buildQuestTab(context, ref),
+                _buildExchangeTab(context, ref),
                 _buildInfoTab(context, sect),
               ],
             ),
@@ -357,15 +361,42 @@ class SectPage extends ConsumerWidget {
   }
 
   Widget _buildQuestTab(BuildContext context, WidgetRef ref) {
-    final availableQuests = ref.watch(availableSectQuestsProvider);
+    final board = ref.watch(sectQuestBoardProvider);
     final progressList = ref.watch(sectQuestProgressProvider).valueOrNull ?? [];
     final inventory = ref.watch(inventoryProvider).valueOrNull ?? [];
-    final activeQuests = progressList.where((p) => p.status == 1).toList();
+    final activeProgressByQuestId = <String, dynamic>{
+      for (final p in progressList)
+        if (p.status == 1) p.questId: p,
+    };
+    final activeEntries = board
+        .where((entry) => entry.state == SectQuestBoardState.active)
+        .toList();
+    final availableEntries = board
+        .where((entry) => entry.state == SectQuestBoardState.available)
+        .toList();
+    final pendingEntries = board
+        .where(
+          (entry) =>
+              entry.state == SectQuestBoardState.cooldown ||
+              entry.state == SectQuestBoardState.lockedContribution ||
+              entry.state == SectQuestBoardState.lockedRealm ||
+              entry.state == SectQuestBoardState.completed,
+        )
+        .toList();
+
+    if (board.isEmpty) {
+      return Center(
+        child: Text(
+          '当前师门暂无任务配置',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+      );
+    }
 
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
-        if (activeQuests.isNotEmpty) ...[
+        if (activeEntries.isNotEmpty) ...[
           Text(
             '进行中',
             style: TextStyle(
@@ -375,38 +406,147 @@ class SectPage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          ...activeQuests.map((progress) {
-            final quest = sectQuests[progress.questId];
-            if (quest == null) return const SizedBox.shrink();
-            return _buildQuestCard(context, ref, quest, progress, inventory);
+          ...activeEntries.map((entry) {
+            final progress = activeProgressByQuestId[entry.quest.id];
+            if (progress == null) return const SizedBox.shrink();
+            return _buildQuestCard(
+              context,
+              ref,
+              entry.quest,
+              progress,
+              inventory,
+            );
           }),
           const SizedBox(height: 16),
         ],
-        Text(
-          '可接取',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: AppColors.accent,
-          ),
-        ),
-        const SizedBox(height: 8),
-        if (availableQuests.isEmpty)
-          Center(
-            child: Padding(
-              padding: EdgeInsets.all(24),
-              child: Text(
-                '暂无可接取的任务',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
+        if (availableEntries.isNotEmpty) ...[
+          Text(
+            '可接取',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.accent,
             ),
-          )
-        else
-          ...availableQuests.map(
-            (quest) => _buildAvailableQuestCard(context, ref, quest),
           ),
+          const SizedBox(height: 8),
+          ...availableEntries.map(
+            (entry) => _buildAvailableQuestCard(context, ref, entry.quest),
+          ),
+          const SizedBox(height: 16),
+        ],
+        if (pendingEntries.isNotEmpty) ...[
+          Text(
+            '未就绪',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.accent,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...pendingEntries.map((entry) => _buildQuestBoardStateCard(entry)),
+        ],
       ],
     );
+  }
+
+  Widget _buildQuestBoardStateCard(SectQuestBoardEntry entry) {
+    final quest = entry.quest;
+    String badgeText;
+    Color badgeColor;
+    String hint;
+
+    if (entry.state == SectQuestBoardState.cooldown) {
+      badgeText = '冷却中';
+      badgeColor = AppColors.warning;
+      hint = '剩余 ${_formatDuration(entry.cooldownRemaining)} 后可再次接取';
+    } else if (entry.state == SectQuestBoardState.lockedContribution) {
+      badgeText = '贡献不足';
+      badgeColor = AppColors.mp;
+      hint = '还差 ${entry.missingContribution} 点贡献度';
+    } else if (entry.state == SectQuestBoardState.lockedRealm) {
+      badgeText = '境界不足';
+      badgeColor = AppColors.danger;
+      hint = '需要达到 ${quest.requiredRealm.label}';
+    } else {
+      badgeText = '已完成';
+      badgeColor = AppColors.success;
+      hint = '该任务为一次性任务，已完成';
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: badgeColor.withValues(alpha: 0.45),
+                    ),
+                  ),
+                  child: Text(
+                    badgeText,
+                    style: TextStyle(
+                      color: badgeColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    quest.name,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              quest.description,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.45,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              hint,
+              style: TextStyle(
+                fontSize: 12,
+                color: badgeColor.withValues(alpha: 0.95),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDuration(Duration? duration) {
+    if (duration == null || duration <= Duration.zero) return '0分钟';
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
+    if (hours <= 0) return '$minutes分钟';
+    if (minutes == 0) return '$hours小时';
+    return '$hours小时$minutes分钟';
   }
 
   Widget _buildQuestCard(
@@ -461,13 +601,15 @@ class SectPage extends ConsumerWidget {
                       size: 16,
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      '${obj.description} ($current/${obj.requiredCount})',
-                      style: TextStyle(
-                        color: done
-                            ? AppColors.success
-                            : AppColors.textSecondary,
-                        fontSize: 13,
+                    Expanded(
+                      child: Text(
+                        '${obj.description} ($current/${obj.requiredCount})',
+                        style: TextStyle(
+                          color: done
+                              ? AppColors.success
+                              : AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ],
@@ -641,6 +783,15 @@ class SectPage extends ConsumerWidget {
               quest.description,
               style: TextStyle(fontSize: 13, height: 1.5),
             ),
+            if (quest.requiredContribution > 0 ||
+                quest.requiredRealm != RealmTier.houTian) ...[
+              const SizedBox(height: 6),
+              Text(
+                '接取条件: ${quest.requiredRealm.label}'
+                '${quest.requiredContribution > 0 ? ' · 贡献度${quest.requiredContribution}' : ''}',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+            ],
             const SizedBox(height: 8),
             Text(
               '奖励: 贡献度+${quest.rewardContribution}、经验+${quest.rewardExp}',
@@ -650,14 +801,25 @@ class SectPage extends ConsumerWidget {
             Align(
               alignment: Alignment.centerRight,
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   final character = ref
                       .read(currentCharacterProvider)
                       .valueOrNull;
                   if (character == null) return;
-                  ref
+                  final ok = await ref
                       .read(sectNotifierProvider.notifier)
                       .acceptSectQuest(character.id, quest.id);
+                  if (!context.mounted) return;
+                  if (ok) {
+                    GameAudio.tap();
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text('已接取师门任务')));
+                  } else {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text('当前无法接取该任务')));
+                  }
                 },
                 child: const Text('接取'),
               ),
@@ -666,6 +828,223 @@ class SectPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildExchangeTab(BuildContext context, WidgetRef ref) {
+    final member = ref.watch(currentSectMemberProvider).valueOrNull;
+    final character = ref.watch(currentCharacterProvider).valueOrNull;
+    final offers = ref.watch(sectExchangeOffersProvider);
+    final learnedSkills = ref.watch(learnedSkillsProvider).valueOrNull ?? [];
+    final learnedSkillIds = learnedSkills.map((s) => s.skillId).toSet();
+    final inventory = ref.watch(inventoryProvider).valueOrNull ?? [];
+    final inventoryCountById = <String, int>{};
+    for (final inv in inventory) {
+      final itemId = inv.itemId as String?;
+      final quantity = inv.quantity as int?;
+      if (itemId == null || itemId.isEmpty) continue;
+      inventoryCountById[itemId] =
+          (inventoryCountById[itemId] ?? 0) + (quantity ?? 0);
+    }
+
+    if (member == null || character == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (offers.isEmpty) {
+      return Center(
+        child: Text(
+          '当前师门暂无兑换项目',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: [
+        Text(
+          '贡献兑换',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.accent,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '当前贡献度：${member.contribution}',
+          style: TextStyle(
+            color: AppColors.warning,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...offers.map(
+          (offer) => _buildExchangeOfferCard(
+            context,
+            ref,
+            character.id,
+            member.contribution,
+            offer,
+            learnedSkillIds,
+            inventoryCountById,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExchangeOfferCard(
+    BuildContext context,
+    WidgetRef ref,
+    String characterId,
+    int contribution,
+    SectExchangeOffer offer,
+    Set<String> learnedSkillIds,
+    Map<String, int> inventoryCountById,
+  ) {
+    final rewardText = _offerRewardText(offer);
+    final unlocked = contribution >= offer.requiredContribution;
+    final enoughCost = contribution >= offer.contributionCost;
+    final uniqueSkillLearned =
+        offer.unique &&
+        offer.rewardSkillId != null &&
+        learnedSkillIds.contains(offer.rewardSkillId);
+    final uniqueItemOwned =
+        offer.unique &&
+        offer.rewardItemId != null &&
+        (inventoryCountById[offer.rewardItemId!] ?? 0) > 0;
+    final uniqueDone = uniqueSkillLearned || uniqueItemOwned;
+    final canExchange = unlocked && enoughCost && !uniqueDone;
+
+    String stateText;
+    Color stateColor;
+    if (!unlocked) {
+      stateText = '需贡献度 ${offer.requiredContribution} 解锁';
+      stateColor = AppColors.mp;
+    } else if (!enoughCost) {
+      stateText = '贡献不足';
+      stateColor = AppColors.danger;
+    } else if (uniqueDone) {
+      stateText = '已兑换';
+      stateColor = AppColors.success;
+    } else {
+      stateText = '可兑换';
+      stateColor = AppColors.accent;
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    offer.name,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: stateColor.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: stateColor.withValues(alpha: 0.45),
+                    ),
+                  ),
+                  child: Text(
+                    stateText,
+                    style: TextStyle(
+                      color: stateColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              offer.description,
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '兑换内容：$rewardText',
+              style: TextStyle(fontSize: 12.5, color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(Icons.star, size: 16, color: AppColors.warning),
+                const SizedBox(width: 4),
+                Text(
+                  '消耗贡献: ${offer.contributionCost}',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: AppColors.warning,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton(
+                onPressed: !canExchange
+                    ? null
+                    : () async {
+                        final error = await ref
+                            .read(sectNotifierProvider.notifier)
+                            .exchangeSectOffer(characterId, offer.id);
+                        if (!context.mounted) return;
+                        if (error == null) {
+                          GameAudio.success();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('兑换成功：$rewardText')),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(error)));
+                        }
+                      },
+                child: const Text('兑换'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _offerRewardText(SectExchangeOffer offer) {
+    final skillId = offer.rewardSkillId;
+    if (skillId != null && skillId.isNotEmpty) {
+      return skills[skillId]?.name ?? skillId;
+    }
+    final itemId = offer.rewardItemId;
+    if (itemId != null && itemId.isNotEmpty) {
+      final name = items[itemId]?.name ?? itemId;
+      return '$name x${offer.rewardItemCount}';
+    }
+    return '未知奖励';
   }
 
   Widget _buildInfoTab(BuildContext context, Sect sect) {

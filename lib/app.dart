@@ -33,16 +33,7 @@ class VittaxiaApp extends StatelessWidget {
           ],
           scrollBehavior: const _NoGlowScrollBehavior(),
           builder: (context, child) {
-            var content = child ?? const SizedBox.shrink();
-            if (spec.uiTintOpacity > 0) {
-              content = ColorFiltered(
-                colorFilter: ColorFilter.mode(
-                  spec.uiTintColor.withValues(alpha: spec.uiTintOpacity),
-                  spec.uiTintBlendMode,
-                ),
-                child: content,
-              );
-            }
+            final content = child ?? const SizedBox.shrink();
 
             return DecoratedBox(
               decoration: BoxDecoration(
@@ -59,6 +50,14 @@ class VittaxiaApp extends StatelessWidget {
                     child: CustomPaint(painter: _InkTexturePainter(spec)),
                   ),
                   content,
+                  if (spec.uiTintOpacity > 0)
+                    IgnorePointer(
+                      child: ColoredBox(
+                        color: spec.uiTintColor.withValues(
+                          alpha: spec.uiTintOpacity * 0.36,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             );

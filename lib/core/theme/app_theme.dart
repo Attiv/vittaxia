@@ -457,12 +457,12 @@ class AppTheme {
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
-          TargetPlatform.android: _WuxiaPageTransitionsBuilder(),
-          TargetPlatform.iOS: _WuxiaPageTransitionsBuilder(),
-          TargetPlatform.macOS: _WuxiaPageTransitionsBuilder(),
-          TargetPlatform.windows: _WuxiaPageTransitionsBuilder(),
-          TargetPlatform.linux: _WuxiaPageTransitionsBuilder(),
-          TargetPlatform.fuchsia: _WuxiaPageTransitionsBuilder(),
+          TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.fuchsia: FadeUpwardsPageTransitionsBuilder(),
         },
       ),
       appBarTheme: AppBarTheme(
@@ -674,36 +674,6 @@ class AppTheme {
           color: spec.textAccent,
           letterSpacing: 0.8,
         ),
-      ),
-    );
-  }
-}
-
-class _WuxiaPageTransitionsBuilder extends PageTransitionsBuilder {
-  const _WuxiaPageTransitionsBuilder();
-
-  @override
-  Widget buildTransitions<T>(
-    PageRoute<T> route,
-    BuildContext context,
-    Animation<double> animation,
-    Animation<double> secondaryAnimation,
-    Widget child,
-  ) {
-    final curved = CurvedAnimation(
-      parent: animation,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
-    );
-
-    return FadeTransition(
-      opacity: Tween<double>(begin: 0.2, end: 1.0).animate(curved),
-      child: SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0.03, 0.0),
-          end: Offset.zero,
-        ).animate(curved),
-        child: child,
       ),
     );
   }

@@ -1,7 +1,7 @@
 import '../models/enums.dart';
 import '../models/quest.dart';
 
-/// 8个主线 + 5个支线任务
+/// 主线与支线任务配置
 final quests = <String, Quest>{
   // ===== 主线：第一章「初出茅庐」=====
   'main_01': const Quest(
@@ -437,6 +437,63 @@ final quests = <String, Quest>{
     rewardSilver: 150,
     rewardReputation: 25,
     prerequisiteQuestId: 'main_17',
+  ),
+  'main_19': const Quest(
+    id: 'main_19',
+    name: '门前回议',
+    description: '你在天剑门外受阻，只得回迷雾谷与林风复盘旧道细节。',
+    type: QuestType.main,
+    objectives: [
+      QuestObjective(
+        id: 'main_19_1',
+        description: '与林风对话',
+        type: QuestObjectiveType.talk,
+        targetId: 'lin_feng',
+      ),
+    ],
+    rewardExp: 200,
+    rewardSilver: 160,
+    prerequisiteQuestId: 'main_18',
+    questGiverNpcId: 'lin_feng',
+    questLocationId: 'miwu_valley',
+  ),
+  'main_20': const Quest(
+    id: 'main_20',
+    name: '旧道复踏',
+    description: '按林风给出的标注再走一遍迷雾谷，确认通往剑门的安全节点。',
+    type: QuestType.main,
+    objectives: [
+      QuestObjective(
+        id: 'main_20_1',
+        description: '勘察迷雾谷',
+        type: QuestObjectiveType.explore,
+        targetId: 'miwu_valley',
+        requiredCount: 2,
+      ),
+    ],
+    rewardExp: 220,
+    rewardSilver: 180,
+    prerequisiteQuestId: 'main_19',
+  ),
+  'main_21': const Quest(
+    id: 'main_21',
+    name: '天阶问剑',
+    description: '再赴天剑门外，与外门弟子交锋三场，拿到真正的入门信物。',
+    type: QuestType.main,
+    objectives: [
+      QuestObjective(
+        id: 'main_21_1',
+        description: '击败天剑门弟子',
+        type: QuestObjectiveType.kill,
+        targetId: 'tianjian_disciple',
+        requiredCount: 3,
+      ),
+    ],
+    rewardExp: 260,
+    rewardSilver: 220,
+    rewardReputation: 35,
+    rewardItemId: 'spirit_pill',
+    prerequisiteQuestId: 'main_20',
   ),
 
   // ===== 支线任务扩展 =====

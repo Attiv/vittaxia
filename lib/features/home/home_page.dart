@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,8 +10,12 @@ import 'package:vittaxia/core/theme/theme_settings.dart';
 import '../../core/constants/game_constants.dart';
 import '../../core/database/database_provider.dart';
 import '../../core/utils/game_audio.dart';
+import '../../data/event_data.dart';
 import '../../data/item_data.dart';
+import '../../data/map_data.dart';
 import '../../data/mine_data.dart';
+import '../../data/npc_data.dart';
+import '../../data/quest_data.dart';
 import '../../models/enums.dart';
 import '../../models/game_event.dart';
 import '../../models/game_event_data.dart';
@@ -36,6 +41,47 @@ import '../sect/sect_page.dart';
 import '../sect/sect_provider.dart';
 import '../skill/skill_page.dart';
 import '../../shared/widgets/status_panel.dart';
+
+final Map<String, String> _enemyObjectiveLocationHints =
+    _buildEnemyObjectiveLocationHints();
+final Map<String, String> _itemObjectiveLocationHints =
+    _buildItemObjectiveLocationHints();
+
+Map<String, String> _buildEnemyObjectiveLocationHints() {
+  final hints = <String, String>{};
+  for (final location in mapLocations.values) {
+    for (final eventId in location.eventIds) {
+      final event = gameEvents[eventId];
+      if (event == null) continue;
+      for (final choice in event.choices) {
+        final enemyId = choice.enemyId;
+        if (enemyId == null || enemyId.isEmpty) continue;
+        hints.putIfAbsent(enemyId, () => location.id);
+      }
+    }
+  }
+  return hints;
+}
+
+Map<String, String> _buildItemObjectiveLocationHints() {
+  final hints = <String, String>{};
+  for (final location in mapLocations.values) {
+    for (final eventId in location.eventIds) {
+      final event = gameEvents[eventId];
+      if (event == null) continue;
+      final fixedItemId = event.rewardItemId;
+      if (fixedItemId != null && fixedItemId.isNotEmpty) {
+        hints.putIfAbsent(fixedItemId, () => location.id);
+      }
+      for (final choice in event.choices) {
+        final itemId = choice.rewardItemId;
+        if (itemId == null || itemId.isEmpty) continue;
+        hints.putIfAbsent(itemId, () => location.id);
+      }
+    }
+  }
+  return hints;
+}
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -417,7 +463,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Future<void> _openQuestPanel() async {
+  Future<void> _openQuestPanel({int initialTabIndex = 0}) async {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -427,10 +473,384 @@ class _HomePageState extends ConsumerState<HomePage> {
         final maxHeight = MediaQuery.of(sheetContext).size.height * 0.92;
         return ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-          child: SizedBox(height: maxHeight, child: const QuestPage()),
+          child: SizedBox(
+            height: maxHeight,
+            child: QuestPage(initialTabIndex: initialTabIndex),
+          ),
         );
       },
     );
+  }
+
+  Future<void> _openQuestQuickPreview() async {
+    final active = ref.read(activeQuestsProvider);
+    final available = ref.read(availableQuestsProvider);
+    final inventory = ref.read(inventoryProvider).valueOrNull ?? const [];
+
+    final inventoryCountById = <String, int>{};
+    for (final inv in inventory) {
+      final itemId = inv.itemId as String?;
+      final quantity = inv.quantity as int?;
+      if (itemId == null) continue;
+      inventoryCountById[itemId] =
+          (inventoryCountById[itemId] ?? 0) + (quantity ?? 0);
+    }
+
+    final activeMain =
+        <({dynamic progress, dynamic quest, Map<String, int> objectives})>[];
+    for (final progress in active) {
+      final quest = quests[progress.questId];
+      if (quest == null || quest.type != QuestType.main) continue;
+      activeMain.add((
+        progress: progress,
+        quest: quest,
+        objectives: _decodeQuestObjectives(progress.objectivesJson),
+      ));
+    }
+    dynamic nextMain;
+    for (final q in available) {
+      if (q.type == QuestType.main) {
+        nextMain = q;
+        break;
+      }
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor:
+          Theme.of(context).bottomSheetTheme.modalBackgroundColor ??
+          Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetContext).size.height * 0.72,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    '主线速览',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: AppColors.textAccent,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  if (activeMain.isEmpty) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppColors.primaryLight.withValues(alpha: 0.45),
+                        ),
+                      ),
+                      child: Text(
+                        nextMain == null
+                            ? '当前没有进行中的主线，也没有可接主线。'
+                            : '当前没有进行中的主线。下一条可接主线如下：',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          height: 1.45,
+                        ),
+                      ),
+                    ),
+                    if (nextMain != null) ...[
+                      const SizedBox(height: 8),
+                      _buildQuickQuestCard(
+                        sheetContext: sheetContext,
+                        quest: nextMain,
+                        objectives: const <String, int>{},
+                        inventoryCountById: inventoryCountById,
+                        questTabIndex: 1,
+                      ),
+                    ],
+                  ] else ...[
+                    for (final entry in activeMain) ...[
+                      _buildQuickQuestCard(
+                        sheetContext: sheetContext,
+                        quest: entry.quest,
+                        objectives: entry.objectives,
+                        inventoryCountById: inventoryCountById,
+                        questTabIndex: 0,
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    if (nextMain != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '下一条可接主线',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      _buildQuickQuestCard(
+                        sheetContext: sheetContext,
+                        quest: nextMain,
+                        objectives: const <String, int>{},
+                        inventoryCountById: inventoryCountById,
+                        questTabIndex: 1,
+                      ),
+                    ],
+                  ],
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildQuickQuestCard({
+    required BuildContext sheetContext,
+    required dynamic quest,
+    required Map<String, int> objectives,
+    required Map<String, int> inventoryCountById,
+    required int questTabIndex,
+  }) {
+    final guideLocationId = _resolveQuestGuideLocation(
+      quest,
+      objectives,
+      inventoryCountById,
+    );
+    final guideLocation = guideLocationId == null
+        ? null
+        : mapLocations[guideLocationId];
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: AppColors.primaryLight.withValues(alpha: 0.45),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            quest.name as String,
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            quest.description as String,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...(quest.objectives as List).map((obj) {
+            final current = _quickQuestObjectiveCurrent(
+              obj,
+              objectives,
+              inventoryCountById,
+            );
+            final required = obj.requiredCount as int;
+            final done = current >= required;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 3),
+              child: Row(
+                children: [
+                  Icon(
+                    done ? Icons.check_circle : Icons.radio_button_unchecked,
+                    size: 14,
+                    color: done ? AppColors.success : AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      '${obj.description} ($current/$required)',
+                      style: TextStyle(
+                        color: done
+                            ? AppColors.success
+                            : AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 8),
+          if (guideLocation != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(
+                '推荐地点：${guideLocation.name}',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              ),
+            ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => _openQuestFromQuickPreview(
+                  sheetContext,
+                  tabIndex: questTabIndex,
+                ),
+                icon: const Icon(Icons.assignment_outlined, size: 16),
+                label: Text(questTabIndex == 1 ? '去任务页接取' : '去任务页'),
+              ),
+              if (guideLocation != null)
+                OutlinedButton.icon(
+                  onPressed: () => _openGuidedMapFromQuickPreview(
+                    sheetContext,
+                    locationId: guideLocation.id,
+                    questName: quest.name as String,
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: AppColors.accent.withValues(alpha: 0.5),
+                    ),
+                    foregroundColor: AppColors.textAccent,
+                  ),
+                  icon: const Icon(Icons.near_me_outlined, size: 16),
+                  label: const Text('地图定位'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openQuestFromQuickPreview(
+    BuildContext sheetContext, {
+    required int tabIndex,
+  }) async {
+    Navigator.of(sheetContext).pop();
+    await Future<void>.delayed(const Duration(milliseconds: 140));
+    if (!mounted) return;
+    await _openQuestPanel(initialTabIndex: tabIndex);
+  }
+
+  Future<void> _openGuidedMapFromQuickPreview(
+    BuildContext sheetContext, {
+    required String locationId,
+    required String questName,
+  }) async {
+    Navigator.of(sheetContext).pop();
+    await Future<void>.delayed(const Duration(milliseconds: 140));
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            MapPage(targetLocationId: locationId, targetQuestName: questName),
+      ),
+    );
+  }
+
+  Map<String, int> _decodeQuestObjectives(String objectivesJson) {
+    try {
+      final decoded = jsonDecode(objectivesJson);
+      if (decoded is! Map) return <String, int>{};
+      final result = <String, int>{};
+      for (final entry in decoded.entries) {
+        final key = entry.key.toString();
+        final value = entry.value;
+        result[key] = value is int ? value : int.tryParse('$value') ?? 0;
+      }
+      return result;
+    } catch (_) {
+      return <String, int>{};
+    }
+  }
+
+  int _quickQuestObjectiveCurrent(
+    dynamic objective,
+    Map<String, int> objectives,
+    Map<String, int> inventoryCountById,
+  ) {
+    final objectiveId = objective.id as String;
+    final recorded = objectives[objectiveId] ?? 0;
+    if (objective.type != QuestObjectiveType.collect) return recorded;
+
+    final targetId = objective.targetId as String?;
+    if (targetId == null || targetId.isEmpty) return recorded;
+
+    final owned = inventoryCountById[targetId] ?? 0;
+    return owned > recorded ? owned : recorded;
+  }
+
+  String? _resolveQuestGuideLocation(
+    dynamic quest,
+    Map<String, int> objectives,
+    Map<String, int> inventoryCountById,
+  ) {
+    final objectiveList = quest.objectives as List;
+    for (final objective in objectiveList) {
+      final required = objective.requiredCount as int? ?? 1;
+      final current = _quickQuestObjectiveCurrent(
+        objective,
+        objectives,
+        inventoryCountById,
+      );
+      if (current >= required) continue;
+      final locationId = _resolveObjectiveGuideLocation(objective, quest);
+      if (locationId != null) return locationId;
+    }
+
+    final questLocationId = quest.questLocationId as String?;
+    if (questLocationId != null && questLocationId.isNotEmpty) {
+      return questLocationId;
+    }
+
+    for (final objective in objectiveList) {
+      final locationId = _resolveObjectiveGuideLocation(objective, quest);
+      if (locationId != null) return locationId;
+    }
+    return null;
+  }
+
+  String? _resolveObjectiveGuideLocation(dynamic objective, dynamic quest) {
+    final targetId = objective.targetId as String?;
+    final objectiveType = objective.type as QuestObjectiveType?;
+    if (objectiveType == QuestObjectiveType.explore) {
+      if (targetId != null && mapLocations.containsKey(targetId)) {
+        return targetId;
+      }
+    } else if (objectiveType == QuestObjectiveType.talk) {
+      if (targetId != null) {
+        final locationId = npcs[targetId]?.locationId;
+        if (locationId != null && locationId.isNotEmpty) return locationId;
+      }
+    } else if (objectiveType == QuestObjectiveType.kill) {
+      if (targetId != null && targetId.isNotEmpty) {
+        final locationId = _enemyObjectiveLocationHints[targetId];
+        if (locationId != null) return locationId;
+      }
+    } else if (objectiveType == QuestObjectiveType.collect) {
+      if (targetId != null && targetId.isNotEmpty) {
+        final locationId = _itemObjectiveLocationHints[targetId];
+        if (locationId != null) return locationId;
+      }
+    }
+
+    final questLocationId = quest.questLocationId as String?;
+    if (questLocationId != null && questLocationId.isNotEmpty) {
+      return questLocationId;
+    }
+    return null;
   }
 
   Widget _buildWelcome(BuildContext context, ThemeData theme) {
@@ -585,9 +1005,15 @@ class _HomePageState extends ConsumerState<HomePage> {
                     context,
                   ).push(MaterialPageRoute(builder: (_) => const SkillPage()));
                 }, hint: '修炼与装备'),
-                _actionButton(Icons.assignment, '任务', () {
-                  _openQuestPanel();
-                }, hint: '主线与支线'),
+                _actionButton(
+                  Icons.assignment,
+                  '任务',
+                  () {
+                    _openQuestPanel();
+                  },
+                  onLongPress: _openQuestQuickPreview,
+                  hint: '长按看当前主线',
+                ),
                 _actionButton(Icons.temple_buddhist, '师门', () {
                   Navigator.of(
                     context,

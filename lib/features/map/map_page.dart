@@ -12,7 +12,10 @@ import '../quest/quest_provider.dart';
 import '../sect/sect_provider.dart';
 
 class MapPage extends ConsumerWidget {
-  const MapPage({super.key});
+  final String? targetLocationId;
+  final String? targetQuestName;
+
+  const MapPage({super.key, this.targetLocationId, this.targetQuestName});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,6 +27,13 @@ class MapPage extends ConsumerWidget {
         .where((p) => p.status == 2)
         .map((p) => p.questId)
         .toSet();
+    final guideTarget = targetLocationId == null
+        ? null
+        : mapLocations[targetLocationId!];
+    final nextHopId = (guideTarget == null || currentLoc == null)
+        ? null
+        : _nextHopToward(currentLoc.id, guideTarget.id);
+    final nextHop = nextHopId == null ? null : mapLocations[nextHopId];
 
     if (character == null || currentLoc == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -69,6 +79,16 @@ class MapPage extends ConsumerWidget {
               ),
             ),
           ),
+          if (guideTarget != null) ...[
+            const SizedBox(height: 10),
+            _buildGuideCard(
+              context,
+              currentLoc,
+              guideTarget,
+              nextHop,
+              nextHopId,
+            ),
+          ],
           const SizedBox(height: 16),
 
           Text('可前往', style: theme.textTheme.titleMedium),
@@ -84,6 +104,8 @@ class MapPage extends ConsumerWidget {
               loc,
               character,
               completedQuestIds,
+              highlighted: nextHopId == loc.id,
+              isGuideTarget: guideTarget?.id == loc.id,
             );
           }),
         ],
@@ -91,17 +113,132 @@ class MapPage extends ConsumerWidget {
     );
   }
 
+  Widget _buildGuideCard(
+    BuildContext context,
+    MapLocation currentLoc,
+    MapLocation guideTarget,
+    MapLocation? nextHop,
+    String? nextHopId,
+  ) {
+    final questName = targetQuestName?.trim();
+    final hasQuestName = questName != null && questName.isNotEmpty;
+
+    String statusText;
+    if (currentLoc.id == guideTarget.id) {
+      statusText = '你已到达目标地点，可直接推进任务。';
+    } else if (nextHop != null) {
+      statusText = '建议先前往 ${nextHop.name}，沿路继续接近目标。';
+    } else {
+      statusText = '当前地图无法计算可达路径，请先尝试切换到邻近地点。';
+    }
+
+    final statusColor = currentLoc.id == guideTarget.id
+        ? AppColors.success
+        : nextHopId == null
+        ? AppColors.warning
+        : AppColors.accent;
+
+    return Card(
+      color: AppColors.surfaceLight,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.assistant_navigation, size: 18, color: statusColor),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    hasQuestName ? '任务指引：$questName' : '任务指引',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '目标地点：${guideTarget.name}',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12.5,
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              statusText,
+              style: TextStyle(
+                color: statusColor,
+                fontSize: 12.5,
+                height: 1.35,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String? _nextHopToward(String fromId, String toId) {
+    if (fromId == toId) return toId;
+    if (!mapLocations.containsKey(fromId) || !mapLocations.containsKey(toId)) {
+      return null;
+    }
+
+    final queue = <String>[fromId];
+    final visited = <String>{fromId};
+    final parent = <String, String>{};
+
+    while (queue.isNotEmpty) {
+      final current = queue.removeAt(0);
+      final location = mapLocations[current];
+      if (location == null) continue;
+      for (final next in location.adjacentIds) {
+        if (!mapLocations.containsKey(next) || visited.contains(next)) continue;
+        visited.add(next);
+        parent[next] = current;
+        if (next == toId) {
+          var step = toId;
+          while (parent[step] != fromId) {
+            final previous = parent[step];
+            if (previous == null) return null;
+            step = previous;
+          }
+          return step;
+        }
+        queue.add(next);
+      }
+    }
+    return null;
+  }
+
   Widget _buildLocationTile(
     BuildContext context,
     WidgetRef ref,
     MapLocation loc,
     dynamic character,
-    Set<String> completedQuestIds,
-  ) {
+    Set<String> completedQuestIds, {
+    required bool highlighted,
+    required bool isGuideTarget,
+  }) {
     final canEnter = _canEnter(loc, character, completedQuestIds);
     final reason = _blockReason(loc, character, completedQuestIds);
+    final borderColor = highlighted
+        ? AppColors.accent.withValues(alpha: 0.9)
+        : isGuideTarget
+        ? AppColors.mp.withValues(alpha: 0.75)
+        : Colors.transparent;
 
     return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: borderColor, width: highlighted ? 1.4 : 1),
+      ),
       child: ListTile(
         leading: Icon(
           _locationIcon(loc.type),
@@ -119,6 +256,23 @@ class MapPage extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
             _dangerBadge(loc.dangerLevel),
+            if (isGuideTarget) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.mp.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: AppColors.mp.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Text(
+                  '任务目标',
+                  style: TextStyle(color: AppColors.mp, fontSize: 10),
+                ),
+              ),
+            ],
           ],
         ),
         subtitle: Text(
@@ -132,11 +286,7 @@ class MapPage extends ConsumerWidget {
           ),
         ),
         trailing: canEnter
-            ? Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: AppColors.accent,
-              )
+            ? Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.accent)
             : Icon(Icons.lock, size: 16, color: AppColors.textSecondary),
         onTap: canEnter ? () => _moveTo(context, ref, loc, character) : null,
       ),

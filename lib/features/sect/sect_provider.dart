@@ -6,7 +6,9 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
+import '../../data/item_data.dart';
 import '../../data/sect_data.dart';
+import '../../data/skill_data.dart';
 import '../../models/game_event.dart';
 import '../../models/sect.dart';
 import '../../models/enums.dart';
@@ -65,19 +67,164 @@ final sectQuestProgressProvider = StreamProvider<List<SectQuestProgressData>>((
   )..where((t) => t.characterId.equals(id))).watch();
 });
 
-/// 当前师门的可用任务
-final availableSectQuestsProvider = Provider<List<SectQuest>>((ref) {
+enum SectQuestBoardState {
+  active,
+  available,
+  cooldown,
+  lockedContribution,
+  lockedRealm,
+  completed,
+}
+
+class SectQuestBoardEntry {
+  final SectQuest quest;
+  final SectQuestBoardState state;
+  final Duration? cooldownRemaining;
+  final int missingContribution;
+
+  const SectQuestBoardEntry({
+    required this.quest,
+    required this.state,
+    this.cooldownRemaining,
+    this.missingContribution = 0,
+  });
+}
+
+/// 当前师门任务看板（进行中/可接取/冷却/未解锁/已完成）
+final sectQuestBoardProvider = Provider<List<SectQuestBoardEntry>>((ref) {
   final sect = ref.watch(currentSectProvider);
-  if (sect == null) return [];
+  final character = ref.watch(currentCharacterProvider).valueOrNull;
+  final member = ref.watch(currentSectMemberProvider).valueOrNull;
+  if (sect == null || character == null || member == null) return [];
 
   final progressList = ref.watch(sectQuestProgressProvider).valueOrNull ?? [];
-  final activeIds = progressList.map((p) => p.questId).toSet();
+  final now = DateTime.now();
 
-  return sectQuests.values.where((q) {
-    if (q.sectId != sect.id) return false;
-    if (activeIds.contains(q.id)) return false;
-    return true;
-  }).toList();
+  final activeByQuestId = <String, SectQuestProgressData>{};
+  final completedByQuestId = <String, List<SectQuestProgressData>>{};
+  for (final progress in progressList) {
+    if (progress.status == 1) {
+      activeByQuestId[progress.questId] = progress;
+    } else if (progress.status == 2) {
+      completedByQuestId.putIfAbsent(progress.questId, () => []).add(progress);
+    }
+  }
+
+  final entries = <SectQuestBoardEntry>[];
+  for (final quest in sectQuests.values) {
+    if (quest.sectId != sect.id) continue;
+
+    if (activeByQuestId.containsKey(quest.id)) {
+      entries.add(
+        SectQuestBoardEntry(quest: quest, state: SectQuestBoardState.active),
+      );
+      continue;
+    }
+
+    if (character.realmTierIndex < quest.requiredRealm.rank - 1) {
+      entries.add(
+        SectQuestBoardEntry(
+          quest: quest,
+          state: SectQuestBoardState.lockedRealm,
+        ),
+      );
+      continue;
+    }
+
+    if (member.contribution < quest.requiredContribution) {
+      entries.add(
+        SectQuestBoardEntry(
+          quest: quest,
+          state: SectQuestBoardState.lockedContribution,
+          missingContribution: quest.requiredContribution - member.contribution,
+        ),
+      );
+      continue;
+    }
+
+    final completedList = completedByQuestId[quest.id] ?? const [];
+    if (!quest.repeatable) {
+      entries.add(
+        SectQuestBoardEntry(
+          quest: quest,
+          state: completedList.isNotEmpty
+              ? SectQuestBoardState.completed
+              : SectQuestBoardState.available,
+        ),
+      );
+      continue;
+    }
+
+    DateTime? latestCompleted;
+    for (final row in completedList) {
+      final time = row.lastCompletedTime;
+      if (time == null) continue;
+      if (latestCompleted == null || latestCompleted.isBefore(time)) {
+        latestCompleted = time;
+      }
+    }
+    if (latestCompleted != null && quest.cooldownHours > 0) {
+      final availableAt = latestCompleted.add(
+        Duration(hours: quest.cooldownHours),
+      );
+      final remain = availableAt.difference(now);
+      if (remain > Duration.zero) {
+        entries.add(
+          SectQuestBoardEntry(
+            quest: quest,
+            state: SectQuestBoardState.cooldown,
+            cooldownRemaining: remain,
+          ),
+        );
+        continue;
+      }
+    }
+
+    entries.add(
+      SectQuestBoardEntry(quest: quest, state: SectQuestBoardState.available),
+    );
+  }
+
+  const stateOrder = <SectQuestBoardState, int>{
+    SectQuestBoardState.active: 0,
+    SectQuestBoardState.available: 1,
+    SectQuestBoardState.cooldown: 2,
+    SectQuestBoardState.lockedContribution: 3,
+    SectQuestBoardState.lockedRealm: 4,
+    SectQuestBoardState.completed: 5,
+  };
+  entries.sort((a, b) {
+    final stateCmp = (stateOrder[a.state] ?? 99).compareTo(
+      stateOrder[b.state] ?? 99,
+    );
+    if (stateCmp != 0) return stateCmp;
+    if (a.state == SectQuestBoardState.lockedContribution) {
+      return a.missingContribution.compareTo(b.missingContribution);
+    }
+    return a.quest.requiredContribution.compareTo(b.quest.requiredContribution);
+  });
+  return entries;
+});
+
+/// 当前师门的可用任务
+final availableSectQuestsProvider = Provider<List<SectQuest>>((ref) {
+  final board = ref.watch(sectQuestBoardProvider);
+  return board
+      .where((entry) => entry.state == SectQuestBoardState.available)
+      .map((entry) => entry.quest)
+      .toList();
+});
+
+/// 当前师门的贡献兑换列表
+final sectExchangeOffersProvider = Provider<List<SectExchangeOffer>>((ref) {
+  final sect = ref.watch(currentSectProvider);
+  if (sect == null) return const [];
+
+  final offers = sectExchangeOffers.values
+      .where((offer) => offer.sectId == sect.id)
+      .toList();
+  offers.sort((a, b) => a.contributionCost.compareTo(b.contributionCost));
+  return offers;
 });
 
 class SectNotifier extends StateNotifier<AsyncValue<void>> {
@@ -125,9 +272,49 @@ class SectNotifier extends StateNotifier<AsyncValue<void>> {
   }
 
   /// 接取师门任务
-  Future<void> acceptSectQuest(String characterId, String questId) async {
+  Future<bool> acceptSectQuest(String characterId, String questId) async {
     final quest = sectQuests[questId];
-    if (quest == null) return;
+    if (quest == null) return false;
+
+    final character = _ref.read(currentCharacterProvider).valueOrNull;
+    if (character == null) return false;
+    final member = await (_db.select(
+      _db.sectMembers,
+    )..where((t) => t.characterId.equals(characterId))).getSingleOrNull();
+    if (member == null) return false;
+    if (member.sectId != quest.sectId) return false;
+    if (character.realmTierIndex < quest.requiredRealm.rank - 1) return false;
+    if (member.contribution < quest.requiredContribution) return false;
+
+    final existingRows =
+        await (_db.select(_db.sectQuestProgress)..where(
+              (t) =>
+                  t.characterId.equals(characterId) & t.questId.equals(questId),
+            ))
+            .get();
+    final hasActiveRow = existingRows.any((row) => row.status == 1);
+    if (hasActiveRow) return false;
+
+    final completedRows = existingRows.where((row) => row.status == 2).toList();
+    if (!quest.repeatable && completedRows.isNotEmpty) return false;
+    if (quest.repeatable &&
+        completedRows.isNotEmpty &&
+        quest.cooldownHours > 0) {
+      DateTime? latestCompleted;
+      for (final row in completedRows) {
+        final time = row.lastCompletedTime;
+        if (time == null) continue;
+        if (latestCompleted == null || latestCompleted.isBefore(time)) {
+          latestCompleted = time;
+        }
+      }
+      if (latestCompleted != null) {
+        final nextTime = latestCompleted.add(
+          Duration(hours: quest.cooldownHours),
+        );
+        if (DateTime.now().isBefore(nextTime)) return false;
+      }
+    }
 
     final objectivesMap = <String, int>{};
     for (final obj in quest.objectives) {
@@ -144,21 +331,41 @@ class SectNotifier extends StateNotifier<AsyncValue<void>> {
       }
     }
 
-    await _db
-        .into(_db.sectQuestProgress)
-        .insert(
-          SectQuestProgressCompanion.insert(
-            id: const Uuid().v4(),
-            characterId: characterId,
-            questId: questId,
-            status: const Value(1),
-            objectivesJson: Value(jsonEncode(objectivesMap)),
-          ),
-        );
+    if (quest.repeatable && completedRows.isNotEmpty) {
+      final latestCompletedRow = completedRows.reduce((a, b) {
+        final aTime =
+            a.lastCompletedTime ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bTime =
+            b.lastCompletedTime ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return aTime.isAfter(bTime) ? a : b;
+      });
+      await (_db.update(
+        _db.sectQuestProgress,
+      )..where((t) => t.id.equals(latestCompletedRow.id))).write(
+        SectQuestProgressCompanion(
+          status: const Value(1),
+          objectivesJson: Value(jsonEncode(objectivesMap)),
+          lastCompletedTime: const Value(null),
+        ),
+      );
+    } else {
+      await _db
+          .into(_db.sectQuestProgress)
+          .insert(
+            SectQuestProgressCompanion.insert(
+              id: const Uuid().v4(),
+              characterId: characterId,
+              questId: questId,
+              status: const Value(1),
+              objectivesJson: Value(jsonEncode(objectivesMap)),
+            ),
+          );
+    }
 
     _ref
         .read(gameLogProvider.notifier)
         .addLog('接取师门任务: ${quest.name}', type: LogType.quest);
+    return true;
   }
 
   /// 更新师门任务目标
@@ -343,6 +550,113 @@ class SectNotifier extends StateNotifier<AsyncValue<void>> {
     );
 
     return true;
+  }
+
+  /// 师门贡献兑换，返回 null 表示成功，否则返回失败原因
+  Future<String?> exchangeSectOffer(String characterId, String offerId) async {
+    final offer = sectExchangeOffers[offerId];
+    if (offer == null) return '兑换项目不存在';
+
+    final member = await (_db.select(
+      _db.sectMembers,
+    )..where((t) => t.characterId.equals(characterId))).getSingleOrNull();
+    if (member == null) return '尚未加入师门';
+    if (member.sectId != offer.sectId) return '只能兑换本门奖励';
+    if (member.contribution < offer.requiredContribution) return '贡献度不足以解锁该项目';
+    if (member.contribution < offer.contributionCost) return '贡献度不足';
+
+    if (offer.unique) {
+      final skillId = offer.rewardSkillId;
+      if (skillId != null && skillId.isNotEmpty) {
+        final learned =
+            await (_db.select(_db.learnedSkills)..where(
+                  (t) =>
+                      t.characterId.equals(characterId) &
+                      t.skillId.equals(skillId),
+                ))
+                .getSingleOrNull();
+        if (learned != null) return '该技能已兑换';
+      }
+      final itemId = offer.rewardItemId;
+      if (itemId != null && itemId.isNotEmpty) {
+        final owned = await _getInventoryCount(characterId, itemId);
+        if (owned > 0) return '该物品已兑换';
+      }
+    }
+
+    await _db.transaction(() async {
+      await (_db.update(
+        _db.sectMembers,
+      )..where((t) => t.characterId.equals(characterId))).write(
+        SectMembersCompanion(
+          contribution: Value(member.contribution - offer.contributionCost),
+        ),
+      );
+
+      final rewardItemId = offer.rewardItemId;
+      if (rewardItemId != null && rewardItemId.isNotEmpty) {
+        final existing =
+            await (_db.select(_db.inventoryItems)..where(
+                  (t) =>
+                      t.characterId.equals(characterId) &
+                      t.itemId.equals(rewardItemId),
+                ))
+                .getSingleOrNull();
+        if (existing != null) {
+          await (_db.update(
+            _db.inventoryItems,
+          )..where((t) => t.id.equals(existing.id))).write(
+            InventoryItemsCompanion(
+              quantity: Value(existing.quantity + offer.rewardItemCount),
+            ),
+          );
+        } else {
+          await _db
+              .into(_db.inventoryItems)
+              .insert(
+                InventoryItemsCompanion.insert(
+                  id: const Uuid().v4(),
+                  characterId: characterId,
+                  itemId: rewardItemId,
+                  quantity: Value(offer.rewardItemCount),
+                ),
+              );
+        }
+      }
+
+      final rewardSkillId = offer.rewardSkillId;
+      if (rewardSkillId != null && rewardSkillId.isNotEmpty) {
+        final learned =
+            await (_db.select(_db.learnedSkills)..where(
+                  (t) =>
+                      t.characterId.equals(characterId) &
+                      t.skillId.equals(rewardSkillId),
+                ))
+                .getSingleOrNull();
+        if (learned == null) {
+          await _db
+              .into(_db.learnedSkills)
+              .insert(
+                LearnedSkillsCompanion.insert(
+                  id: const Uuid().v4(),
+                  characterId: characterId,
+                  skillId: rewardSkillId,
+                ),
+              );
+        }
+      }
+    });
+
+    final rewardText = offer.rewardSkillId != null
+        ? (skills[offer.rewardSkillId]?.name ?? offer.rewardSkillId!)
+        : '${items[offer.rewardItemId]?.name ?? offer.rewardItemId} x${offer.rewardItemCount}';
+    _ref
+        .read(gameLogProvider.notifier)
+        .addLog(
+          '消耗贡献${offer.contributionCost}兑换：$rewardText',
+          type: LogType.item,
+        );
+    return null;
   }
 }
 

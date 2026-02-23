@@ -3,8 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/utils/game_audio.dart';
+import '../../core/database/app_database.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/game_audio.dart';
 import '../../data/quest_data.dart';
 import '../../models/enums.dart';
 import '../../models/quest.dart';
@@ -13,53 +14,108 @@ import '../inventory/inventory_provider.dart';
 import 'quest_dialogs.dart';
 import 'quest_provider.dart';
 
-class QuestPage extends ConsumerWidget {
-  const QuestPage({super.key});
+class QuestPage extends ConsumerStatefulWidget {
+  final int initialTabIndex;
+
+  const QuestPage({super.key, this.initialTabIndex = 0});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<QuestPage> createState() => _QuestPageState();
+}
+
+class _QuestPageState extends ConsumerState<QuestPage>
+    with SingleTickerProviderStateMixin {
+  static const _tabCount = 3;
+
+  late final TabController _tabController;
+  late int _activeTab;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialTabIndex.clamp(0, _tabCount - 1).toInt();
+    _activeTab = initial;
+    _tabController = TabController(
+      length: _tabCount,
+      vsync: this,
+      initialIndex: initial,
+    );
+    _tabController.addListener(_handleTabChanged);
+  }
+
+  @override
+  void dispose() {
+    _tabController.removeListener(_handleTabChanged);
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _handleTabChanged() {
+    if (_activeTab == _tabController.index) return;
+    setState(() {
+      _activeTab = _tabController.index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final progressAsync = ref.watch(questProgressProvider);
     final available = ref.watch(availableQuestsProvider);
     final active = ref.watch(activeQuestsProvider);
-    final inventory = ref.watch(inventoryProvider).valueOrNull ?? [];
+    final inventory = ref.watch(inventoryProvider).valueOrNull ?? const [];
+    final inventoryCountById = _buildInventoryCountMap(inventory);
 
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('任务'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: '进行中'),
-              Tab(text: '可接取'),
-              Tab(text: '已完成'),
-            ],
-          ),
-        ),
-        body: progressAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('$e')),
-          data: (allProgress) {
-            final completed = allProgress.where((p) => p.status == 2).toList();
-
-            return TabBarView(
-              children: [
-                // 进行中
-                _buildQuestList(
-                  context,
-                  ref,
-                  active,
-                  inventory: inventory,
-                  isActive: true,
-                ),
-                // 可接取
-                _buildAvailableList(context, ref, available),
-                // 已完成
-                _buildCompletedList(context, completed),
-              ],
-            );
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('任务'),
+        bottom: TabBar(
+          controller: _tabController,
+          onTap: (index) {
+            if (_activeTab == index) return;
+            setState(() {
+              _activeTab = index;
+            });
           },
+          tabs: [
+            Tab(text: '进行中'),
+            Tab(text: '可接取'),
+            Tab(text: '已完成'),
+          ],
         ),
+      ),
+      body: progressAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('$e')),
+        data: (allProgress) {
+          final completed = allProgress.where((p) => p.status == 2).toList();
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 160),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            child: KeyedSubtree(
+              key: ValueKey(_activeTab),
+              child: switch (_activeTab) {
+                0 => KeyedSubtree(
+                  key: const PageStorageKey('quest_tab_active'),
+                  child: _buildQuestList(
+                    context,
+                    ref,
+                    active,
+                    inventoryCountById: inventoryCountById,
+                  ),
+                ),
+                1 => KeyedSubtree(
+                  key: const PageStorageKey('quest_tab_available'),
+                  child: _buildAvailableList(context, ref, available),
+                ),
+                _ => KeyedSubtree(
+                  key: const PageStorageKey('quest_tab_completed'),
+                  child: _buildCompletedList(context, completed),
+                ),
+              },
+            ),
+          );
+        },
       ),
     );
   }
@@ -67,23 +123,30 @@ class QuestPage extends ConsumerWidget {
   Widget _buildQuestList(
     BuildContext context,
     WidgetRef ref,
-    List<dynamic> progressList, {
-    required List<dynamic> inventory,
-    required bool isActive,
+    List<QuestProgressData> progressList, {
+    required Map<String, int> inventoryCountById,
   }) {
     if (progressList.isEmpty) {
       return Center(
         child: Text('暂无任务', style: TextStyle(color: AppColors.textSecondary)),
       );
     }
-    return ListView(
+
+    return ListView.builder(
       padding: const EdgeInsets.all(12),
-      children: progressList.map((progress) {
+      itemCount: progressList.length,
+      itemBuilder: (_, index) {
+        final progress = progressList[index];
         final quest = quests[progress.questId];
         if (quest == null) return const SizedBox.shrink();
 
-        final objectives = Map<String, int>.from(
-          jsonDecode(progress.objectivesJson),
+        final objectives = _decodeObjectives(progress.objectivesJson);
+        final objectiveCurrent = <String, int>{
+          for (final obj in quest.objectives)
+            obj.id: _objectiveCurrent(obj, objectives, inventoryCountById),
+        };
+        final allDone = quest.objectives.every(
+          (obj) => (objectiveCurrent[obj.id] ?? 0) >= obj.requiredCount,
         );
 
         return Card(
@@ -110,11 +173,11 @@ class QuestPage extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Text(
                   quest.description,
-                  style: TextStyle(fontSize: 13, height: 1.5),
+                  style: const TextStyle(fontSize: 13, height: 1.5),
                 ),
                 const SizedBox(height: 8),
                 ...quest.objectives.map((obj) {
-                  final current = _objectiveCurrent(obj, objectives, inventory);
+                  final current = objectiveCurrent[obj.id] ?? 0;
                   final done = current >= obj.requiredCount;
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 2),
@@ -128,66 +191,50 @@ class QuestPage extends ConsumerWidget {
                           size: 16,
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          '${obj.description} ($current/${obj.requiredCount})',
-                          style: TextStyle(
-                            color: done
-                                ? AppColors.success
-                                : AppColors.textSecondary,
-                            fontSize: 13,
+                        Expanded(
+                          child: Text(
+                            '${obj.description} ($current/${obj.requiredCount})',
+                            style: TextStyle(
+                              color: done
+                                  ? AppColors.success
+                                  : AppColors.textSecondary,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   );
                 }),
-                // 完成按钮
-                if (isActive) ...[
-                  const SizedBox(height: 8),
-                  Builder(
-                    builder: (_) {
-                      final allDone = quest.objectives.every((obj) {
-                        final current = _objectiveCurrent(
-                          obj,
-                          objectives,
-                          inventory,
-                        );
-                        return current >= obj.requiredCount;
-                      });
-                      return Align(
-                        alignment: Alignment.centerRight,
-                        child: ElevatedButton(
-                          onPressed: allDone
-                              ? () async {
-                                  final character = ref
-                                      .read(currentCharacterProvider)
-                                      .valueOrNull;
-                                  if (character == null) return;
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton(
+                    onPressed: allDone
+                        ? () async {
+                            final character = ref
+                                .read(currentCharacterProvider)
+                                .valueOrNull;
+                            if (character == null) return;
 
-                                  final completed = await ref
-                                      .read(questNotifierProvider.notifier)
-                                      .tryCompleteQuest(character.id, quest.id);
+                            final completed = await ref
+                                .read(questNotifierProvider.notifier)
+                                .tryCompleteQuest(character.id, quest.id);
 
-                                  if (completed && context.mounted) {
-                                    GameAudio.success();
-                                    await showQuestCompleteDialog(
-                                      context,
-                                      quest,
-                                    );
-                                  }
-                                }
-                              : null,
-                          child: const Text('交付'),
-                        ),
-                      );
-                    },
+                            if (completed && context.mounted) {
+                              GameAudio.success();
+                              await showQuestCompleteDialog(context, quest);
+                            }
+                          }
+                        : null,
+                    child: const Text('交付'),
                   ),
-                ],
+                ),
               ],
             ),
           ),
         );
-      }).toList(),
+      },
     );
   }
 
@@ -204,9 +251,12 @@ class QuestPage extends ConsumerWidget {
         ),
       );
     }
-    return ListView(
+
+    return ListView.builder(
       padding: const EdgeInsets.all(12),
-      children: available.map((quest) {
+      itemCount: available.length,
+      itemBuilder: (_, index) {
+        final quest = available[index];
         return Card(
           child: Padding(
             padding: const EdgeInsets.all(12),
@@ -231,7 +281,7 @@ class QuestPage extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Text(
                   quest.description,
-                  style: TextStyle(fontSize: 13, height: 1.5),
+                  style: const TextStyle(fontSize: 13, height: 1.5),
                 ),
                 const SizedBox(height: 8),
                 _rewardRow(quest),
@@ -262,11 +312,14 @@ class QuestPage extends ConsumerWidget {
             ),
           ),
         );
-      }).toList(),
+      },
     );
   }
 
-  Widget _buildCompletedList(BuildContext context, List<dynamic> completed) {
+  Widget _buildCompletedList(
+    BuildContext context,
+    List<QuestProgressData> completed,
+  ) {
     if (completed.isEmpty) {
       return Center(
         child: Text(
@@ -275,11 +328,15 @@ class QuestPage extends ConsumerWidget {
         ),
       );
     }
-    return ListView(
+
+    return ListView.builder(
       padding: const EdgeInsets.all(12),
-      children: completed.map((progress) {
+      itemCount: completed.length,
+      itemBuilder: (_, index) {
+        final progress = completed[index];
         final quest = quests[progress.questId];
         if (quest == null) return const SizedBox.shrink();
+
         return Card(
           child: ListTile(
             leading: Icon(Icons.check_circle, color: AppColors.success),
@@ -291,7 +348,7 @@ class QuestPage extends ConsumerWidget {
             ),
           ),
         );
-      }).toList(),
+      },
     );
   }
 
@@ -326,19 +383,45 @@ class QuestPage extends ConsumerWidget {
     );
   }
 
+  Map<String, int> _decodeObjectives(String objectivesJson) {
+    try {
+      final decoded = jsonDecode(objectivesJson);
+      if (decoded is! Map) return <String, int>{};
+      final result = <String, int>{};
+      for (final entry in decoded.entries) {
+        final key = entry.key.toString();
+        final value = entry.value;
+        result[key] = value is int ? value : int.tryParse('$value') ?? 0;
+      }
+      return result;
+    } catch (_) {
+      return <String, int>{};
+    }
+  }
+
+  Map<String, int> _buildInventoryCountMap(List<dynamic> inventory) {
+    final counts = <String, int>{};
+    for (final inv in inventory) {
+      final itemId = inv.itemId as String?;
+      final quantity = inv.quantity as int?;
+      if (itemId == null) continue;
+      counts[itemId] = (counts[itemId] ?? 0) + (quantity ?? 0);
+    }
+    return counts;
+  }
+
   int _objectiveCurrent(
     QuestObjective obj,
     Map<String, int> objectives,
-    List<dynamic> inventory,
+    Map<String, int> inventoryCountById,
   ) {
     final recorded = objectives[obj.id] ?? 0;
     if (obj.type != QuestObjectiveType.collect) return recorded;
+
     final targetId = obj.targetId;
     if (targetId == null || targetId.isEmpty) return recorded;
 
-    final owned = inventory
-        .where((inv) => inv.itemId == targetId)
-        .fold<int>(0, (sum, inv) => sum + (inv.quantity as int));
+    final owned = inventoryCountById[targetId] ?? 0;
     return owned > recorded ? owned : recorded;
   }
 }
