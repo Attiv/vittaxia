@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../character/character_provider.dart';
 import 'dungeon_explore_page.dart';
 import 'dungeon_provider.dart';
 
@@ -93,7 +94,17 @@ class DungeonListPage extends ConsumerWidget {
                           ],
                         ),
                         trailing: TextButton(
-                          onPressed: () {
+                          onPressed: () async {
+                            // 如果已通关，先重置进度
+                            if (status == 2) {
+                              final characterId = ref.read(currentCharacterIdProvider);
+                              if (characterId != null) {
+                                await ref
+                                    .read(dungeonNotifierProvider.notifier)
+                                    .resetDungeon(characterId, dungeon.id);
+                              }
+                            }
+                            if (!context.mounted) return;
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) =>

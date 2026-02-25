@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vittaxia/core/theme/app_theme.dart';
 import 'package:vittaxia/core/theme/theme_settings.dart';
 
+import '../../core/constants/battle_speed_settings.dart';
 import '../../core/constants/game_constants.dart';
 import '../../core/database/database_provider.dart';
 import '../../core/utils/game_audio.dart';
@@ -271,6 +272,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   Future<void> _openSettingsPanel() async {
     var soundEnabled = GameAudio.enabled;
     var selectedTheme = ThemeSettings.current;
+    var selectedBattleStyle = BattleSpeedSettings.animationStyle;
 
     await showModalBottomSheet<void>(
       context: context,
@@ -370,6 +372,62 @@ class _HomePageState extends ConsumerState<HomePage> {
                         );
                       },
                     ),
+                    const SizedBox(height: 12),
+                    Divider(
+                      color: AppColors.primaryLight.withValues(alpha: 0.45),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      '战斗动画',
+                      style: sheetTheme.textTheme.titleMedium?.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '当前：${selectedBattleStyle.label} · ${selectedBattleStyle.subtitle}',
+                      style: sheetTheme.textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final width = (constraints.maxWidth - 8) / 2;
+                        return Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final style in battleAnimationStyleOrder)
+                              SizedBox(
+                                width: width,
+                                child: _buildBattleAnimationStyleButton(
+                                  style: style,
+                                  selectedStyle: selectedBattleStyle,
+                                  onSelected: (nextStyle) {
+                                    if (nextStyle == selectedBattleStyle) {
+                                      return;
+                                    }
+                                    BattleSpeedSettings.setAnimationStyle(
+                                      nextStyle,
+                                    );
+                                    setSheetState(() {
+                                      selectedBattleStyle = nextStyle;
+                                    });
+                                    if (mounted) {
+                                      setState(() {});
+                                      _showActionTip(
+                                        '动画风格已切换为 ${nextStyle.label}',
+                                      );
+                                    }
+                                    GameAudio.tap();
+                                  },
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -455,6 +513,82 @@ class _HomePageState extends ConsumerState<HomePage> {
                   Icons.check_circle,
                   size: 16,
                   color: spec.accent.withValues(alpha: 0.96),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBattleAnimationStyleButton({
+    required BattleAnimationStyle style,
+    required BattleAnimationStyle selectedStyle,
+    required ValueChanged<BattleAnimationStyle> onSelected,
+  }) {
+    final isSelected = style == selectedStyle;
+    final accent = isSelected ? AppColors.accent : AppColors.primaryLight;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => onSelected(style),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+          decoration: BoxDecoration(
+            color: AppColors.surface.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: accent.withValues(alpha: isSelected ? 0.95 : 0.7),
+              width: isSelected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: accent,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      style.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      style.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isSelected)
+                Icon(
+                  Icons.check_circle,
+                  size: 16,
+                  color: accent.withValues(alpha: 0.95),
                 ),
             ],
           ),

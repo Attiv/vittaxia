@@ -495,6 +495,96 @@ final quests = <String, Quest>{
     rewardItemId: 'spirit_pill',
     prerequisiteQuestId: 'main_20',
   ),
+  'main_22': const Quest(
+    id: 'main_22',
+    name: '入门试炼',
+    description: '持入门信物进入天剑门，接受外门长老的入门试炼。',
+    type: QuestType.main,
+    objectives: [
+      QuestObjective(
+        id: 'main_22_1',
+        description: '到达天剑门内门',
+        type: QuestObjectiveType.explore,
+        targetId: 'tianjian_inner',
+      ),
+      QuestObjective(
+        id: 'main_22_2',
+        description: '与外门长老对话',
+        type: QuestObjectiveType.talk,
+        targetId: 'outer_elder',
+      ),
+    ],
+    rewardExp: 280,
+    rewardSilver: 240,
+    prerequisiteQuestId: 'main_21',
+  ),
+  'main_23': const Quest(
+    id: 'main_23',
+    name: '剑心考验',
+    description: '外门长老要求你进入剑心幻境，通过三重考验以证明你的剑道之心。',
+    type: QuestType.main,
+    objectives: [
+      QuestObjective(
+        id: 'main_23_1',
+        description: '进入剑心幻境',
+        type: QuestObjectiveType.explore,
+        targetId: 'sword_heart_realm',
+      ),
+      QuestObjective(
+        id: 'main_23_2',
+        description: '通过剑心考验',
+        type: QuestObjectiveType.kill,
+        targetId: 'sword_heart_phantom',
+        requiredCount: 3,
+      ),
+    ],
+    rewardExp: 300,
+    rewardSilver: 260,
+    rewardReputation: 40,
+    prerequisiteQuestId: 'main_22',
+  ),
+  'main_24': const Quest(
+    id: 'main_24',
+    name: '正式入门',
+    description: '通过试炼后，正式成为天剑门外门弟子，获得弟子令牌和基础剑法秘籍。',
+    type: QuestType.main,
+    objectives: [
+      QuestObjective(
+        id: 'main_24_1',
+        description: '领取弟子令牌',
+        type: QuestObjectiveType.talk,
+        targetId: 'outer_elder',
+      ),
+    ],
+    rewardExp: 320,
+    rewardSilver: 280,
+    rewardReputation: 50,
+    rewardItemId: 'tianjian_token',
+    prerequisiteQuestId: 'main_23',
+  ),
+  'main_25': const Quest(
+    id: 'main_25',
+    name: '古玉之谜',
+    description: '成为天剑门弟子后，掌门召见你，询问古玉之事。原来古玉与天剑门的镇派之宝有关。',
+    type: QuestType.main,
+    objectives: [
+      QuestObjective(
+        id: 'main_25_1',
+        description: '前往掌门大殿',
+        type: QuestObjectiveType.explore,
+        targetId: 'sect_master_hall',
+      ),
+      QuestObjective(
+        id: 'main_25_2',
+        description: '与掌门对话',
+        type: QuestObjectiveType.talk,
+        targetId: 'sect_master',
+      ),
+    ],
+    rewardExp: 340,
+    rewardSilver: 300,
+    prerequisiteQuestId: 'main_24',
+  ),
 
   // ===== 支线任务扩展 =====
   'side_06': const Quest(

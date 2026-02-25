@@ -473,6 +473,31 @@ class _BattlePageState extends ConsumerState<BattlePage> {
                     }
                   },
           ),
+          PopupMenuButton<BattleAnimationStyle>(
+            icon: Icon(Icons.animation, color: AppColors.accent),
+            tooltip: '动画风格',
+            onSelected: (style) {
+              setState(() {
+                BattleSpeedSettings.setAnimationStyle(style);
+              });
+            },
+            itemBuilder: (context) => [
+              for (final style in battleAnimationStyleOrder)
+                PopupMenuItem(
+                  value: style,
+                  child: Row(
+                    children: [
+                      if (BattleSpeedSettings.animationStyle == style)
+                        const Icon(Icons.check, size: 18),
+                      if (BattleSpeedSettings.animationStyle != style)
+                        const SizedBox(width: 18),
+                      const SizedBox(width: 8),
+                      Text('${style.label} · ${style.subtitle}'),
+                    ],
+                  ),
+                ),
+            ],
+          ),
           // 战斗速度切换按钮
           PopupMenuButton<BattleSpeed>(
             icon: Icon(
@@ -556,7 +581,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
           // 战斗动画区
           Container(
             margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
+            padding: const EdgeInsets.fromLTRB(4, 4, 4, 6),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
@@ -571,7 +596,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
             child: BattleArenaWidget(
               controller: _arenaController,
               idlePlayerWeaponType: _resolveEquippedWeaponType(),
-              height: 220,
+              height: 182,
             ),
           ),
           // 战斗日志
