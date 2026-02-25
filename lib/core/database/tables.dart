@@ -118,3 +118,23 @@ class SectQuestProgress extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// 修炼记录表
+class CultivationSessions extends Table {
+  TextColumn get id => text()();
+  TextColumn get characterId => text().references(Characters, #id)();
+  IntColumn get typeIndex => integer()(); // 0=打坐 1=武技 2=历练
+  IntColumn get statusIndex => integer().withDefault(const Constant(0))(); // 0=空闲 1=修炼中 2=已完成
+  TextColumn get skillId => text().nullable()();
+  TextColumn get locationId => text().nullable()();
+  DateTimeColumn get startTime => dateTime()();
+  IntColumn get durationMinutes => integer()();
+  DateTimeColumn get completedTime => dateTime().nullable()();
+  IntColumn get rewardExp => integer().withDefault(const Constant(0))();
+  IntColumn get rewardSilver => integer().withDefault(const Constant(0))();
+  TextColumn get rewardItemsJson => text().withDefault(const Constant('{}'))();
+  TextColumn get rewardSkillId => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

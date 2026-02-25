@@ -979,4 +979,552 @@ final gameEvents = <String, GameEventData>{
       ),
     ],
   ),
+
+  // ===== 青云村新增事件 =====
+  'qy_morning_practice': const GameEventData(
+    id: 'qy_morning_practice',
+    name: '晨练',
+    description: '清晨，村口有几个年轻人在练拳，动作虽然生疏，但很认真。',
+    type: GameEventType.scenery,
+    weight: 12,
+    choices: [
+      EventChoice(
+        text: '加入他们',
+        resultText: '你和他们一起练了一套基础拳法，虽然简单，但感觉身体舒展了不少。',
+        rewardExp: 8,
+        hpChange: 5,
+      ),
+      EventChoice(
+        text: '指点几招',
+        resultText: '你纠正了他们的几个错误动作，他们很感激，送了你几文钱。',
+        rewardExp: 12,
+        rewardSilver: 8,
+      ),
+    ],
+  ),
+  'qy_lost_child': const GameEventData(
+    id: 'qy_lost_child',
+    name: '走失的孩童',
+    description: '一个小孩在村口哭泣，说找不到回家的路了。',
+    type: GameEventType.npcEncounter,
+    weight: 10,
+    choices: [
+      EventChoice(
+        text: '送他回家',
+        resultText: '你把孩子送回家，他的父母感激涕零，坚持要给你一些谢礼。',
+        rewardSilver: 15,
+        rewardExp: 10,
+      ),
+      EventChoice(
+        text: '安慰几句',
+        resultText: '你安慰了孩子几句，告诉他回家的方向，然后离开了。',
+        rewardExp: 3,
+      ),
+    ],
+  ),
+  'qy_village_feast': const GameEventData(
+    id: 'qy_village_feast',
+    name: '村宴',
+    description: '村里正在办喜事，摆了流水席，热闹非凡。',
+    type: GameEventType.scenery,
+    weight: 8,
+    choices: [
+      EventChoice(
+        text: '随礼参加',
+        resultText: '你随了份礼金参加宴席，酒足饭饱之余，还听到了不少江湖趣闻。',
+        rewardExp: 15,
+        hpChange: 10,
+      ),
+      EventChoice(
+        text: '远远观望',
+        resultText: '你在外围看了看热闹，感受到了浓浓的人情味。',
+        rewardExp: 5,
+      ),
+    ],
+  ),
+  'qy_herb_thief': const GameEventData(
+    id: 'qy_herb_thief',
+    name: '药田小偷',
+    description: '李药婆的药田里有人在偷草药！',
+    type: GameEventType.battle,
+    weight: 7,
+    choices: [
+      EventChoice(
+        text: '上前制止',
+        resultText: '小偷见势不妙，抄起锄头就要跑，你拦住了他！',
+        triggerBattle: true,
+        enemyId: 'wild_dog',
+      ),
+      EventChoice(
+        text: '大喊抓贼',
+        resultText: '你大喊一声，小偷吓得丢下草药就跑了。李药婆赶来，给了你一些草药作为感谢。',
+        rewardItemId: 'bixin_herb',
+        rewardExp: 8,
+      ),
+    ],
+  ),
+  'qy_fortune_teller': const GameEventData(
+    id: 'qy_fortune_teller',
+    name: '算命先生',
+    description: '一个白胡子老头摆了个算命摊，见你走过，笑眯眯地说："小友印堂发亮，必有奇遇。"',
+    type: GameEventType.adventure,
+    weight: 5,
+    choices: [
+      EventChoice(
+        text: '让他算一卦',
+        resultText: '老头掐指一算，说你近日会有贵人相助。虽然不知真假，但你心情愉悦。',
+        rewardExp: 12,
+      ),
+      EventChoice(
+        text: '笑而不语',
+        resultText: '你笑了笑，没有理会，继续前行。',
+        rewardExp: 2,
+      ),
+    ],
+  ),
+
+  // ===== 清风镇新增事件 =====
+  'qf_beggar_info': const GameEventData(
+    id: 'qf_beggar_info',
+    name: '乞丐的情报',
+    description: '一个乞丐拦住你，说有重要消息要告诉你，但需要一点"茶水钱"。',
+    type: GameEventType.npcEncounter,
+    weight: 10,
+    choices: [
+      EventChoice(
+        text: '给他银两',
+        resultText: '乞丐收下银两，告诉你最近落霞山脉有山贼在抢劫过路商人，让你小心。',
+        rewardExp: 10,
+      ),
+      EventChoice(
+        text: '拒绝',
+        resultText: '你摇摇头走开了。',
+        rewardExp: 1,
+      ),
+    ],
+  ),
+  'qf_weapon_shop': const GameEventData(
+    id: 'qf_weapon_shop',
+    name: '兵器铺打折',
+    description: '兵器铺老板在门口吆喝，说今天所有兵器打八折。',
+    type: GameEventType.merchant,
+    weight: 8,
+    choices: [
+      EventChoice(
+        text: '进去看看',
+        resultText: '你挑选了一把趁手的兵器，老板还额外送了你一瓶金创药。',
+        rewardItemId: 'healing_pill',
+        rewardExp: 5,
+      ),
+      EventChoice(
+        text: '不需要',
+        resultText: '你现在不缺兵器，继续前行。',
+        rewardExp: 1,
+      ),
+    ],
+  ),
+  'qf_poetry_contest': const GameEventData(
+    id: 'qf_poetry_contest',
+    name: '诗会',
+    description: '镇上的文人雅士正在举办诗会，围观者众多。',
+    type: GameEventType.scenery,
+    weight: 9,
+    choices: [
+      EventChoice(
+        text: '凑近观看',
+        resultText: '你听了几首诗词，虽然不太懂，但也感受到了文化的魅力。',
+        rewardExp: 12,
+      ),
+      EventChoice(
+        text: '即兴作诗',
+        resultText: '你灵机一动，作了一首打油诗，虽然不够雅致，但也博得了一些掌声。',
+        rewardExp: 18,
+        rewardSilver: 10,
+      ),
+    ],
+  ),
+  'qf_gambling_den': const GameEventData(
+    id: 'qf_gambling_den',
+    name: '赌坊',
+    description: '巷子里传来骰子声，有人在赌博。',
+    type: GameEventType.trap,
+    weight: 6,
+    choices: [
+      EventChoice(
+        text: '进去试试手气',
+        resultText: '你赌了几把，运气不错，赢了一些银两。',
+        rewardSilver: 30,
+        rewardExp: 5,
+      ),
+      EventChoice(
+        text: '远离赌博',
+        resultText: '你知道赌博害人，转身离开了。',
+        rewardExp: 3,
+      ),
+    ],
+  ),
+  'qf_escort_mission': const GameEventData(
+    id: 'qf_escort_mission',
+    name: '护送任务',
+    description: '一个商人请你帮忙护送一批货物到下一个镇子，愿意支付报酬。',
+    type: GameEventType.adventure,
+    weight: 7,
+    choices: [
+      EventChoice(
+        text: '接受任务',
+        resultText: '你护送货物平安到达，商人很满意，给了你丰厚的报酬。',
+        rewardSilver: 40,
+        rewardExp: 20,
+      ),
+      EventChoice(
+        text: '婉拒',
+        resultText: '你现在有更重要的事情要做，婉言谢绝了。',
+        rewardExp: 2,
+      ),
+    ],
+  ),
+
+  // ===== 青竹林新增事件 =====
+  'qz_bamboo_flute': const GameEventData(
+    id: 'qz_bamboo_flute',
+    name: '竹笛声',
+    description: '竹林深处传来悠扬的笛声，如泣如诉。',
+    type: GameEventType.scenery,
+    weight: 10,
+    choices: [
+      EventChoice(
+        text: '循声寻去',
+        resultText: '你找到了吹笛之人，是一位隐居的老者。他见你有缘，传授了你一些内功心法。',
+        rewardExp: 30,
+      ),
+      EventChoice(
+        text: '静静聆听',
+        resultText: '你坐下来静静聆听，心境平和了许多。',
+        rewardExp: 10,
+      ),
+    ],
+  ),
+  'qz_bamboo_shoots': const GameEventData(
+    id: 'qz_bamboo_shoots',
+    name: '竹笋',
+    description: '你发现了一片新鲜的竹笋，看起来很美味。',
+    type: GameEventType.treasure,
+    weight: 12,
+    choices: [
+      EventChoice(
+        text: '采集竹笋',
+        resultText: '你采了一些竹笋，可以拿去卖钱或者自己吃。',
+        rewardSilver: 12,
+        rewardExp: 5,
+      ),
+      EventChoice(
+        text: '留给动物',
+        resultText: '你决定不破坏这里的生态，留给动物们吃。',
+        rewardExp: 8,
+      ),
+    ],
+  ),
+  'qz_martial_artist': const GameEventData(
+    id: 'qz_martial_artist',
+    name: '练武之人',
+    description: '一个年轻人在竹林中练剑，剑法凌厉，显然是个高手。',
+    type: GameEventType.npcEncounter,
+    weight: 8,
+    choices: [
+      EventChoice(
+        text: '请教剑法',
+        resultText: '年轻人很友善，指点了你几招，你受益匪浅。',
+        rewardExp: 25,
+      ),
+      EventChoice(
+        text: '切磋武艺',
+        resultText: '你提出切磋，年轻人欣然应战！',
+        triggerBattle: true,
+        enemyId: 'rogue_swordsman',
+      ),
+    ],
+  ),
+  'qz_injured_hunter': const GameEventData(
+    id: 'qz_injured_hunter',
+    name: '受伤的猎户',
+    description: '一个猎户躺在地上，腿部受伤，旁边是一头死去的野猪。',
+    type: GameEventType.npcEncounter,
+    weight: 7,
+    choices: [
+      EventChoice(
+        text: '帮他包扎',
+        resultText: '你用草药帮他包扎伤口，猎户很感激，把野猪肉分给了你一些。',
+        rewardSilver: 20,
+        rewardExp: 15,
+      ),
+      EventChoice(
+        text: '送他回村',
+        resultText: '你背着猎户回到村子，他的家人给了你一些谢礼。',
+        rewardSilver: 30,
+        rewardExp: 20,
+      ),
+    ],
+  ),
+
+  // ===== 望月楼新增事件 =====
+  'wy_stargazing': const GameEventData(
+    id: 'wy_stargazing',
+    name: '观星',
+    description: '夜空繁星点点，你忍不住驻足观赏。',
+    type: GameEventType.scenery,
+    weight: 12,
+    choices: [
+      EventChoice(
+        text: '仔细观察',
+        resultText: '你观察星象，似乎对天地运行有了一些新的理解。',
+        rewardExp: 20,
+      ),
+      EventChoice(
+        text: '随意看看',
+        resultText: '星空很美，你心情愉悦。',
+        rewardExp: 8,
+      ),
+    ],
+  ),
+  'wy_mysterious_woman': const GameEventData(
+    id: 'wy_mysterious_woman',
+    name: '神秘女子',
+    description: '楼上有一位蒙面女子，气质出尘，似乎在等待什么人。',
+    type: GameEventType.npcEncounter,
+    weight: 6,
+    choices: [
+      EventChoice(
+        text: '上前搭话',
+        resultText: '女子看了你一眼，淡淡地说："你不是我要等的人。"然后飘然离去。',
+        rewardExp: 10,
+      ),
+      EventChoice(
+        text: '不打扰',
+        resultText: '你识趣地没有打扰，继续自己的事情。',
+        rewardExp: 5,
+      ),
+    ],
+  ),
+  'wy_poetry_scroll': const GameEventData(
+    id: 'wy_poetry_scroll',
+    name: '诗卷',
+    description: '桌上有一卷诗稿，字迹秀丽，内容深奥。',
+    type: GameEventType.treasure,
+    weight: 8,
+    choices: [
+      EventChoice(
+        text: '细细品读',
+        resultText: '你读完诗卷，对文学和人生有了更深的感悟。',
+        rewardExp: 25,
+      ),
+      EventChoice(
+        text: '随便翻翻',
+        resultText: '你翻了几页，看不太懂，放下了。',
+        rewardExp: 8,
+      ),
+    ],
+  ),
+
+  // ===== 落霞山脉新增事件 =====
+  'lx_mountain_spring': const GameEventData(
+    id: 'lx_mountain_spring',
+    name: '山泉',
+    description: '你发现了一处清澈的山泉，泉水甘甜。',
+    type: GameEventType.treasure,
+    weight: 10,
+    choices: [
+      EventChoice(
+        text: '饮用泉水',
+        resultText: '泉水清凉甘甜，你感觉精神焕发。',
+        hpChange: 20,
+        rewardExp: 8,
+      ),
+      EventChoice(
+        text: '装满水囊',
+        resultText: '你装满了水囊，以备不时之需。',
+        rewardExp: 5,
+      ),
+    ],
+  ),
+  'lx_merchant_caravan': const GameEventData(
+    id: 'lx_merchant_caravan',
+    name: '商队',
+    description: '一支商队正在休息，看起来很疲惫。',
+    type: GameEventType.npcEncounter,
+    weight: 9,
+    choices: [
+      EventChoice(
+        text: '询问情况',
+        resultText: '商队说前方有山贼出没，请你小心。他们还卖给你一些补给品。',
+        rewardItemId: 'healing_pill',
+        rewardExp: 10,
+      ),
+      EventChoice(
+        text: '继续前行',
+        resultText: '你点点头，继续赶路。',
+        rewardExp: 3,
+      ),
+    ],
+  ),
+  'lx_rare_ore': const GameEventData(
+    id: 'lx_rare_ore',
+    name: '稀有矿石',
+    description: '山壁上有一块闪闪发光的矿石，看起来很珍贵。',
+    type: GameEventType.treasure,
+    weight: 6,
+    choices: [
+      EventChoice(
+        text: '费力开采',
+        resultText: '你费了好大劲才把矿石挖下来，是一块精铁矿！',
+        rewardItemId: 'fine_iron',
+        rewardExp: 15,
+      ),
+      EventChoice(
+        text: '做个标记',
+        resultText: '你在附近做了标记，打算以后带工具来开采。',
+        rewardExp: 5,
+      ),
+    ],
+  ),
+
+  // ===== 迷雾谷新增事件 =====
+  'mw_lost_soul': const GameEventData(
+    id: 'mw_lost_soul',
+    name: '迷失的灵魂',
+    description: '雾中有一个模糊的身影在徘徊，似乎迷失了方向。',
+    type: GameEventType.npcEncounter,
+    weight: 8,
+    choices: [
+      EventChoice(
+        text: '尝试沟通',
+        resultText: '你试图与之沟通，但它只是茫然地看着你，然后消失在雾中。',
+        rewardExp: 15,
+      ),
+      EventChoice(
+        text: '快速离开',
+        resultText: '你感到不安，加快脚步离开了。',
+        rewardExp: 5,
+      ),
+    ],
+  ),
+  'mw_ancient_stele': const GameEventData(
+    id: 'mw_ancient_stele',
+    name: '古碑',
+    description: '雾气散开，露出一块古老的石碑，上面刻着模糊的文字。',
+    type: GameEventType.treasure,
+    weight: 7,
+    choices: [
+      EventChoice(
+        text: '辨认文字',
+        resultText: '你费力辨认，似乎是某种古老的心法口诀，你记下了一部分。',
+        rewardExp: 35,
+      ),
+      EventChoice(
+        text: '拓印下来',
+        resultText: '你用纸拓印了碑文，打算回去慢慢研究。',
+        rewardExp: 20,
+      ),
+    ],
+  ),
+  'mw_spirit_herb': const GameEventData(
+    id: 'mw_spirit_herb',
+    name: '灵草',
+    description: '雾气中隐约可见一株发光的草药，散发着淡淡的灵气。',
+    type: GameEventType.treasure,
+    weight: 5,
+    choices: [
+      EventChoice(
+        text: '小心采集',
+        resultText: '你小心翼翼地采下灵草，这是一株罕见的天星草！',
+        rewardItemId: 'tianxing_stone',
+        rewardExp: 25,
+      ),
+      EventChoice(
+        text: '不敢靠近',
+        resultText: '你担心有危险，没有靠近。',
+        rewardExp: 5,
+      ),
+    ],
+  ),
+
+  // ===== 天剑门外新增事件 =====
+  'tj_sword_monument': const GameEventData(
+    id: 'tj_sword_monument',
+    name: '剑碑',
+    description: '山道旁有一块巨大的石碑，上面刻着一个"剑"字，笔力雄浑。',
+    type: GameEventType.scenery,
+    weight: 10,
+    choices: [
+      EventChoice(
+        text: '参悟剑意',
+        resultText: '你在剑碑前静坐参悟，对剑道有了更深的理解。',
+        rewardExp: 40,
+      ),
+      EventChoice(
+        text: '匆匆而过',
+        resultText: '你看了一眼，继续前行。',
+        rewardExp: 10,
+      ),
+    ],
+  ),
+  'tj_elder_guidance': const GameEventData(
+    id: 'tj_elder_guidance',
+    name: '长老指点',
+    description: '一位天剑门长老路过，看到你在练剑。',
+    type: GameEventType.npcEncounter,
+    weight: 6,
+    choices: [
+      EventChoice(
+        text: '请教剑法',
+        resultText: '长老指点了你几招，你茅塞顿开。',
+        rewardExp: 50,
+      ),
+      EventChoice(
+        text: '恭敬行礼',
+        resultText: '你恭敬地行礼，长老点点头离开了。',
+        rewardExp: 15,
+      ),
+    ],
+  ),
+
+  // ===== 荒野营地新增事件 =====
+  'wc_weapon_maintenance': const GameEventData(
+    id: 'wc_weapon_maintenance',
+    name: '兵器保养',
+    description: '营地里有个老兵在保养兵器，手法娴熟。',
+    type: GameEventType.npcEncounter,
+    weight: 10,
+    choices: [
+      EventChoice(
+        text: '请教保养技巧',
+        resultText: '老兵教了你一些保养兵器的方法，你的兵器焕然一新。',
+        rewardExp: 12,
+      ),
+      EventChoice(
+        text: '只是观看',
+        resultText: '你在旁边看了一会儿，学到了一些皮毛。',
+        rewardExp: 5,
+      ),
+    ],
+  ),
+  'wc_dice_game': const GameEventData(
+    id: 'wc_dice_game',
+    name: '骰子游戏',
+    description: '几个佣兵在玩骰子，邀请你加入。',
+    type: GameEventType.adventure,
+    weight: 8,
+    choices: [
+      EventChoice(
+        text: '参与游戏',
+        resultText: '你玩了几局，有输有赢，最后小赚了一些。',
+        rewardSilver: 15,
+        rewardExp: 8,
+      ),
+      EventChoice(
+        text: '婉拒',
+        resultText: '你不想赌博，婉言谢绝了。',
+        rewardExp: 3,
+      ),
+    ],
+  ),
 };

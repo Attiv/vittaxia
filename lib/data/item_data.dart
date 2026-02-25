@@ -304,4 +304,33 @@ final items = <String, Item>{
     buyPrice: 300,
     sellPrice: 130,
   ),
+
+  // ===== 任务道具 =====
+  'ancient_jade': const Item(
+    id: 'ancient_jade',
+    name: '古玉',
+    description: '黑衣人留下的神秘古玉，刻有奇异符文，似乎隐藏着某个秘密。',
+    type: ItemType.questItem,
+    rarity: ItemRarity.legendary,
+    buyPrice: 0,
+    sellPrice: 0,
+  ),
+  'ancient_jade_key': const Item(
+    id: 'ancient_jade_key',
+    name: '古玉钥匙',
+    description: '从古墓中找到的第二把古玉钥匙，与你手中的古玉形状相似。两者似乎可以组合。',
+    type: ItemType.questItem,
+    rarity: ItemRarity.legendary,
+    buyPrice: 0,
+    sellPrice: 0,
+  ),
+  'tianjian_token': const Item(
+    id: 'tianjian_token',
+    name: '天剑门令牌',
+    description: '天剑门外门弟子的身份令牌，持此令可在门中自由出入。',
+    type: ItemType.questItem,
+    rarity: ItemRarity.rare,
+    buyPrice: 0,
+    sellPrice: 0,
+  ),
 };
