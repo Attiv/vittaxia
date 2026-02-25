@@ -10,15 +10,23 @@ import '../explore/explore_provider.dart';
 import '../../models/game_event.dart';
 import '../quest/quest_provider.dart';
 import '../sect/sect_provider.dart';
+import 'visual_map_widget.dart';
 
-class MapPage extends ConsumerWidget {
+class MapPage extends ConsumerStatefulWidget {
   final String? targetLocationId;
   final String? targetQuestName;
 
   const MapPage({super.key, this.targetLocationId, this.targetQuestName});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MapPage> createState() => _MapPageState();
+}
+
+class _MapPageState extends ConsumerState<MapPage> {
+  bool _showListView = false;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final character = ref.watch(currentCharacterProvider).valueOrNull;
     final currentLoc = ref.watch(currentLocationProvider);
@@ -27,9 +35,9 @@ class MapPage extends ConsumerWidget {
         .where((p) => p.status == 2)
         .map((p) => p.questId)
         .toSet();
-    final guideTarget = targetLocationId == null
+    final guideTarget = widget.targetLocationId == null
         ? null
-        : mapLocations[targetLocationId!];
+        : mapLocations[widget.targetLocationId!];
     final nextHopId = (guideTarget == null || currentLoc == null)
         ? null
         : _nextHopToward(currentLoc.id, guideTarget.id);
@@ -39,76 +47,387 @@ class MapPage extends ConsumerWidget {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    // 计算已解锁的地点
+    final unlockedLocationIds = _getUnlockedLocations(character, completedQuestIds);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('江湖地图')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // 当前位置
-          Card(
-            color: AppColors.surfaceLight,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.location_on,
-                        color: AppColors.accent,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '当前: ${currentLoc.name}',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: AppColors.accent,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _dangerBadge(currentLoc.dangerLevel),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    currentLoc.description,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ),
+      appBar: AppBar(
+        title: const Text('江湖地图'),
+        actions: [
+          IconButton(
+            icon: Icon(_showListView ? Icons.map : Icons.list),
+            tooltip: _showListView ? '地图视图' : '列表视图',
+            onPressed: () => setState(() => _showListView = !_showListView),
           ),
-          if (guideTarget != null) ...[
-            const SizedBox(height: 10),
-            _buildGuideCard(
+        ],
+      ),
+      body: _showListView
+          ? _buildListView(
               context,
+              theme,
               currentLoc,
+              character,
+              completedQuestIds,
               guideTarget,
               nextHop,
               nextHopId,
-            ),
-          ],
-          const SizedBox(height: 16),
-
-          Text('可前往', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-
-          // 可达地点
-          ...currentLoc.adjacentIds.map((id) {
-            final loc = mapLocations[id];
-            if (loc == null) return const SizedBox.shrink();
-            return _buildLocationTile(
+            )
+          : _buildMapView(
               context,
-              ref,
-              loc,
+              currentLoc,
               character,
               completedQuestIds,
-              highlighted: nextHopId == loc.id,
-              isGuideTarget: guideTarget?.id == loc.id,
-            );
-          }),
+              unlockedLocationIds,
+              guideTarget,
+              nextHop,
+            ),
+    );
+  }
+
+  Widget _buildMapView(
+    BuildContext context,
+    MapLocation currentLoc,
+    dynamic character,
+    Set<String> completedQuestIds,
+    Set<String> unlockedLocationIds,
+    MapLocation? guideTarget,
+    MapLocation? nextHop,
+  ) {
+    return Column(
+      children: [
+        // 顶部信息栏
+        Container(
+          padding: const EdgeInsets.all(12),
+          color: AppColors.surface,
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.location_on, color: AppColors.accent, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '当前位置: ${currentLoc.name}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.accent,
+                      ),
+                    ),
+                  ),
+                  _dangerBadge(currentLoc.dangerLevel),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                currentLoc.description,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                  height: 1.3,
+                ),
+              ),
+              if (guideTarget != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: AppColors.accent.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.assistant_navigation,
+                          size: 16, color: AppColors.accent),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          currentLoc.id == guideTarget.id
+                              ? '已到达任务目标: ${guideTarget.name}'
+                              : nextHop != null
+                                  ? '任务指引: ${guideTarget.name} (建议前往 ${nextHop.name})'
+                                  : '任务目标: ${guideTarget.name}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.accent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        // 可视化地图
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.background,
+                  AppColors.surface,
+                ],
+              ),
+            ),
+            child: VisualMapWidget(
+              locations: mapLocations,
+              currentLocationId: currentLoc.id,
+              unlockedLocationIds: unlockedLocationIds,
+              onLocationTap: (locationId) {
+                final targetLoc = mapLocations[locationId];
+                if (targetLoc != null &&
+                    currentLoc.adjacentIds.contains(locationId)) {
+                  _moveTo(context, targetLoc, character);
+                } else if (targetLoc != null) {
+                  _showLocationDetail(context, targetLoc, character, completedQuestIds);
+                }
+              },
+            ),
+          ),
+        ),
+        // 底部提示
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          color: AppColors.surface,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.touch_app, size: 16, color: AppColors.textSecondary),
+              const SizedBox(width: 6),
+              Text(
+                '点击地点查看详情 · 双指缩放移动地图',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildListView(
+    BuildContext context,
+    ThemeData theme,
+    MapLocation currentLoc,
+    dynamic character,
+    Set<String> completedQuestIds,
+    MapLocation? guideTarget,
+    MapLocation? nextHop,
+    String? nextHopId,
+  ) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // 当前位置
+        Card(
+          color: AppColors.surfaceLight,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      color: AppColors.accent,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '当前: ${currentLoc.name}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: AppColors.accent,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _dangerBadge(currentLoc.dangerLevel),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  currentLoc.description,
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (guideTarget != null) ...[
+          const SizedBox(height: 10),
+          _buildGuideCard(
+            context,
+            currentLoc,
+            guideTarget,
+            nextHop,
+            nextHopId,
+          ),
         ],
+        const SizedBox(height: 16),
+
+        Text('可前往', style: theme.textTheme.titleMedium),
+        const SizedBox(height: 8),
+
+        // 可达地点
+        ...currentLoc.adjacentIds.map((id) {
+          final loc = mapLocations[id];
+          if (loc == null) return const SizedBox.shrink();
+          return _buildLocationTile(
+            context,
+            loc,
+            character,
+            completedQuestIds,
+            highlighted: nextHopId == loc.id,
+            isGuideTarget: guideTarget?.id == loc.id,
+          );
+        }),
+      ],
+    );
+  }
+
+  Set<String> _getUnlockedLocations(
+    dynamic character,
+    Set<String> completedQuestIds,
+  ) {
+    final unlocked = <String>{};
+    for (final entry in mapLocations.entries) {
+      if (_canEnter(entry.value, character, completedQuestIds)) {
+        unlocked.add(entry.key);
+      }
+    }
+    return unlocked;
+  }
+
+  void _showLocationDetail(
+    BuildContext context,
+    MapLocation location,
+    dynamic character,
+    Set<String> completedQuestIds,
+  ) {
+    final canEnter = _canEnter(location, character, completedQuestIds);
+    final reason = _blockReason(location, character, completedQuestIds);
+    final currentLoc = ref.read(currentLocationProvider);
+    final isAdjacent = currentLoc?.adjacentIds.contains(location.id) ?? false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.8,
+        expand: false,
+        builder: (context, scrollController) => Container(
+          padding: const EdgeInsets.all(20),
+          child: ListView(
+            controller: scrollController,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    _locationIcon(location.type),
+                    size: 32,
+                    color: AppColors.accent,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          location.name,
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.accent,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            _dangerBadge(location.dangerLevel),
+                            const SizedBox(width: 8),
+                            Text(
+                              location.type.label,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                location.description,
+                style: const TextStyle(fontSize: 14, height: 1.5),
+              ),
+              if (!canEnter) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.danger.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppColors.danger.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.lock, color: AppColors.danger, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          reason,
+                          style: TextStyle(
+                            color: AppColors.danger,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+              if (canEnter && isAdjacent)
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _moveTo(context, location, character);
+                  },
+                  icon: const Icon(Icons.arrow_forward),
+                  label: const Text('前往此地'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                )
+              else if (canEnter && !isAdjacent)
+                Text(
+                  '此地点不相邻，无法直接前往',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -120,7 +439,7 @@ class MapPage extends ConsumerWidget {
     MapLocation? nextHop,
     String? nextHopId,
   ) {
-    final questName = targetQuestName?.trim();
+    final questName = widget.targetQuestName?.trim();
     final hasQuestName = questName != null && questName.isNotEmpty;
 
     String statusText;
@@ -219,7 +538,6 @@ class MapPage extends ConsumerWidget {
 
   Widget _buildLocationTile(
     BuildContext context,
-    WidgetRef ref,
     MapLocation loc,
     dynamic character,
     Set<String> completedQuestIds, {
@@ -288,7 +606,7 @@ class MapPage extends ConsumerWidget {
         trailing: canEnter
             ? Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.accent)
             : Icon(Icons.lock, size: 16, color: AppColors.textSecondary),
-        onTap: canEnter ? () => _moveTo(context, ref, loc, character) : null,
+        onTap: canEnter ? () => _moveTo(context, loc, character) : null,
       ),
     );
   }
@@ -329,7 +647,6 @@ class MapPage extends ConsumerWidget {
 
   void _moveTo(
     BuildContext context,
-    WidgetRef ref,
     MapLocation loc,
     dynamic character,
   ) {

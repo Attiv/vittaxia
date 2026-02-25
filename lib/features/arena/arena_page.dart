@@ -28,7 +28,7 @@ class _ArenaPageState extends ConsumerState<ArenaPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('论剑台')),
       body: DefaultTabController(
-        length: 3,
+        length: 2,
         child: Column(
           children: [
             Container(
@@ -36,8 +36,7 @@ class _ArenaPageState extends ConsumerState<ArenaPage> {
               child: const TabBar(
                 tabs: [
                   Tab(text: '每日挑战'),
-                  Tab(text: '排位赛'),
-                  Tab(text: '排行榜'),
+                  Tab(text: '成就称号'),
                 ],
               ),
             ),
@@ -45,8 +44,7 @@ class _ArenaPageState extends ConsumerState<ArenaPage> {
               child: TabBarView(
                 children: [
                   _buildDailyChallengeTab(context, character),
-                  _buildRankedTab(context, character),
-                  _buildLeaderboardTab(context),
+                  _buildAchievementsTab(context, character),
                 ],
               ),
             ),
@@ -287,166 +285,200 @@ class _ArenaPageState extends ConsumerState<ArenaPage> {
     );
   }
 
-  Widget _buildRankedTab(BuildContext context, dynamic character) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.emoji_events,
-              size: 80,
-              color: AppColors.warning,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              '排位赛',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.accent,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '排位赛系统开发中...',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '敬请期待！',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildLeaderboardTab(BuildContext context) {
+  Widget _buildAchievementsTab(BuildContext context, dynamic character) {
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
-        _buildLeaderboardTypeCard(
-          context,
-          LeaderboardType.power,
-          Icons.flash_on,
-          AppColors.danger,
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.accent.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.info_outline, color: AppColors.accent, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    '成就系统',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.accent,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '完成成就可以获得称号和奖励。称号会显示在你的名字旁边，提供属性加成。',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
         ),
-        _buildLeaderboardTypeCard(
-          context,
-          LeaderboardType.wealth,
-          Icons.monetization_on,
-          AppColors.warning,
+        const SizedBox(height: 16),
+        Text(
+          '战斗成就',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.accent,
+          ),
         ),
-        _buildLeaderboardTypeCard(
-          context,
-          LeaderboardType.reputation,
-          Icons.star,
-          AppColors.exp,
-        ),
-        _buildLeaderboardTypeCard(
-          context,
-          LeaderboardType.arena,
+        const SizedBox(height: 8),
+        _buildAchievementCard(
+          '初出茅庐',
+          '完成首次战斗',
           Icons.emoji_events,
-          AppColors.accent,
+          AppColors.success,
+          false,
+          '0/1',
         ),
-        _buildLeaderboardTypeCard(
-          context,
-          LeaderboardType.sect,
-          Icons.groups,
+        _buildAchievementCard(
+          '百战老兵',
+          '完成100场战斗',
+          Icons.military_tech,
           AppColors.mp,
+          false,
+          '0/100',
+        ),
+        _buildAchievementCard(
+          '连胜之王',
+          '达成10连胜',
+          Icons.trending_up,
+          AppColors.warning,
+          false,
+          '0/10',
+        ),
+        const SizedBox(height: 16),
+        Text(
+          '修炼成就',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.accent,
+          ),
+        ),
+        const SizedBox(height: 8),
+        _buildAchievementCard(
+          '勤学苦练',
+          '修炼100次',
+          Icons.self_improvement,
+          AppColors.exp,
+          false,
+          '0/100',
+        ),
+        _buildAchievementCard(
+          '武学大师',
+          '学会20个技能',
+          Icons.school,
+          AppColors.accent,
+          false,
+          '0/20',
         ),
       ],
     );
   }
 
-  Widget _buildLeaderboardTypeCard(
-    BuildContext context,
-    LeaderboardType type,
+  Widget _buildAchievementCard(
+    String title,
+    String description,
     IconData icon,
     Color color,
+    bool completed,
+    String progress,
   ) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: () => _showLeaderboard(context, type),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 32),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  type.label,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.accent,
-                  ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: completed
+                    ? color.withValues(alpha: 0.3)
+                    : AppColors.surface,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: completed
+                      ? color
+                      : AppColors.textSecondary.withValues(alpha: 0.3),
+                  width: 2,
                 ),
               ),
-              Icon(
-                Icons.chevron_right,
-                color: AppColors.textSecondary,
+              child: Icon(
+                icon,
+                color: completed ? color : AppColors.textSecondary,
+                size: 28,
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showLeaderboard(BuildContext context, LeaderboardType type) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (context, scrollController) => Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Text(
-                type.label,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.accent,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: Center(
-                  child: Text(
-                    '排行榜数据开发中...',
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
                     style: TextStyle(
                       fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: completed
+                          ? AppColors.accent
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 13,
                       color: AppColors.textSecondary,
                     ),
                   ),
-                ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: LinearProgressIndicator(
+                          value: completed ? 1.0 : 0.0,
+                          backgroundColor: AppColors.surface,
+                          valueColor: AlwaysStoppedAnimation<Color>(color),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        progress,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            if (completed)
+              Icon(Icons.check_circle, color: color, size: 24)
+            else
+              Icon(
+                Icons.lock,
+                color: AppColors.textSecondary,
+                size: 24,
+              ),
+          ],
         ),
       ),
     );

@@ -187,15 +187,33 @@ class JianghuRecords extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// 论剑台记录表
-class ArenaRecords extends Table {
+/// 剧情线进度表
+class StorylineProgressTable extends Table {
   TextColumn get id => text()();
   TextColumn get characterId => text().references(Characters, #id)();
-  TextColumn get opponentId => text()();
-  BoolColumn get isVictory => boolean()();
-  IntColumn get rankingChange => integer().withDefault(const Constant(0))();
-  DateTimeColumn get battleTime => dateTime().withDefault(currentDateAndTime)();
+  IntColumn get typeIndex => integer()(); // StorylineType枚举索引
+  IntColumn get currentChapter => integer().withDefault(const Constant(0))();
+  IntColumn get totalChapters => integer()();
+  TextColumn get completedQuestIdsJson => text().withDefault(const Constant('[]'))();
+  BoolColumn get isCompleted => boolean().withDefault(const Constant(false))();
+  TextColumn get endingType => text().nullable()();
+  DateTimeColumn get startedAt => dateTime().nullable()();
+  DateTimeColumn get completedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// 剧情选择记录表
+class StorylineChoicesTable extends Table {
+  TextColumn get id => text()();
+  TextColumn get characterId => text().references(Characters, #id)();
+  TextColumn get questId => text()();
+  TextColumn get branchId => text()();
+  TextColumn get choiceName => text()();
+  DateTimeColumn get chosenAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
