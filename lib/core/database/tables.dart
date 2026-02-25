@@ -138,3 +138,64 @@ class CultivationSessions extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// 势力声望表
+class FactionReputations extends Table {
+  TextColumn get characterId => text().references(Characters, #id)();
+  TextColumn get factionId => text()();
+  IntColumn get reputation => integer().withDefault(const Constant(0))();
+  DateTimeColumn get lastUpdated => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {characterId, factionId};
+}
+
+/// 成就进度表
+class AchievementProgress extends Table {
+  TextColumn get id => text()();
+  TextColumn get characterId => text().references(Characters, #id)();
+  TextColumn get achievementId => text()();
+  IntColumn get currentValue => integer().withDefault(const Constant(0))();
+  BoolColumn get isCompleted => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get completedAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// 称号表
+class CharacterTitles extends Table {
+  TextColumn get characterId => text().references(Characters, #id)();
+  TextColumn get titleId => text()();
+  BoolColumn get isActive => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get obtainedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {characterId, titleId};
+}
+
+/// 江湖录表
+class JianghuRecords extends Table {
+  TextColumn get id => text()();
+  TextColumn get characterId => text().references(Characters, #id)();
+  TextColumn get eventType => text()();
+  TextColumn get description => text()();
+  DateTimeColumn get timestamp => dateTime().withDefault(currentDateAndTime)();
+  BoolColumn get isLegendary => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// 论剑台记录表
+class ArenaRecords extends Table {
+  TextColumn get id => text()();
+  TextColumn get characterId => text().references(Characters, #id)();
+  TextColumn get opponentId => text()();
+  BoolColumn get isVictory => boolean()();
+  IntColumn get rankingChange => integer().withDefault(const Constant(0))();
+  DateTimeColumn get battleTime => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
