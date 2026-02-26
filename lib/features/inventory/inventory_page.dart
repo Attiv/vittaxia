@@ -83,6 +83,7 @@ class InventoryPage extends ConsumerWidget {
                   character,
                   inventory,
                 ),
+                _activeSetPanel(theme, character),
                 const Divider(height: 24),
               ],
               if (equipCount > 0) ...[
@@ -99,6 +100,42 @@ class InventoryPage extends ConsumerWidget {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _activeSetPanel(ThemeData theme, dynamic character) {
+    final states = activeEquipmentSetStates(
+      character,
+    ).where((s) => s.equippedPieces > 0).toList();
+    if (states.isEmpty) return const SizedBox.shrink();
+
+    return Card(
+      color: AppColors.surfaceLight,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('套装状态', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            for (final state in states)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text(
+                  state.activeBonus != null
+                      ? '${state.set.name} (${state.equippedPieces}/${state.set.itemIds.length}) · ${state.activeBonus!.description}'
+                      : '${state.set.name} (${state.equippedPieces}/${state.set.itemIds.length}) · 未激活',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: state.activeBonus != null
+                        ? AppColors.success
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -147,10 +184,7 @@ class InventoryPage extends ConsumerWidget {
           ),
         ),
         subtitle: item != null
-            ? Text(
-                _itemBonusText(item, enhLv),
-                style: TextStyle(fontSize: 11),
-              )
+            ? Text(_itemBonusText(item, enhLv), style: TextStyle(fontSize: 11))
             : null,
         trailing: item != null
             ? Row(
@@ -201,10 +235,7 @@ class InventoryPage extends ConsumerWidget {
               const SizedBox(width: 4),
               Text(
                 'x${inv.quantity}',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
               ),
             ],
           ],
@@ -237,10 +268,7 @@ class InventoryPage extends ConsumerWidget {
             onPressed: () => _confirmSell(context, ref, inv, item, character),
             child: Text(
               '售${item.sellPrice}',
-              style: TextStyle(
-                fontSize: 11,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
             ),
           )
         : null;

@@ -38,6 +38,30 @@ final mineSpots = <String, MineSpot>{
       MineDrop(itemId: 'tianxing_stone', weight: 10),
     ],
   ),
+  'marsh_mine': const MineSpot(
+    id: 'marsh_mine',
+    name: '沼泽黑矿',
+    locationId: 'youming_marsh',
+    staminaCost: 28,
+    drops: [
+      MineDrop(itemId: 'mystic_ore', weight: 40, minCount: 1, maxCount: 2),
+      MineDrop(itemId: 'star_iron', weight: 28),
+      MineDrop(itemId: 'void_crystal', weight: 20),
+      MineDrop(itemId: 'tianxing_stone', weight: 12),
+    ],
+  ),
+  'xuanbing_mine': const MineSpot(
+    id: 'xuanbing_mine',
+    name: '寒潭晶脉',
+    locationId: 'xuanbing_lake',
+    staminaCost: 32,
+    drops: [
+      MineDrop(itemId: 'star_iron', weight: 38, minCount: 1, maxCount: 2),
+      MineDrop(itemId: 'void_crystal', weight: 32),
+      MineDrop(itemId: 'tianxing_stone', weight: 20),
+      MineDrop(itemId: 'mystic_ore', weight: 10),
+    ],
+  ),
 };
 
 /// 根据地点查找矿点

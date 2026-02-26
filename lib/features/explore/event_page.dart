@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/router/page_transition.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/item_data.dart';
 import '../../models/game_event_data.dart';
@@ -38,21 +39,27 @@ class EventPage extends ConsumerWidget {
 
             // 选项
             if (event.choices.isNotEmpty)
-              ...event.choices.map((choice) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: ElevatedButton(
-                      onPressed: () =>
-                          _resolveChoice(context, ref, choice),
-                      child: Text(choice.text),
-                    ),
-                  )),
+              ...event.choices.map(
+                (choice) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: ElevatedButton(
+                    onPressed: () => _resolveChoice(context, ref, choice),
+                    child: Text(choice.text),
+                  ),
+                ),
+              ),
 
             // 无选项时直接关闭
             if (event.choices.isEmpty)
               ElevatedButton(
                 onPressed: () {
-                  _applyRewards(ref, event.rewardExp, event.rewardSilver,
-                      event.rewardItemId, null);
+                  _applyRewards(
+                    ref,
+                    event.rewardExp,
+                    event.rewardSilver,
+                    event.rewardItemId,
+                    null,
+                  );
                   Navigator.of(context).pop();
                 },
                 child: const Text('继续'),
@@ -63,14 +70,12 @@ class EventPage extends ConsumerWidget {
     );
   }
 
-  void _resolveChoice(
-      BuildContext context, WidgetRef ref, EventChoice choice) {
+  void _resolveChoice(BuildContext context, WidgetRef ref, EventChoice choice) {
     // 触发战斗的选项直接跳转战斗页
     if (choice.triggerBattle && choice.enemyId != null) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => BattlePage(enemyId: choice.enemyId!),
-        ),
+      pushSmoothReplacementPage<void, void>(
+        context,
+        BattlePage(enemyId: choice.enemyId!),
       );
       return;
     }
@@ -81,15 +86,15 @@ class EventPage extends ConsumerWidget {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text(event.name,
-            style: TextStyle(color: AppColors.accent)),
+        title: Text(event.name, style: TextStyle(color: AppColors.accent)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(choice.resultText,
-                style: TextStyle(
-                    color: AppColors.textPrimary, height: 1.6)),
+            Text(
+              choice.resultText,
+              style: TextStyle(color: AppColors.textPrimary, height: 1.6),
+            ),
             const SizedBox(height: 16),
             if (choice.rewardExp > 0)
               _rewardLine('经验 +${choice.rewardExp}', AppColors.exp),
@@ -101,14 +106,22 @@ class EventPage extends ConsumerWidget {
                 choice.hpChange > 0 ? AppColors.success : AppColors.danger,
               ),
             if (choice.rewardItemId != null)
-              _rewardLine('获得物品: ${items[choice.rewardItemId]?.name ?? choice.rewardItemId}', AppColors.accent),
+              _rewardLine(
+                '获得物品: ${items[choice.rewardItemId]?.name ?? choice.rewardItemId}',
+                AppColors.accent,
+              ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () {
-              _applyRewards(ref, choice.rewardExp, choice.rewardSilver,
-                  choice.rewardItemId, choice.hpChange != 0 ? choice.hpChange : null);
+              _applyRewards(
+                ref,
+                choice.rewardExp,
+                choice.rewardSilver,
+                choice.rewardItemId,
+                choice.hpChange != 0 ? choice.hpChange : null,
+              );
               Navigator.of(ctx).pop();
               Navigator.of(context).pop();
             },

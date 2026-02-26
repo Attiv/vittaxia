@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,8 +11,10 @@ import 'package:vittaxia/core/theme/theme_settings.dart';
 import '../../core/constants/battle_speed_settings.dart';
 import '../../core/constants/game_constants.dart';
 import '../../core/database/database_provider.dart';
+import '../../core/router/page_transition.dart';
 import '../../core/utils/game_audio.dart';
 import '../../data/event_data.dart';
+import '../../data/enemy_data.dart';
 import '../../data/item_data.dart';
 import '../../data/map_data.dart';
 import '../../data/mine_data.dart';
@@ -94,12 +97,15 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   static const _cheatUnlockPassword = 'attiv';
   static const _titleTapThreshold = 5;
+  static const _bountyStaminaBase = 8;
+  static const _escortStaminaCost = 12;
 
   bool _checkedIdleReward = false;
   bool _restoredCharacter = false;
   int _titleTapCount = 0;
   bool _cheatUnlocked = false;
   bool _cheatMenuOpen = false;
+  final Random _rng = Random();
   // 悬浮按钮拖动位置（右下角偏移）
   double _fabRight = 16;
   double _fabBottom = 90;
@@ -159,9 +165,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             icon: Icon(Icons.help_outline),
             tooltip: '新手攻略',
             onPressed: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const GuidePage()));
+              pushSmoothPage(context, const GuidePage());
             },
           ),
         ],
@@ -886,11 +890,9 @@ class _HomePageState extends ConsumerState<HomePage> {
     Navigator.of(sheetContext).pop();
     await Future<void>.delayed(const Duration(milliseconds: 140));
     if (!mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) =>
-            MapPage(targetLocationId: locationId, targetQuestName: questName),
-      ),
+    await pushSmoothPage(
+      context,
+      MapPage(targetLocationId: locationId, targetQuestName: questName),
     );
   }
 
@@ -1002,10 +1004,9 @@ class _HomePageState extends ConsumerState<HomePage> {
             const SizedBox(height: 48),
             ElevatedButton(
               onPressed: () async {
-                final created = await Navigator.of(context).push<bool>(
-                  MaterialPageRoute(
-                    builder: (_) => const CharacterCreatePage(),
-                  ),
+                final created = await pushSmoothPage<bool>(
+                  context,
+                  const CharacterCreatePage(),
                 );
                 if (created == true) {
                   ref.invalidate(characterListProvider);
@@ -1033,11 +1034,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         StatusPanel(
           character: character,
           onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => CharacterDetailPage(character: character),
-              ),
-            );
+            pushSmoothPage(context, CharacterDetailPage(character: character));
           },
         ),
         if (location != null)
@@ -1106,9 +1103,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                       _showActionTip('此处无矿脉');
                       return;
                     }
-                    Navigator.of(
-                      context,
-                    ).push(MaterialPageRoute(builder: (_) => const MinePage()));
+                    pushSmoothPage(context, const MinePage());
                   },
                   staminaCost: mineSpot?.staminaCost,
                   currentStamina: character.stamina,
@@ -1120,24 +1115,16 @@ class _HomePageState extends ConsumerState<HomePage> {
                     _showActionTip('此处无洞府');
                     return;
                   }
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const DungeonListPage()),
-                  );
+                  pushSmoothPage(context, const DungeonListPage());
                 }, hint: '洞府挑战'),
                 _actionButton(Icons.people, '交谈', () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const NpcListPage()),
-                  );
+                  pushSmoothPage(context, const NpcListPage());
                 }, hint: 'NPC互动'),
                 _actionButton(Icons.inventory_2, '背包', () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const InventoryPage()),
-                  );
+                  pushSmoothPage(context, const InventoryPage());
                 }, hint: '物品/装备'),
                 _actionButton(Icons.auto_stories, '技能', () {
-                  Navigator.of(
-                    context,
-                  ).push(MaterialPageRoute(builder: (_) => const SkillPage()));
+                  pushSmoothPage(context, const SkillPage());
                 }, hint: '修炼与装备'),
                 _actionButton(
                   Icons.assignment,
@@ -1149,15 +1136,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                   hint: '长按看当前主线',
                 ),
                 _actionButton(Icons.temple_buddhist, '师门', () {
-                  Navigator.of(
-                    context,
-                  ).push(MaterialPageRoute(builder: (_) => const SectPage()));
+                  pushSmoothPage(context, const SectPage());
                 }, hint: '拜师学艺'),
                 _actionButton(Icons.map, '地图', () {
-                  Navigator.of(
-                    context,
-                  ).push(MaterialPageRoute(builder: (_) => const MapPage()));
+                  pushSmoothPage(context, const MapPage());
                 }, hint: '切换地点'),
+                _actionButton(Icons.assignment_late, '江湖令', () {
+                  _openJianghuOrders(character);
+                }, hint: '悬赏与押镖'),
                 _actionButton(
                   Icons.self_improvement,
                   '打坐',
@@ -1181,9 +1167,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   hint: '长按连续恢复',
                 ),
                 _actionButton(Icons.info_outline, '帮助', () {
-                  Navigator.of(
-                    context,
-                  ).push(MaterialPageRoute(builder: (_) => const GuidePage()));
+                  pushSmoothPage(context, const GuidePage());
                 }, hint: '新手攻略'),
               ],
             ),
@@ -1570,6 +1554,399 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
+  Future<void> _openJianghuOrders(dynamic character) async {
+    var contracts = _generateBountyContracts(character);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+                children: [
+                  Text(
+                    '江湖令',
+                    style: TextStyle(
+                      color: AppColors.accent,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '单机玩法：接悬赏、跑押镖。悬赏需先战斗，胜利后额外结算奖励。',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12.5,
+                      height: 1.4,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Text(
+                        '悬赏榜（随机）',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: () {
+                          setSheetState(() {
+                            contracts = _generateBountyContracts(character);
+                          });
+                        },
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: const Text('刷新'),
+                      ),
+                    ],
+                  ),
+                  ...contracts.map(
+                    (contract) => Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    contract.title,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.warning.withValues(
+                                      alpha: 0.16,
+                                    ),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    contract.tierLabel,
+                                    style: TextStyle(
+                                      color: AppColors.warning,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              contract.brief,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              children: [
+                                _buildMiniTag(
+                                  Icons.flash_on,
+                                  '奖励经验 +${contract.bonusExp}',
+                                ),
+                                _buildMiniTag(
+                                  Icons.monetization_on,
+                                  '奖励银两 +${contract.bonusSilver}',
+                                ),
+                                if (contract.bonusItemId != null)
+                                  _buildMiniTag(
+                                    Icons.inventory_2,
+                                    '奖励 ${items[contract.bonusItemId]?.name ?? contract.bonusItemId}',
+                                  ),
+                                _buildMiniTag(
+                                  Icons.local_fire_department,
+                                  '体力消耗 ${contract.staminaCost}',
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.of(sheetContext).pop();
+                                  Future<void>.delayed(
+                                    const Duration(milliseconds: 120),
+                                    () => _startBountyContract(contract),
+                                  );
+                                },
+                                icon: const Icon(Icons.gavel, size: 16),
+                                label: const Text('接取悬赏'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '跑镖委托',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '护送商队穿越险路，按速度和运气判定成败。',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            children: [
+                              _buildMiniTag(
+                                Icons.local_fire_department,
+                                '体力消耗 $_escortStaminaCost',
+                              ),
+                              _buildMiniTag(Icons.attach_money, '奖励：银两/经验/矿料'),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.of(sheetContext).pop();
+                                Future<void>.delayed(
+                                  const Duration(milliseconds: 120),
+                                  _startEscortMission,
+                                );
+                              },
+                              icon: const Icon(Icons.local_shipping, size: 16),
+                              label: const Text('开始押镖'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildMiniTag(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: AppColors.textSecondary),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<_BountyContract> _generateBountyContracts(dynamic character) {
+    final tierIndex = character.realmTierIndex as int;
+    final pools = _selectBountyEnemyPool(tierIndex);
+    final pool = List<String>.from(pools)..shuffle(_rng);
+    final takeCount = min(3, pool.length);
+    final selected = pool.take(takeCount).toList();
+
+    final contracts = <_BountyContract>[];
+    for (var i = 0; i < selected.length; i++) {
+      final enemyId = selected[i];
+      final enemy = enemies[enemyId];
+      if (enemy == null) continue;
+
+      final tier = i + 1;
+      final staminaCost = _bountyStaminaBase + tier * 3;
+      final bonusExp = (enemy.expReward * (0.45 + tier * 0.22)).round();
+      final bonusSilver =
+          (enemy.silverReward * (0.6 + tier * 0.25)).round() + tier * 12;
+      final extraItemId = tier >= 3
+          ? (enemy.dropItemId ?? (_rng.nextBool() ? 'fine_iron' : 'mystic_ore'))
+          : null;
+
+      contracts.add(
+        _BountyContract(
+          enemyId: enemyId,
+          title: '悬赏${enemy.name}',
+          brief: '目标：${enemy.name}（威胁阶 ${enemy.atk ~/ 10 + 1}）',
+          tierLabel: '令阶$tier',
+          staminaCost: staminaCost,
+          bonusExp: bonusExp,
+          bonusSilver: bonusSilver,
+          bonusItemId: extraItemId,
+        ),
+      );
+    }
+    return contracts;
+  }
+
+  List<String> _selectBountyEnemyPool(int tierIndex) {
+    if (tierIndex <= 1) {
+      return const [
+        'wild_dog',
+        'drunkard',
+        'wild_boar',
+        'mine_bat',
+        'cave_snake',
+      ];
+    }
+    if (tierIndex <= 3) {
+      return const [
+        'bandit',
+        'shadow_assassin',
+        'rogue_swordsman',
+        'mountain_hunter',
+        'corrupted_monk',
+      ];
+    }
+    if (tierIndex <= 5) {
+      return const ['ghost', 'blood_wolf', 'tomb_warrior', 'iron_golem'];
+    }
+    return const [
+      'bandit_leader',
+      'tianjian_disciple',
+      'phantom_lord',
+      'iron_golem',
+    ];
+  }
+
+  Future<void> _startBountyContract(_BountyContract contract) async {
+    final character = ref.read(currentCharacterProvider).valueOrNull;
+    if (character == null) return;
+
+    final consumeOk = await ref
+        .read(characterNotifierProvider.notifier)
+        .consumeStamina(character.id, contract.staminaCost);
+    if (!consumeOk) {
+      _showActionTip('体力不足，无法接取悬赏');
+      return;
+    }
+
+    ref
+        .read(gameLogProvider.notifier)
+        .addLog('你接下了${contract.title}。', type: LogType.quest);
+
+    if (!mounted) return;
+    final won = await pushSmoothPage<bool>(
+      context,
+      BattlePage(enemyId: contract.enemyId),
+    );
+    if (won != true) {
+      ref
+          .read(gameLogProvider.notifier)
+          .addLog('悬赏行动失利，你暂且退回整理伤势。', type: LogType.quest);
+      _showActionTip('悬赏未完成');
+      return;
+    }
+
+    applyEventRewards(
+      ref,
+      exp: contract.bonusExp,
+      silver: contract.bonusSilver,
+      itemId: contract.bonusItemId,
+    );
+    ref
+        .read(gameLogProvider.notifier)
+        .addLog(
+          '完成${contract.title}，领取悬赏：经验+${contract.bonusExp}，银两+${contract.bonusSilver}'
+          '${contract.bonusItemId == null ? '' : '，额外物资已入袋'}。',
+          type: LogType.quest,
+        );
+    _showActionTip('悬赏完成，奖励已结算');
+  }
+
+  Future<void> _startEscortMission() async {
+    final character = ref.read(currentCharacterProvider).valueOrNull;
+    if (character == null) return;
+
+    final consumeOk = await ref
+        .read(characterNotifierProvider.notifier)
+        .consumeStamina(character.id, _escortStaminaCost);
+    if (!consumeOk) {
+      _showActionTip('体力不足，无法押镖');
+      return;
+    }
+
+    final speed = totalSpeed(character);
+    final luck = totalLuck(character);
+    final successRate = (0.48 + speed * 0.006 + luck * 0.004).clamp(0.5, 0.92);
+    final success = _rng.nextDouble() < successRate;
+
+    if (success) {
+      final silverGain = 65 + _rng.nextInt(65) + luck;
+      final expGain = 24 + _rng.nextInt(24);
+      final itemId = _rng.nextDouble() < 0.32
+          ? (_rng.nextDouble() < 0.6 ? 'fine_iron' : 'mystic_ore')
+          : null;
+      applyEventRewards(ref, exp: expGain, silver: silverGain, itemId: itemId);
+      ref
+          .read(gameLogProvider.notifier)
+          .addLog('押镖顺利抵达，商队当场结清酬金。', type: LogType.explore);
+      _showActionTip('押镖成功：经验+$expGain，银两+$silverGain');
+      return;
+    }
+
+    final hpLoss = 12 + _rng.nextInt(18);
+    final silverLoss = min(character.silver, 18 + _rng.nextInt(36));
+    await ref
+        .read(characterNotifierProvider.notifier)
+        .updateStats(
+          characterId: character.id,
+          currentHp: (character.currentHp - hpLoss).clamp(
+            1,
+            totalMaxHp(character),
+          ),
+          silver: character.silver - silverLoss,
+        );
+    ref
+        .read(gameLogProvider.notifier)
+        .addLog('押镖途中遭遇伏击，虽保住性命，但损失了部分财货。', type: LogType.combat);
+    _showActionTip('押镖失利：气血-$hpLoss，银两-$silverLoss');
+  }
+
   Future<void> _doBatchRecover({required bool isMeditate}) async {
     var done = 0;
     for (var i = 0; i < 3; i++) {
@@ -1876,6 +2253,28 @@ class _CheatActionSheet extends StatelessWidget {
   }
 }
 
+class _BountyContract {
+  final String enemyId;
+  final String title;
+  final String brief;
+  final String tierLabel;
+  final int staminaCost;
+  final int bonusExp;
+  final int bonusSilver;
+  final String? bonusItemId;
+
+  const _BountyContract({
+    required this.enemyId,
+    required this.title,
+    required this.brief,
+    required this.tierLabel,
+    required this.staminaCost,
+    required this.bonusExp,
+    required this.bonusSilver,
+    this.bonusItemId,
+  });
+}
+
 /// 探索事件底部弹窗，减少页面跳转
 class _EventBottomSheet extends ConsumerStatefulWidget {
   final GameEventData event;
@@ -2008,9 +2407,7 @@ class _EventBottomSheetState extends ConsumerState<_EventBottomSheet> {
     // 战斗选项：关闭弹窗后跳转战斗页
     if (choice.triggerBattle && choice.enemyId != null) {
       Navigator.of(context).pop();
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => BattlePage(enemyId: choice.enemyId!)),
-      );
+      pushSmoothPage(context, BattlePage(enemyId: choice.enemyId!));
       return;
     }
 

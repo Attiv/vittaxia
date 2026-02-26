@@ -109,7 +109,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
       atk: totalAtk(character),
       def: totalDef(character),
       speed: totalSpeed(character),
-      luck: character.baseLuck,
+      luck: totalLuck(character),
       equippedSkillIds: equippedSkillIds,
       skillLevels: skillLevels,
       passiveSkillIds: passiveSkillIds,

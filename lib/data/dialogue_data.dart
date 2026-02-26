@@ -39,7 +39,11 @@ final dialogues = <String, DialogueNode>{
     speaker: '张大叔',
     text: '孩子，你终于长大了。这江湖啊，可不是好混的。出门在外，多加小心。',
     choices: [
-      DialogueChoice(text: '大叔，我准备好了', nextId: 'zhang_greet_2', affectionChange: 2),
+      DialogueChoice(
+        text: '大叔，我准备好了',
+        nextId: 'zhang_greet_2',
+        affectionChange: 2,
+      ),
       DialogueChoice(text: '大叔放心', nextId: 'zhang_greet_3'),
       DialogueChoice(text: '请教掌法', nextId: 'zhang_teach_palm'),
     ],
@@ -81,7 +85,11 @@ final dialogues = <String, DialogueNode>{
     speaker: '李药婆',
     text: '哟，又是你啊。年轻人别整天打打杀杀的，身体要紧。来看看我这里的药，备着总没错。',
     choices: [
-      DialogueChoice(text: '问她配药诀窍', nextId: 'li_potion_tip', affectionChange: 1),
+      DialogueChoice(
+        text: '问她配药诀窍',
+        nextId: 'li_potion_tip',
+        affectionChange: 1,
+      ),
       DialogueChoice(text: '询问迷雾谷毒雾', nextId: 'li_mist_antidote'),
       DialogueChoice(text: '商议月华药谱', nextId: 'li_moonlight_formula'),
     ],
@@ -415,7 +423,11 @@ final dialogues = <String, DialogueNode>{
     text: '你也在这迷雾中迷路了？我叫林风，是个剑客。在这谷中已经转了三天了。要不……我们结伴同行？',
     choices: [
       DialogueChoice(text: '好，一起走', nextId: 'lin_join', affectionChange: 5),
-      DialogueChoice(text: '请他标注安全路', nextId: 'lin_route_briefing', affectionChange: 1),
+      DialogueChoice(
+        text: '请他标注安全路',
+        nextId: 'lin_route_briefing',
+        affectionChange: 1,
+      ),
       DialogueChoice(text: '回报路标复测', nextId: 'lin_route_review_report'),
       DialogueChoice(text: '回报雾谷清障', nextId: 'lin_ghost_sweep_report'),
       DialogueChoice(text: '请教剑气诀窍', nextId: 'lin_teach_sword_qi'),
@@ -465,5 +477,81 @@ final dialogues = <String, DialogueNode>{
     id: 'lin_solo',
     speaker: '林风',
     text: '也好。那就各走各的吧，江湖再见。',
+  ),
+
+  // ===== 沈万千 =====
+  'shen_greet': const DialogueNode(
+    id: 'shen_greet',
+    speaker: '沈万千',
+    text: '买卖要讲眼力，也讲胆识。你若只图便宜，就别进我这门。',
+    choices: [
+      DialogueChoice(text: '看看珍品', nextId: 'shen_treasure'),
+      DialogueChoice(text: '请教商路消息', nextId: 'shen_route_tip'),
+    ],
+    affectionChange: 1,
+  ),
+  'shen_treasure': const DialogueNode(
+    id: 'shen_treasure',
+    speaker: '沈万千',
+    text: '这批货里有云鳞宝甲和龙魂枪，都是压箱底的家伙。价高，但不会让你亏。',
+    expReward: 12,
+  ),
+  'shen_route_tip': const DialogueNode(
+    id: 'shen_route_tip',
+    speaker: '沈万千',
+    text: '黄沙驿站最近夜里不太平，若真要押货过去，记得留一手后队护卫。',
+    expReward: 10,
+    affectionChange: 1,
+  ),
+
+  // ===== 韩旗刀 =====
+  'han_greet': const DialogueNode(
+    id: 'han_greet',
+    speaker: '韩旗刀',
+    text: '驿站这边不养闲人。想在这条道上活久一点，就得懂巡防和换哨。',
+    choices: [
+      DialogueChoice(text: '请教驿站规矩', nextId: 'han_contract'),
+      DialogueChoice(text: '了解沙匪动向', nextId: 'han_bandit_report'),
+    ],
+    affectionChange: 1,
+  ),
+  'han_contract': const DialogueNode(
+    id: 'han_contract',
+    speaker: '韩旗刀',
+    text: '巡夜先看火点，再看马桩，最后盯风向。顺序错了，遇袭时你连人都叫不齐。',
+    expReward: 14,
+    affectionChange: 2,
+  ),
+  'han_bandit_report': const DialogueNode(
+    id: 'han_bandit_report',
+    speaker: '韩旗刀',
+    text: '这几天有探哨在外围踩点，你若外出，尽量别一个人走西侧沙梁。',
+    expReward: 9,
+  ),
+
+  // ===== 慕清河 =====
+  'mu_greet': const DialogueNode(
+    id: 'mu_greet',
+    speaker: '慕清河',
+    text: '寒潭不留浮躁之人。你若只求快剑，来错地方了。',
+    choices: [
+      DialogueChoice(text: '请前辈指点', nextId: 'mu_teach'),
+      DialogueChoice(text: '请教潭心古阵', nextId: 'mu_array_tip'),
+    ],
+    affectionChange: 1,
+  ),
+  'mu_teach': const DialogueNode(
+    id: 'mu_teach',
+    speaker: '慕清河',
+    text: '先学会“慢”，再学会“稳”。身法若能先一步落位，很多硬碰硬就不用打了。',
+    teachSkillId: 'mist_step',
+    expReward: 18,
+    affectionChange: 2,
+  ),
+  'mu_array_tip': const DialogueNode(
+    id: 'mu_array_tip',
+    speaker: '慕清河',
+    text: '潭心阵纹每逢子时会短暂回亮，那时观纹最清。别贪久，寒流会反噬经脉。',
+    expReward: 12,
   ),
 };

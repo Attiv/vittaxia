@@ -38,13 +38,17 @@ class _VisualMapWidgetState extends State<VisualMapWidget> {
   // 地图节点布局（相对坐标，0-1范围）
   static const Map<String, Offset> _nodePositions = {
     'qingyun_village': Offset(0.2, 0.5),
-    'qingfeng_town': Offset(0.5, 0.3),
+    'qingfeng_town': Offset(0.45, 0.32),
     'qingzhu_forest': Offset(0.2, 0.7),
-    'wangyue_tower': Offset(0.65, 0.45),
-    'luoxia_mountains': Offset(0.5, 0.15),
-    'wilderness_camp': Offset(0.7, 0.6),
-    'miwu_valley': Offset(0.8, 0.75),
-    'tianjian_gate': Offset(0.85, 0.9),
+    'wangyue_tower': Offset(0.63, 0.45),
+    'luoxia_mountains': Offset(0.46, 0.14),
+    'wilderness_camp': Offset(0.68, 0.6),
+    'miwu_valley': Offset(0.83, 0.74),
+    'tianjian_gate': Offset(0.84, 0.9),
+    'yunzhou_city': Offset(0.62, 0.25),
+    'huangsha_outpost': Offset(0.78, 0.48),
+    'youming_marsh': Offset(0.92, 0.64),
+    'xuanbing_lake': Offset(0.95, 0.4),
   };
 
   @override
@@ -75,9 +79,7 @@ class _VisualMapWidgetState extends State<VisualMapWidget> {
                 unlockedLocationIds: widget.unlockedLocationIds,
                 hoveredLocationId: hoveredLocationId,
               ),
-              child: Stack(
-                children: _buildLocationNodes(width, height),
-              ),
+              child: Stack(children: _buildLocationNodes(width, height)),
             ),
           ),
         );
@@ -164,10 +166,7 @@ class _VisualMapWidgetState extends State<VisualMapWidget> {
             decoration: BoxDecoration(
               color: bgColor,
               shape: BoxShape.circle,
-              border: Border.all(
-                color: borderColor,
-                width: isCurrent ? 3 : 2,
-              ),
+              border: Border.all(color: borderColor, width: isCurrent ? 3 : 2),
               boxShadow: isCurrent || isHovered
                   ? [
                       BoxShadow(
@@ -220,11 +219,7 @@ class _VisualMapWidgetState extends State<VisualMapWidget> {
           if (!isUnlocked)
             Padding(
               padding: const EdgeInsets.only(top: 2),
-              child: Icon(
-                Icons.lock,
-                size: 14,
-                color: AppColors.textSecondary,
-              ),
+              child: Icon(Icons.lock, size: 14, color: AppColors.textSecondary),
             ),
         ],
       ),
@@ -299,7 +294,8 @@ class _MapPainter extends CustomPainter {
         final isToUnlocked = unlockedLocationIds.contains(adjacentId);
         final isConnected = isFromUnlocked && isToUnlocked;
 
-        final isHighlighted = locationId == currentLocationId ||
+        final isHighlighted =
+            locationId == currentLocationId ||
             adjacentId == currentLocationId ||
             locationId == hoveredLocationId ||
             adjacentId == hoveredLocationId;
@@ -307,8 +303,8 @@ class _MapPainter extends CustomPainter {
         final paint = Paint()
           ..color = isConnected
               ? (isHighlighted
-                  ? AppColors.accent.withValues(alpha: 0.6)
-                  : AppColors.primaryLight.withValues(alpha: 0.4))
+                    ? AppColors.accent.withValues(alpha: 0.6)
+                    : AppColors.primaryLight.withValues(alpha: 0.4))
               : AppColors.textSecondary.withValues(alpha: 0.15)
           ..strokeWidth = isHighlighted ? 3 : 2
           ..style = PaintingStyle.stroke
@@ -335,11 +331,7 @@ class _MapPainter extends CustomPainter {
     while (currentDistance < distance) {
       final dashEnd = currentDistance + dashWidth;
       if (dashEnd > distance) {
-        canvas.drawLine(
-          start + unitVector * currentDistance,
-          end,
-          paint,
-        );
+        canvas.drawLine(start + unitVector * currentDistance, end, paint);
         break;
       }
 

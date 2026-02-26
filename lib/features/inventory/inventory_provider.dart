@@ -9,6 +9,7 @@ import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
 import '../../data/enhance_data.dart';
 import '../../data/item_data.dart';
+import '../equipment/equipment_system.dart';
 import '../../models/enums.dart';
 import '../character/character_provider.dart';
 
@@ -299,6 +300,28 @@ int _getEnhanceLevel(String? equipItemId, List<InventoryItem>? inventory) {
   return 0;
 }
 
+List<EquipmentSetActivation> activeEquipmentSetStates(dynamic character) {
+  return evaluateEquipmentSetActivations(
+    weaponId: character.weaponId,
+    armorId: character.armorId,
+    shoesId: character.shoesId,
+    accessoryId: character.accessoryId,
+  );
+}
+
+int _sumSetBonus(
+  List<EquipmentSetActivation> states,
+  int Function(SetBonus bonus) selector,
+) {
+  var total = 0;
+  for (final state in states) {
+    final bonus = state.activeBonus;
+    if (bonus == null) continue;
+    total += selector(bonus);
+  }
+  return total;
+}
+
 int totalAtk(dynamic character, [List<InventoryItem>? inventory]) {
   int bonus = 0;
   for (final id in [
@@ -312,6 +335,7 @@ int totalAtk(dynamic character, [List<InventoryItem>? inventory]) {
       bonus += _enhancedBonus(base, _getEnhanceLevel(id, inventory));
     }
   }
+  bonus += _sumSetBonus(activeEquipmentSetStates(character), (b) => b.atkBonus);
   return character.baseAtk + bonus;
 }
 
@@ -328,6 +352,7 @@ int totalDef(dynamic character, [List<InventoryItem>? inventory]) {
       bonus += _enhancedBonus(base, _getEnhanceLevel(id, inventory));
     }
   }
+  bonus += _sumSetBonus(activeEquipmentSetStates(character), (b) => b.defBonus);
   return character.baseDef + bonus;
 }
 
@@ -344,6 +369,10 @@ int totalSpeed(dynamic character, [List<InventoryItem>? inventory]) {
       bonus += _enhancedBonus(base, _getEnhanceLevel(id, inventory));
     }
   }
+  bonus += _sumSetBonus(
+    activeEquipmentSetStates(character),
+    (b) => b.speedBonus,
+  );
   return character.baseSpeed + bonus;
 }
 
@@ -356,6 +385,7 @@ int totalMaxHp(dynamic character, [List<InventoryItem>? inventory]) {
       bonus += _enhancedBonus(base, _getEnhanceLevel(id, inventory));
     }
   }
+  bonus += _sumSetBonus(activeEquipmentSetStates(c), (b) => b.hpBonus);
   return c.levelMaxHp + bonus;
 }
 
@@ -368,7 +398,28 @@ int totalMaxMp(dynamic character, [List<InventoryItem>? inventory]) {
       bonus += _enhancedBonus(base, _getEnhanceLevel(id, inventory));
     }
   }
+  bonus += _sumSetBonus(activeEquipmentSetStates(c), (b) => b.mpBonus);
   return c.levelMaxMp + bonus;
+}
+
+int totalLuck(dynamic character, [List<InventoryItem>? inventory]) {
+  int bonus = 0;
+  for (final id in [
+    character.weaponId,
+    character.armorId,
+    character.shoesId,
+    character.accessoryId,
+  ]) {
+    if (id != null && id.isNotEmpty) {
+      final base = items[id]?.luckBonus ?? 0;
+      bonus += _enhancedBonus(base, _getEnhanceLevel(id, inventory));
+    }
+  }
+  bonus += _sumSetBonus(
+    activeEquipmentSetStates(character),
+    (b) => b.luckBonus,
+  );
+  return character.baseLuck + bonus;
 }
 
 int totalMaxStamina(dynamic character) {

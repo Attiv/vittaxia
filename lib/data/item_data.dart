@@ -68,6 +68,18 @@ final items = <String, Item>{
     buyPrice: 80,
     sellPrice: 30,
   ),
+  'dragon_soul_spear': const Item(
+    id: 'dragon_soul_spear',
+    name: '龙魂枪',
+    description: '枪杆以陨铁锻成，出枪时隐有龙吟，兼具爆发与控场能力。',
+    type: ItemType.weapon,
+    rarity: ItemRarity.epic,
+    atkBonus: 34,
+    speedBonus: 4,
+    luckBonus: 2,
+    buyPrice: 1200,
+    sellPrice: 500,
+  ),
 
   // ===== 防具 (5件) =====
   'cloth_armor': const Item(
@@ -125,6 +137,18 @@ final items = <String, Item>{
     buyPrice: 800,
     sellPrice: 350,
   ),
+  'cloud_scale_robe': const Item(
+    id: 'cloud_scale_robe',
+    name: '云鳞宝甲',
+    description: '内衬云纹软鳞，外层薄如蝉翼，能在攻防间保持灵活。',
+    type: ItemType.armor,
+    rarity: ItemRarity.epic,
+    defBonus: 30,
+    hpBonus: 35,
+    speedBonus: 4,
+    buyPrice: 1280,
+    sellPrice: 520,
+  ),
 
   // ===== 鞋子 (3件) =====
   'straw_sandals': const Item(
@@ -171,10 +195,10 @@ final items = <String, Item>{
     buyPrice: 100,
     sellPrice: 40,
   ),
-  'ancient_jade': const Item(
-    id: 'ancient_jade',
-    name: '古玉',
-    description: '黑衣人留下的神秘古玉，上面刻着看不懂的符文。似乎蕴含着某种力量。',
+  'ancient_jade_talisman': const Item(
+    id: 'ancient_jade_talisman',
+    name: '古玉护符',
+    description: '仿古玉锻制的护符，能稳固真气流转，适合长期佩戴。',
     type: ItemType.accessory,
     rarity: ItemRarity.epic,
     atkBonus: 5,
@@ -184,6 +208,19 @@ final items = <String, Item>{
     luckBonus: 5,
     buyPrice: 0,
     sellPrice: 0,
+  ),
+  'heaven_mirror_ring': const Item(
+    id: 'heaven_mirror_ring',
+    name: '照天戒',
+    description: '古修士遗留的灵戒，佩戴后真气运转更稳，攻守兼备。',
+    type: ItemType.accessory,
+    rarity: ItemRarity.legendary,
+    atkBonus: 8,
+    defBonus: 8,
+    mpBonus: 35,
+    luckBonus: 8,
+    buyPrice: 1500,
+    sellPrice: 650,
   ),
 
   // ===== 消耗品 (2件) =====
@@ -227,6 +264,18 @@ final items = <String, Item>{
     healMp: 60,
     buyPrice: 80,
     sellPrice: 35,
+  ),
+  'nine_turn_pill': const Item(
+    id: 'nine_turn_pill',
+    name: '九转回元丹',
+    description: '高阶丹药，战后服用可迅速稳住伤势与内息，并恢复部分体力。',
+    type: ItemType.consumable,
+    rarity: ItemRarity.epic,
+    healHp: 220,
+    healMp: 120,
+    healStamina: 20,
+    buyPrice: 260,
+    sellPrice: 110,
   ),
 
   // ===== 材料 =====
@@ -303,6 +352,15 @@ final items = <String, Item>{
     rarity: ItemRarity.epic,
     buyPrice: 300,
     sellPrice: 130,
+  ),
+  'void_crystal': const Item(
+    id: 'void_crystal',
+    name: '幽冥晶',
+    description: '沼泽深处产出的异质晶石，可作为高阶锻造与阵法材料。',
+    type: ItemType.material,
+    rarity: ItemRarity.epic,
+    buyPrice: 220,
+    sellPrice: 95,
   ),
 
   // ===== 任务道具 =====

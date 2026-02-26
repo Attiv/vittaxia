@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import '../../data/item_data.dart';
 import '../../models/enums.dart';
 import '../../models/item.dart';
 
@@ -44,13 +43,28 @@ class SetBonus {
   });
 }
 
+/// 套装激活状态
+class EquipmentSetActivation {
+  final EquipmentSet set;
+  final int equippedPieces;
+  final SetBonus? activeBonus;
+
+  const EquipmentSetActivation({
+    required this.set,
+    required this.equippedPieces,
+    required this.activeBonus,
+  });
+
+  bool get isActive => activeBonus != null;
+}
+
 /// 装备套装数据
 final equipmentSets = <String, EquipmentSet>{
   'iron_warrior': const EquipmentSet(
     id: 'iron_warrior',
     name: '铁甲战士',
     description: '基础的铁制装备套装，适合新手使用。',
-    itemIds: ['iron_sword', 'iron_mail', 'iron_boots'],
+    itemIds: ['iron_sword', 'iron_mail', 'straw_sandals'],
     bonuses: {
       2: SetBonus(
         requiredPieces: 2,
@@ -73,11 +87,7 @@ final equipmentSets = <String, EquipmentSet>{
     description: '轻盈的装备套装，强化速度和闪避。',
     itemIds: ['qingzhu_sword', 'cloud_boots', 'jade_pendant'],
     bonuses: {
-      2: SetBonus(
-        requiredPieces: 2,
-        description: '2件套：速度+8',
-        speedBonus: 8,
-      ),
+      2: SetBonus(requiredPieces: 2, description: '2件套：速度+8', speedBonus: 8),
       3: SetBonus(
         requiredPieces: 3,
         description: '3件套：速度+15，运气+5',
@@ -90,13 +100,9 @@ final equipmentSets = <String, EquipmentSet>{
     id: 'cold_moon',
     name: '寒月',
     description: '寒气逼人的装备套装，攻击力强大。',
-    itemIds: ['cold_moon_blade', 'dark_robe', 'shadow_boots'],
+    itemIds: ['cold_moon_blade', 'dark_robe', 'wind_shadow_boots'],
     bonuses: {
-      2: SetBonus(
-        requiredPieces: 2,
-        description: '2件套：攻击+15',
-        atkBonus: 15,
-      ),
+      2: SetBonus(requiredPieces: 2, description: '2件套：攻击+15', atkBonus: 15),
       3: SetBonus(
         requiredPieces: 3,
         description: '3件套：攻击+30，速度+10',
@@ -105,7 +111,117 @@ final equipmentSets = <String, EquipmentSet>{
       ),
     },
   ),
+  'steel_frontier': const EquipmentSet(
+    id: 'steel_frontier',
+    name: '钢锋卫',
+    description: '攻守平衡的实战套装，适合中期稳定推进。',
+    itemIds: ['fine_steel_sword', 'leather_armor', 'cloud_boots'],
+    bonuses: {
+      2: SetBonus(
+        requiredPieces: 2,
+        description: '2件套：攻击+8，防御+8',
+        atkBonus: 8,
+        defBonus: 8,
+      ),
+      3: SetBonus(
+        requiredPieces: 3,
+        description: '3件套：生命+80，防御+18，速度+4',
+        hpBonus: 80,
+        defBonus: 18,
+        speedBonus: 4,
+      ),
+    },
+  ),
+  'night_veil': const EquipmentSet(
+    id: 'night_veil',
+    name: '夜幕行者',
+    description: '偏向突袭与机动的暗战套装。',
+    itemIds: ['bandit_saber', 'dark_robe', 'jade_pendant'],
+    bonuses: {
+      2: SetBonus(
+        requiredPieces: 2,
+        description: '2件套：攻击+12，速度+6',
+        atkBonus: 12,
+        speedBonus: 6,
+      ),
+      3: SetBonus(
+        requiredPieces: 3,
+        description: '3件套：攻击+20，速度+12，运气+6',
+        atkBonus: 20,
+        speedBonus: 12,
+        luckBonus: 6,
+      ),
+    },
+  ),
+  'heaven_pulse': const EquipmentSet(
+    id: 'heaven_pulse',
+    name: '天脉',
+    description: '高阶全面强化套装，兼具爆发、韧性与续航。',
+    itemIds: ['dragon_soul_spear', 'cloud_scale_robe', 'heaven_mirror_ring'],
+    bonuses: {
+      2: SetBonus(
+        requiredPieces: 2,
+        description: '2件套：攻击+18，防御+18，内力+40',
+        atkBonus: 18,
+        defBonus: 18,
+        mpBonus: 40,
+      ),
+      3: SetBonus(
+        requiredPieces: 3,
+        description: '3件套：生命+120，内力+80，攻+35，防+28，速+10，运+8',
+        hpBonus: 120,
+        mpBonus: 80,
+        atkBonus: 35,
+        defBonus: 28,
+        speedBonus: 10,
+        luckBonus: 8,
+      ),
+    },
+  ),
 };
+
+/// 计算当前装备的套装激活情况（同一套只取已达成的最高档位）
+List<EquipmentSetActivation> evaluateEquipmentSetActivations({
+  String? weaponId,
+  String? armorId,
+  String? shoesId,
+  String? accessoryId,
+}) {
+  final equippedItemIds = <String>{
+    if (weaponId != null && weaponId.isNotEmpty) weaponId,
+    if (armorId != null && armorId.isNotEmpty) armorId,
+    if (shoesId != null && shoesId.isNotEmpty) shoesId,
+    if (accessoryId != null && accessoryId.isNotEmpty) accessoryId,
+  };
+
+  final states = <EquipmentSetActivation>[];
+  for (final set in equipmentSets.values) {
+    final pieces = set.itemIds.where(equippedItemIds.contains).length;
+    SetBonus? active;
+    for (final bonus in set.bonuses.values) {
+      if (pieces < bonus.requiredPieces) continue;
+      if (active == null || bonus.requiredPieces > active.requiredPieces) {
+        active = bonus;
+      }
+    }
+    states.add(
+      EquipmentSetActivation(
+        set: set,
+        equippedPieces: pieces,
+        activeBonus: active,
+      ),
+    );
+  }
+
+  states.sort((a, b) {
+    if (a.isActive != b.isActive) return a.isActive ? -1 : 1;
+    if (a.equippedPieces != b.equippedPieces) {
+      return b.equippedPieces.compareTo(a.equippedPieces);
+    }
+    return a.set.name.compareTo(b.set.name);
+  });
+  return states;
+}
 
 /// 装备强化系统
 class EquipmentEnhanceSystem {
@@ -152,31 +268,31 @@ enum EnhanceFailurePenalty {
 class EquipmentQualitySystem {
   /// 升级装备品质所需材料
   static Map<ItemRarity, QualityUpgradeRecipe> get upgradeRecipes => {
-        ItemRarity.common: const QualityUpgradeRecipe(
-          fromRarity: ItemRarity.common,
-          toRarity: ItemRarity.uncommon,
-          materialId: 'fine_iron',
-          materialCount: 5,
-          silverCost: 200,
-          successRate: 0.8,
-        ),
-        ItemRarity.uncommon: const QualityUpgradeRecipe(
-          fromRarity: ItemRarity.uncommon,
-          toRarity: ItemRarity.rare,
-          materialId: 'mystic_ore',
-          materialCount: 3,
-          silverCost: 500,
-          successRate: 0.6,
-        ),
-        ItemRarity.rare: const QualityUpgradeRecipe(
-          fromRarity: ItemRarity.rare,
-          toRarity: ItemRarity.epic,
-          materialId: 'star_iron',
-          materialCount: 2,
-          silverCost: 1000,
-          successRate: 0.4,
-        ),
-      };
+    ItemRarity.common: const QualityUpgradeRecipe(
+      fromRarity: ItemRarity.common,
+      toRarity: ItemRarity.uncommon,
+      materialId: 'fine_iron',
+      materialCount: 5,
+      silverCost: 200,
+      successRate: 0.8,
+    ),
+    ItemRarity.uncommon: const QualityUpgradeRecipe(
+      fromRarity: ItemRarity.uncommon,
+      toRarity: ItemRarity.rare,
+      materialId: 'mystic_ore',
+      materialCount: 3,
+      silverCost: 500,
+      successRate: 0.6,
+    ),
+    ItemRarity.rare: const QualityUpgradeRecipe(
+      fromRarity: ItemRarity.rare,
+      toRarity: ItemRarity.epic,
+      materialId: 'star_iron',
+      materialCount: 2,
+      silverCost: 1000,
+      successRate: 0.4,
+    ),
+  };
 
   /// 品质升级后的属性提升
   static Item upgradeQuality(Item item, ItemRarity newRarity) {

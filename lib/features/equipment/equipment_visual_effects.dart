@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -51,6 +53,33 @@ final setVisualEffects = <String, EquipmentSetVisualEffect>{
     particleColors: [Color(0xFF4169E1), Color(0xFF6495ED), Color(0xFFB0C4DE)],
     specialIcon: Icons.ac_unit,
   ),
+  'steel_frontier': const EquipmentSetVisualEffect(
+    setId: 'steel_frontier',
+    primaryColor: Color(0xFF607D8B),
+    secondaryColor: Color(0xFF455A64),
+    glowColor: Color(0xFF90A4AE),
+    attackEffect: '钢锋突进',
+    particleColors: [Color(0xFF607D8B), Color(0xFF90A4AE)],
+    specialIcon: Icons.gavel,
+  ),
+  'night_veil': const EquipmentSetVisualEffect(
+    setId: 'night_veil',
+    primaryColor: Color(0xFF4A148C),
+    secondaryColor: Color(0xFF1A237E),
+    glowColor: Color(0xFF7E57C2),
+    attackEffect: '夜幕绝袭',
+    particleColors: [Color(0xFF4A148C), Color(0xFF7E57C2), Color(0xFF1A237E)],
+    specialIcon: Icons.nights_stay,
+  ),
+  'heaven_pulse': const EquipmentSetVisualEffect(
+    setId: 'heaven_pulse',
+    primaryColor: Color(0xFFFFA000),
+    secondaryColor: Color(0xFFF57C00),
+    glowColor: Color(0xFFFFD54F),
+    attackEffect: '天脉共鸣',
+    particleColors: [Color(0xFFFFA000), Color(0xFFFFD54F), Color(0xFFF57C00)],
+    specialIcon: Icons.bolt,
+  ),
 };
 
 /// 装备发光效果组件
@@ -84,9 +113,10 @@ class _EquipmentGlowEffectState extends State<EquipmentGlowEffect>
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat(reverse: true);
-    _animation = Tween<double>(begin: 0.6, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.6,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -148,11 +178,7 @@ class SetNameText extends StatelessWidget {
   Widget build(BuildContext context) {
     return ShaderMask(
       shaderCallback: (bounds) => LinearGradient(
-        colors: [
-          color,
-          color.withValues(alpha: 0.7),
-          color,
-        ],
+        colors: [color, color.withValues(alpha: 0.7), color],
         stops: const [0.0, 0.5, 1.0],
       ).createShader(bounds),
       child: Text(
@@ -198,13 +224,15 @@ class _AttackEffectAnimationState extends State<AttackEffectAnimation>
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.5, end: 2.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.5,
+      end: 2.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
-    _opacityAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _opacityAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _controller.forward().then((_) {
       widget.onComplete?.call();
@@ -249,12 +277,7 @@ class _AttackEffectAnimationState extends State<AttackEffectAnimation>
                   color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black,
-                      blurRadius: 4,
-                    ),
-                  ],
+                  shadows: [Shadow(color: Colors.black, blurRadius: 4)],
                 ),
               ),
             ),
@@ -336,20 +359,14 @@ class _ParticlePainter extends CustomPainter {
     for (var i = 0; i < particleCount; i++) {
       final angle = (i / particleCount) * 2 * 3.14159;
       final distance = maxRadius * progress;
-      final x = center.dx + distance * cos(angle);
-      final y = center.dy + distance * sin(angle);
+      final x = center.dx + distance * math.cos(angle);
+      final y = center.dy + distance * math.sin(angle);
 
       final paint = Paint()
-        ..color = colors[i % colors.length].withValues(
-          alpha: 1.0 - progress,
-        )
+        ..color = colors[i % colors.length].withValues(alpha: 1.0 - progress)
         ..style = PaintingStyle.fill;
 
-      canvas.drawCircle(
-        Offset(x, y),
-        4 * (1 - progress),
-        paint,
-      );
+      canvas.drawCircle(Offset(x, y), 4 * (1 - progress), paint);
     }
   }
 
@@ -357,9 +374,6 @@ class _ParticlePainter extends CustomPainter {
   bool shouldRepaint(_ParticlePainter oldDelegate) {
     return oldDelegate.progress != progress;
   }
-
-  double cos(double angle) => angle.cos();
-  double sin(double angle) => angle.sin();
 }
 
 /// 装备品质颜色
@@ -404,11 +418,7 @@ class EnhancementLevelBadge extends StatelessWidget {
   final int level;
   final double size;
 
-  const EnhancementLevelBadge({
-    super.key,
-    required this.level,
-    this.size = 20,
-  });
+  const EnhancementLevelBadge({super.key, required this.level, this.size = 20});
 
   @override
   Widget build(BuildContext context) {

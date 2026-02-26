@@ -3,17 +3,11 @@ import '../models/map_location.dart';
 
 /// 游戏地图数据
 /// 地图结构:
-///            [落霞山脉] (4)
-///                |
-///   [青云村]---+---[清风镇] (1)
-///   (起始,1)       |
-///      |       [望月楼] (3)
-///   [青竹林]       |
-///   (2)        [荒野营地] (4)
-///                |
-///           [迷雾谷] (6, 大成)
-///                |
-///           [天剑门外] (5, 主线)
+///                [玄冰寒潭] (8, 通脉)
+///                   |
+/// [青云村]--[清风镇]--[云州城]--[黄沙驿站]--[幽冥沼泽]--[迷雾谷]
+///    |         |         |          |             |         |
+/// [青竹林]   [望月楼]   [落霞山脉] [荒野营地]    [天剑门外]---+
 final mapLocations = <String, MapLocation>{
   'qingyun_village': const MapLocation(
     id: 'qingyun_village',
@@ -38,7 +32,12 @@ final mapLocations = <String, MapLocation>{
     description: '江湖人来人往的小镇，酒楼茶馆林立，是消息汇聚之地。醉仙楼的酒香飘出半条街。',
     type: LocationType.city,
     dangerLevel: 1,
-    adjacentIds: ['qingyun_village', 'wangyue_tower', 'luoxia_mountains'],
+    adjacentIds: [
+      'qingyun_village',
+      'wangyue_tower',
+      'luoxia_mountains',
+      'yunzhou_city',
+    ],
     npcIds: ['liu_ruyan', 'bai_wuchang', 'sun_yishou'],
     eventIds: [
       'qf_street_fight',
@@ -94,7 +93,7 @@ final mapLocations = <String, MapLocation>{
     description: '绵延数十里的山脉，山势险峻。近来有山贼盘踞，往来客商苦不堪言。',
     type: LocationType.wilderness,
     dangerLevel: 4,
-    adjacentIds: ['qingfeng_town', 'wilderness_camp'],
+    adjacentIds: ['qingfeng_town', 'wilderness_camp', 'huangsha_outpost'],
     npcIds: ['qin_zhu'],
     eventIds: [
       'lx_bandit_ambush',
@@ -114,7 +113,12 @@ final mapLocations = <String, MapLocation>{
     description: '江湖人士临时搭建的营地，常有佣兵和猎人在此歇脚。篝火旁总能听到各种传闻和故事。',
     type: LocationType.wilderness,
     dangerLevel: 4,
-    adjacentIds: ['wangyue_tower', 'luoxia_mountains', 'miwu_valley'],
+    adjacentIds: [
+      'wangyue_tower',
+      'luoxia_mountains',
+      'miwu_valley',
+      'huangsha_outpost',
+    ],
     npcIds: [],
     eventIds: [
       'wc_mercenary_talk',
@@ -131,7 +135,7 @@ final mapLocations = <String, MapLocation>{
     description: '常年弥漫浓雾的山谷，据说是通往天剑门的必经之路。雾中时有怪声，令人毛骨悚然。',
     type: LocationType.dungeon,
     dangerLevel: 6,
-    adjacentIds: ['wilderness_camp', 'tianjian_gate'],
+    adjacentIds: ['wilderness_camp', 'tianjian_gate', 'youming_marsh'],
     npcIds: ['lin_feng'],
     eventIds: [
       'mw_fog_illusion',
@@ -151,14 +155,81 @@ final mapLocations = <String, MapLocation>{
     description: '天剑门是江湖第一大派，门派坐落于云雾缭绕的山巅。门外石阶千级，气势恢宏。',
     type: LocationType.sect,
     dangerLevel: 5,
-    adjacentIds: ['miwu_valley'],
+    adjacentIds: ['miwu_valley', 'xuanbing_lake'],
     npcIds: [],
-    eventIds: [
-      'tj_disciple_challenge',
-      'tj_sword_intent',
-      'tj_gate_resonance',
-    ],
+    eventIds: ['tj_disciple_challenge', 'tj_sword_intent', 'tj_gate_resonance'],
     explorationSeconds: 45,
     requiredQuestId: 'main_07',
+  ),
+  'yunzhou_city': const MapLocation(
+    id: 'yunzhou_city',
+    name: '云州城',
+    description: '南北商路交汇的大城，镖局、商会与茶肆并立，消息与买卖都很活络。',
+    type: LocationType.city,
+    dangerLevel: 4,
+    adjacentIds: ['qingfeng_town', 'huangsha_outpost'],
+    npcIds: ['shen_wanqian'],
+    eventIds: [
+      'yz_trade_dispute',
+      'yz_secret_auction',
+      'yz_escort_request',
+      'yz_street_brawl',
+    ],
+    explorationSeconds: 42,
+  ),
+  'huangsha_outpost': const MapLocation(
+    id: 'huangsha_outpost',
+    name: '黄沙驿站',
+    description: '边路驿站，往来行商在此换马补给。夜里风沙呼啸，常有匪徒窥伺。',
+    type: LocationType.special,
+    dangerLevel: 5,
+    adjacentIds: [
+      'luoxia_mountains',
+      'wilderness_camp',
+      'yunzhou_city',
+      'youming_marsh',
+    ],
+    npcIds: ['han_qidao'],
+    eventIds: [
+      'hs_bandit_scout',
+      'hs_supply_caravan',
+      'hs_sandstorm_cache',
+      'hs_night_watch',
+    ],
+    explorationSeconds: 46,
+  ),
+  'youming_marsh': const MapLocation(
+    id: 'youming_marsh',
+    name: '幽冥沼泽',
+    description: '瘴气缭绕的古沼，枯木横生。误入者常在迷雾与泥潭中失去方向。',
+    type: LocationType.dungeon,
+    dangerLevel: 7,
+    adjacentIds: ['huangsha_outpost', 'miwu_valley', 'xuanbing_lake'],
+    npcIds: [],
+    eventIds: [
+      'ym_swamp_beast',
+      'ym_poison_miasma',
+      'ym_lost_relic',
+      'ym_shadow_hunter',
+    ],
+    explorationSeconds: 55,
+    requiredRealm: RealmTier.xianTian,
+  ),
+  'xuanbing_lake': const MapLocation(
+    id: 'xuanbing_lake',
+    name: '玄冰寒潭',
+    description: '终年不化的寒潭，水面如镜。潭心藏有古阵残痕，常引来强者闭关悟武。',
+    type: LocationType.special,
+    dangerLevel: 8,
+    adjacentIds: ['youming_marsh', 'tianjian_gate'],
+    npcIds: ['mu_qinghe'],
+    eventIds: [
+      'xb_ice_spirit',
+      'xb_cold_current',
+      'xb_ancient_altar',
+      'xb_sword_echo',
+    ],
+    explorationSeconds: 62,
+    requiredRealm: RealmTier.zhuJi,
   ),
 };

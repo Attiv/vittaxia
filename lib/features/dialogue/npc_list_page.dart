@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/router/page_transition.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/enums.dart';
 import '../../models/npc.dart';
@@ -21,9 +22,7 @@ class NpcListPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('附近的人')),
       body: npcsHere.isEmpty
-          ? Center(
-              child: Text('此处无人', style: theme.textTheme.bodyMedium),
-            )
+          ? Center(child: Text('此处无人', style: theme.textTheme.bodyMedium))
           : ListView(
               padding: const EdgeInsets.all(12),
               children: npcsHere.map((npc) {
@@ -39,7 +38,10 @@ class NpcListPage extends ConsumerWidget {
                     ),
                     title: Row(
                       children: [
-                        Text(npc.name, style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(
+                          npc.name,
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           npc.title,
@@ -53,8 +55,11 @@ class NpcListPage extends ConsumerWidget {
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(npc.description,
-                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(
+                          npc.description,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         const SizedBox(height: 4),
                         Text(
                           '好感: $aff ($label)',
@@ -81,11 +86,7 @@ class NpcListPage extends ConsumerWidget {
           IconButton(
             icon: Icon(Icons.chat, color: AppColors.accent, size: 20),
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => DialoguePage(npcId: npc.id, npc: npc),
-                ),
-              );
+              pushSmoothPage(context, DialoguePage(npcId: npc.id, npc: npc));
             },
             tooltip: '对话',
           ),
@@ -93,11 +94,7 @@ class NpcListPage extends ConsumerWidget {
           IconButton(
             icon: Icon(Icons.store, color: AppColors.accent, size: 20),
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ShopPage(npc: npc),
-                ),
-              );
+              pushSmoothPage(context, ShopPage(npc: npc));
             },
             tooltip: '商店',
           ),

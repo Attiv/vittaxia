@@ -38,11 +38,7 @@ final gameEvents = <String, GameEventData>{
         resultText: '老者讲述了一段关于"天剑门"的传奇，你若有所悟。',
         rewardExp: 10,
       ),
-      EventChoice(
-        text: '随意听听',
-        resultText: '你心不在焉，只记住了些零碎片段。',
-        rewardExp: 3,
-      ),
+      EventChoice(text: '随意听听', resultText: '你心不在焉，只记住了些零碎片段。', rewardExp: 3),
     ],
   ),
   'qy_chicken_chase': const GameEventData(
@@ -58,10 +54,7 @@ final gameEvents = <String, GameEventData>{
         rewardSilver: 5,
         rewardExp: 3,
       ),
-      EventChoice(
-        text: '视而不见',
-        resultText: '你从旁边走过，装作没看见。',
-      ),
+      EventChoice(text: '视而不见', resultText: '你从旁边走过，装作没看见。'),
     ],
   ),
   'qy_mysterious_traveler': const GameEventData(
@@ -118,11 +111,7 @@ final gameEvents = <String, GameEventData>{
         triggerBattle: true,
         enemyId: 'drunkard',
       ),
-      EventChoice(
-        text: '绕道走开',
-        resultText: '你摇摇头，不想惹麻烦。',
-        rewardExp: 2,
-      ),
+      EventChoice(text: '绕道走开', resultText: '你摇摇头，不想惹麻烦。', rewardExp: 2),
     ],
   ),
   'qf_merchant_deal': const GameEventData(
@@ -137,10 +126,7 @@ final gameEvents = <String, GameEventData>{
         resultText: '你翻看了一番，发现了一瓶还不错的金创药。',
         rewardItemId: 'healing_pill',
       ),
-      EventChoice(
-        text: '不感兴趣',
-        resultText: '你瞥了一眼便走开了。',
-      ),
+      EventChoice(text: '不感兴趣', resultText: '你瞥了一眼便走开了。'),
     ],
   ),
   'qf_rumor': const GameEventData(
@@ -155,11 +141,7 @@ final gameEvents = <String, GameEventData>{
         resultText: '你听到他们在谈论落霞山脉的山贼最近活动频繁，据说抢了一批很值钱的货物。',
         rewardExp: 8,
       ),
-      EventChoice(
-        text: '自顾喝茶',
-        resultText: '你淡然品茶，不理闲事。',
-        rewardExp: 2,
-      ),
+      EventChoice(text: '自顾喝茶', resultText: '你淡然品茶，不理闲事。', rewardExp: 2),
     ],
   ),
   'qf_pickpocket': const GameEventData(
@@ -318,11 +300,7 @@ final gameEvents = <String, GameEventData>{
         rewardItemId: 'bixin_herb',
         rewardExp: 10,
       ),
-      EventChoice(
-        text: '做个标记以后再来',
-        resultText: '你在附近的竹子上刻了个记号。',
-        rewardExp: 3,
-      ),
+      EventChoice(text: '做个标记以后再来', resultText: '你在附近的竹子上刻了个记号。', rewardExp: 3),
     ],
   ),
   'qz_bamboo_training': const GameEventData(
@@ -358,11 +336,7 @@ final gameEvents = <String, GameEventData>{
         rewardSilver: 30,
         rewardExp: 20,
       ),
-      EventChoice(
-        text: '太黑了不敢进',
-        resultText: '你犹豫再三，还是退了出来。',
-        rewardExp: 2,
-      ),
+      EventChoice(text: '太黑了不敢进', resultText: '你犹豫再三，还是退了出来。', rewardExp: 2),
     ],
   ),
   'qz_snake_encounter': const GameEventData(
@@ -372,11 +346,7 @@ final gameEvents = <String, GameEventData>{
     type: GameEventType.trap,
     weight: 7,
     choices: [
-      EventChoice(
-        text: '一棍打飞',
-        resultText: '你眼疾手快一棍子将蛇扫开，虚惊一场。',
-        rewardExp: 8,
-      ),
+      EventChoice(text: '一棍打飞', resultText: '你眼疾手快一棍子将蛇扫开，虚惊一场。', rewardExp: 8),
       EventChoice(
         text: '缓缓后退',
         resultText: '你慢慢退开，青蛇也没追来，但你出了一身冷汗。',
@@ -397,11 +367,7 @@ final gameEvents = <String, GameEventData>{
         rewardItemId: 'tianxing_stone',
         rewardExp: 12,
       ),
-      EventChoice(
-        text: '暂且放过',
-        resultText: '你担心这是诱饵，没有贸然下手。',
-        rewardExp: 3,
-      ),
+      EventChoice(text: '暂且放过', resultText: '你担心这是诱饵，没有贸然下手。', rewardExp: 3),
     ],
   ),
 
@@ -419,11 +385,7 @@ final gameEvents = <String, GameEventData>{
         resultText: '你在月光下吐纳真气，感觉经脉通畅了许多。',
         rewardExp: 25,
       ),
-      EventChoice(
-        text: '欣赏月色',
-        resultText: '月色如水，你心旷神怡。',
-        rewardExp: 5,
-      ),
+      EventChoice(text: '欣赏月色', resultText: '月色如水，你心旷神怡。', rewardExp: 5),
     ],
   ),
   'wy_ancient_scroll': const GameEventData(
@@ -438,11 +400,7 @@ final gameEvents = <String, GameEventData>{
         resultText: '你费了好大功夫才认出几个字，似乎是某种心法的残篇。虽然不完整，但你也有所收获。',
         rewardExp: 30,
       ),
-      EventChoice(
-        text: '收起来以后再看',
-        resultText: '你将纸片小心折好放入怀中。',
-        rewardExp: 5,
-      ),
+      EventChoice(text: '收起来以后再看', resultText: '你将纸片小心折好放入怀中。', rewardExp: 5),
     ],
   ),
   'wy_spirit_test': const GameEventData(
@@ -499,11 +457,7 @@ final gameEvents = <String, GameEventData>{
         rewardItemId: 'moonflower',
         rewardExp: 10,
       ),
-      EventChoice(
-        text: '只观不取',
-        resultText: '你只是静静看着花开花落，心神渐宁。',
-        rewardExp: 6,
-      ),
+      EventChoice(text: '只观不取', resultText: '你只是静静看着花开花落，心神渐宁。', rewardExp: 6),
     ],
   ),
 
@@ -562,11 +516,7 @@ final gameEvents = <String, GameEventData>{
         resultText: '你张开双臂模仿苍鹰的姿态，竟对身法有了新的理解。',
         rewardExp: 18,
       ),
-      EventChoice(
-        text: '驻足观赏',
-        resultText: '苍鹰振翅高飞，消失在云端。壮哉！',
-        rewardExp: 5,
-      ),
+      EventChoice(text: '驻足观赏', resultText: '苍鹰振翅高飞，消失在云端。壮哉！', rewardExp: 5),
     ],
   ),
   'lx_hermit_hut': const GameEventData(
@@ -581,11 +531,7 @@ final gameEvents = <String, GameEventData>{
         resultText: '无人应答。你推门进去，发现墙上刻着几招剑法的图示。你仔细研究，受益匪浅。',
         rewardExp: 25,
       ),
-      EventChoice(
-        text: '不打扰',
-        resultText: '你在门外行了一礼便离开了。',
-        rewardExp: 3,
-      ),
+      EventChoice(text: '不打扰', resultText: '你在门外行了一礼便离开了。', rewardExp: 3),
     ],
   ),
   'lx_bandit_camp': const GameEventData(
@@ -621,11 +567,7 @@ final gameEvents = <String, GameEventData>{
         rewardItemId: 'cold_iron',
         rewardExp: 14,
       ),
-      EventChoice(
-        text: '先记位置',
-        resultText: '你担心动静太大引来山贼，只做了标记。',
-        rewardExp: 4,
-      ),
+      EventChoice(text: '先记位置', resultText: '你担心动静太大引来山贼，只做了标记。', rewardExp: 4),
     ],
   ),
   'lx_mine_trail_cleanup': const GameEventData(
@@ -871,10 +813,7 @@ final gameEvents = <String, GameEventData>{
         resultText: '猎人拿出一些兽皮和草药，你挑选了一些有用的材料。',
         rewardItemId: 'rough_iron',
       ),
-      EventChoice(
-        text: '礼貌拒绝',
-        resultText: '你婉言谢绝，继续前行。',
-      ),
+      EventChoice(text: '礼貌拒绝', resultText: '你婉言谢绝，继续前行。'),
     ],
   ),
   'wc_rogue_encounter': const GameEventData(
@@ -909,11 +848,7 @@ final gameEvents = <String, GameEventData>{
         resultText: '你听到了一个关于古代高手的传说，心中若有所悟。',
         rewardExp: 18,
       ),
-      EventChoice(
-        text: '早早休息',
-        resultText: '你觉得疲惫，找了个角落休息去了。',
-        hpChange: 15,
-      ),
+      EventChoice(text: '早早休息', resultText: '你觉得疲惫，找了个角落休息去了。', hpChange: 15),
     ],
   ),
   'wc_night_ambush': const GameEventData(
@@ -929,11 +864,7 @@ final gameEvents = <String, GameEventData>{
         triggerBattle: true,
         enemyId: 'mountain_hunter',
       ),
-      EventChoice(
-        text: '假装熟睡',
-        resultText: '你闭目装睡，那声音渐渐远去了。',
-        rewardExp: 3,
-      ),
+      EventChoice(text: '假装熟睡', resultText: '你闭目装睡，那声音渐渐远去了。', rewardExp: 3),
     ],
   ),
 
@@ -1075,11 +1006,7 @@ final gameEvents = <String, GameEventData>{
         resultText: '老头掐指一算，说你近日会有贵人相助。虽然不知真假，但你心情愉悦。',
         rewardExp: 12,
       ),
-      EventChoice(
-        text: '笑而不语',
-        resultText: '你笑了笑，没有理会，继续前行。',
-        rewardExp: 2,
-      ),
+      EventChoice(text: '笑而不语', resultText: '你笑了笑，没有理会，继续前行。', rewardExp: 2),
     ],
   ),
 
@@ -1096,11 +1023,7 @@ final gameEvents = <String, GameEventData>{
         resultText: '乞丐收下银两，告诉你最近落霞山脉有山贼在抢劫过路商人，让你小心。',
         rewardExp: 10,
       ),
-      EventChoice(
-        text: '拒绝',
-        resultText: '你摇摇头走开了。',
-        rewardExp: 1,
-      ),
+      EventChoice(text: '拒绝', resultText: '你摇摇头走开了。', rewardExp: 1),
     ],
   ),
   'qf_weapon_shop': const GameEventData(
@@ -1116,11 +1039,7 @@ final gameEvents = <String, GameEventData>{
         rewardItemId: 'healing_pill',
         rewardExp: 5,
       ),
-      EventChoice(
-        text: '不需要',
-        resultText: '你现在不缺兵器，继续前行。',
-        rewardExp: 1,
-      ),
+      EventChoice(text: '不需要', resultText: '你现在不缺兵器，继续前行。', rewardExp: 1),
     ],
   ),
   'qf_poetry_contest': const GameEventData(
@@ -1156,11 +1075,7 @@ final gameEvents = <String, GameEventData>{
         rewardSilver: 30,
         rewardExp: 5,
       ),
-      EventChoice(
-        text: '远离赌博',
-        resultText: '你知道赌博害人，转身离开了。',
-        rewardExp: 3,
-      ),
+      EventChoice(text: '远离赌博', resultText: '你知道赌博害人，转身离开了。', rewardExp: 3),
     ],
   ),
   'qf_escort_mission': const GameEventData(
@@ -1176,11 +1091,7 @@ final gameEvents = <String, GameEventData>{
         rewardSilver: 40,
         rewardExp: 20,
       ),
-      EventChoice(
-        text: '婉拒',
-        resultText: '你现在有更重要的事情要做，婉言谢绝了。',
-        rewardExp: 2,
-      ),
+      EventChoice(text: '婉拒', resultText: '你现在有更重要的事情要做，婉言谢绝了。', rewardExp: 2),
     ],
   ),
 
@@ -1197,11 +1108,7 @@ final gameEvents = <String, GameEventData>{
         resultText: '你找到了吹笛之人，是一位隐居的老者。他见你有缘，传授了你一些内功心法。',
         rewardExp: 30,
       ),
-      EventChoice(
-        text: '静静聆听',
-        resultText: '你坐下来静静聆听，心境平和了许多。',
-        rewardExp: 10,
-      ),
+      EventChoice(text: '静静聆听', resultText: '你坐下来静静聆听，心境平和了许多。', rewardExp: 10),
     ],
   ),
   'qz_bamboo_shoots': const GameEventData(
@@ -1279,11 +1186,7 @@ final gameEvents = <String, GameEventData>{
         resultText: '你观察星象，似乎对天地运行有了一些新的理解。',
         rewardExp: 20,
       ),
-      EventChoice(
-        text: '随意看看',
-        resultText: '星空很美，你心情愉悦。',
-        rewardExp: 8,
-      ),
+      EventChoice(text: '随意看看', resultText: '星空很美，你心情愉悦。', rewardExp: 8),
     ],
   ),
   'wy_mysterious_woman': const GameEventData(
@@ -1298,11 +1201,7 @@ final gameEvents = <String, GameEventData>{
         resultText: '女子看了你一眼，淡淡地说："你不是我要等的人。"然后飘然离去。',
         rewardExp: 10,
       ),
-      EventChoice(
-        text: '不打扰',
-        resultText: '你识趣地没有打扰，继续自己的事情。',
-        rewardExp: 5,
-      ),
+      EventChoice(text: '不打扰', resultText: '你识趣地没有打扰，继续自己的事情。', rewardExp: 5),
     ],
   ),
   'wy_poetry_scroll': const GameEventData(
@@ -1317,11 +1216,7 @@ final gameEvents = <String, GameEventData>{
         resultText: '你读完诗卷，对文学和人生有了更深的感悟。',
         rewardExp: 25,
       ),
-      EventChoice(
-        text: '随便翻翻',
-        resultText: '你翻了几页，看不太懂，放下了。',
-        rewardExp: 8,
-      ),
+      EventChoice(text: '随便翻翻', resultText: '你翻了几页，看不太懂，放下了。', rewardExp: 8),
     ],
   ),
 
@@ -1339,11 +1234,7 @@ final gameEvents = <String, GameEventData>{
         hpChange: 20,
         rewardExp: 8,
       ),
-      EventChoice(
-        text: '装满水囊',
-        resultText: '你装满了水囊，以备不时之需。',
-        rewardExp: 5,
-      ),
+      EventChoice(text: '装满水囊', resultText: '你装满了水囊，以备不时之需。', rewardExp: 5),
     ],
   ),
   'lx_merchant_caravan': const GameEventData(
@@ -1359,11 +1250,7 @@ final gameEvents = <String, GameEventData>{
         rewardItemId: 'healing_pill',
         rewardExp: 10,
       ),
-      EventChoice(
-        text: '继续前行',
-        resultText: '你点点头，继续赶路。',
-        rewardExp: 3,
-      ),
+      EventChoice(text: '继续前行', resultText: '你点点头，继续赶路。', rewardExp: 3),
     ],
   ),
   'lx_rare_ore': const GameEventData(
@@ -1400,11 +1287,7 @@ final gameEvents = <String, GameEventData>{
         resultText: '你试图与之沟通，但它只是茫然地看着你，然后消失在雾中。',
         rewardExp: 15,
       ),
-      EventChoice(
-        text: '快速离开',
-        resultText: '你感到不安，加快脚步离开了。',
-        rewardExp: 5,
-      ),
+      EventChoice(text: '快速离开', resultText: '你感到不安，加快脚步离开了。', rewardExp: 5),
     ],
   ),
   'mw_ancient_stele': const GameEventData(
@@ -1439,11 +1322,7 @@ final gameEvents = <String, GameEventData>{
         rewardItemId: 'tianxing_stone',
         rewardExp: 25,
       ),
-      EventChoice(
-        text: '不敢靠近',
-        resultText: '你担心有危险，没有靠近。',
-        rewardExp: 5,
-      ),
+      EventChoice(text: '不敢靠近', resultText: '你担心有危险，没有靠近。', rewardExp: 5),
     ],
   ),
 
@@ -1460,11 +1339,7 @@ final gameEvents = <String, GameEventData>{
         resultText: '你在剑碑前静坐参悟，对剑道有了更深的理解。',
         rewardExp: 40,
       ),
-      EventChoice(
-        text: '匆匆而过',
-        resultText: '你看了一眼，继续前行。',
-        rewardExp: 10,
-      ),
+      EventChoice(text: '匆匆而过', resultText: '你看了一眼，继续前行。', rewardExp: 10),
     ],
   ),
   'tj_elder_guidance': const GameEventData(
@@ -1474,16 +1349,8 @@ final gameEvents = <String, GameEventData>{
     type: GameEventType.npcEncounter,
     weight: 6,
     choices: [
-      EventChoice(
-        text: '请教剑法',
-        resultText: '长老指点了你几招，你茅塞顿开。',
-        rewardExp: 50,
-      ),
-      EventChoice(
-        text: '恭敬行礼',
-        resultText: '你恭敬地行礼，长老点点头离开了。',
-        rewardExp: 15,
-      ),
+      EventChoice(text: '请教剑法', resultText: '长老指点了你几招，你茅塞顿开。', rewardExp: 50),
+      EventChoice(text: '恭敬行礼', resultText: '你恭敬地行礼，长老点点头离开了。', rewardExp: 15),
     ],
   ),
 
@@ -1500,11 +1367,7 @@ final gameEvents = <String, GameEventData>{
         resultText: '老兵教了你一些保养兵器的方法，你的兵器焕然一新。',
         rewardExp: 12,
       ),
-      EventChoice(
-        text: '只是观看',
-        resultText: '你在旁边看了一会儿，学到了一些皮毛。',
-        rewardExp: 5,
-      ),
+      EventChoice(text: '只是观看', resultText: '你在旁边看了一会儿，学到了一些皮毛。', rewardExp: 5),
     ],
   ),
   'wc_dice_game': const GameEventData(
@@ -1520,10 +1383,307 @@ final gameEvents = <String, GameEventData>{
         rewardSilver: 15,
         rewardExp: 8,
       ),
+      EventChoice(text: '婉拒', resultText: '你不想赌博，婉言谢绝了。', rewardExp: 3),
+    ],
+  ),
+
+  // ===== 云州城 =====
+  'yz_trade_dispute': const GameEventData(
+    id: 'yz_trade_dispute',
+    name: '商会纠纷',
+    description: '两家商号在街口争执不下，围观者越聚越多。',
+    type: GameEventType.npcEncounter,
+    weight: 11,
+    choices: [
       EventChoice(
-        text: '婉拒',
-        resultText: '你不想赌博，婉言谢绝了。',
-        rewardExp: 3,
+        text: '出面调停',
+        resultText: '你把账目和货单一一理顺，双方终于握手言和。',
+        rewardExp: 18,
+        rewardSilver: 12,
+      ),
+      EventChoice(text: '只看热闹', resultText: '你听了半天，顺手记住了几条商路消息。', rewardExp: 7),
+    ],
+  ),
+  'yz_secret_auction': const GameEventData(
+    id: 'yz_secret_auction',
+    name: '暗巷拍卖',
+    description: '夜色中，一场小型拍卖正在巷内悄悄进行，台上摆着几件稀有货。',
+    type: GameEventType.merchant,
+    weight: 7,
+    choices: [
+      EventChoice(
+        text: '竞拍丹药',
+        resultText: '你抢下一枚品质上佳的丹药，虽花了钱但很值。',
+        rewardItemId: 'nine_turn_pill',
+        rewardExp: 14,
+      ),
+      EventChoice(text: '观望离开', resultText: '你记下了拍卖会暗号，决定改日再来。', rewardExp: 6),
+    ],
+  ),
+  'yz_escort_request': const GameEventData(
+    id: 'yz_escort_request',
+    name: '临时押镖',
+    description: '镖局缺人手，镖头开出短途押运的临时酬金。',
+    type: GameEventType.adventure,
+    weight: 9,
+    choices: [
+      EventChoice(
+        text: '接下押运',
+        resultText: '你护送货箱穿过闹市，顺利交货。',
+        rewardExp: 16,
+        rewardSilver: 20,
+      ),
+      EventChoice(text: '婉拒委托', resultText: '你暂不打算分心，继续在城中打探消息。', rewardExp: 5),
+    ],
+  ),
+  'yz_street_brawl': const GameEventData(
+    id: 'yz_street_brawl',
+    name: '巷战突袭',
+    description: '几名浪人突然从巷尾包抄上来，显然盯上了你的行囊。',
+    type: GameEventType.battle,
+    weight: 6,
+    choices: [
+      EventChoice(
+        text: '拔刀迎敌',
+        resultText: '你转身立定，正面接战。',
+        triggerBattle: true,
+        enemyId: 'rogue_swordsman',
+      ),
+      EventChoice(text: '借巷脱身', resultText: '你利用地形绕开包抄，成功甩掉对方。', rewardExp: 8),
+    ],
+  ),
+
+  // ===== 黄沙驿站 =====
+  'hs_bandit_scout': const GameEventData(
+    id: 'hs_bandit_scout',
+    name: '沙匪探哨',
+    description: '驿站外的沙丘上出现了可疑身影，像是在踩点。',
+    type: GameEventType.battle,
+    weight: 9,
+    choices: [
+      EventChoice(
+        text: '上前拿人',
+        resultText: '对方转身就逃，你紧追不舍后爆发冲突。',
+        triggerBattle: true,
+        enemyId: 'bandit',
+      ),
+      EventChoice(
+        text: '回报驿站',
+        resultText: '你把动向报给守夜人，驿站很快加强了巡防。',
+        rewardExp: 10,
+      ),
+    ],
+  ),
+  'hs_supply_caravan': const GameEventData(
+    id: 'hs_supply_caravan',
+    name: '补给车队',
+    description: '一支补给车队刚抵达驿站，车上堆满了矿料与药材。',
+    type: GameEventType.treasure,
+    weight: 10,
+    choices: [
+      EventChoice(
+        text: '帮忙卸货',
+        resultText: '你忙前忙后，车队管事送你一块上好的矿料。',
+        rewardItemId: 'mystic_ore',
+        rewardExp: 13,
+      ),
+      EventChoice(
+        text: '只问路况',
+        resultText: '你问清了前路风沙时段，行程能更稳一些。',
+        rewardExp: 7,
+      ),
+    ],
+  ),
+  'hs_sandstorm_cache': const GameEventData(
+    id: 'hs_sandstorm_cache',
+    name: '风沙埋箱',
+    description: '狂风过后，沙地里露出半截木箱角，看上去像是旧行商留下的货。',
+    type: GameEventType.trap,
+    weight: 7,
+    choices: [
+      EventChoice(
+        text: '强行挖掘',
+        resultText: '你顶着风沙挖出箱子，手臂被砂石划伤，但也有收获。',
+        hpChange: -12,
+        rewardSilver: 18,
+        rewardExp: 14,
+      ),
+      EventChoice(text: '谨慎放弃', resultText: '你判断风势未稳，决定先撤回驿站。', rewardExp: 5),
+    ],
+  ),
+  'hs_night_watch': const GameEventData(
+    id: 'hs_night_watch',
+    name: '夜巡火线',
+    description: '深夜巡防时，你在马厩后方撞见了一名潜行者。',
+    type: GameEventType.battle,
+    weight: 6,
+    choices: [
+      EventChoice(
+        text: '当场拦截',
+        resultText: '对方冷笑一声，拔刃便战。',
+        triggerBattle: true,
+        enemyId: 'shadow_assassin',
+      ),
+      EventChoice(
+        text: '尾随观察',
+        resultText: '你一路跟踪摸清了对方撤离路线，避免了正面硬拼。',
+        rewardExp: 11,
+      ),
+    ],
+  ),
+
+  // ===== 幽冥沼泽 =====
+  'ym_swamp_beast': const GameEventData(
+    id: 'ym_swamp_beast',
+    name: '泥沼凶兽',
+    description: '泥潭深处传来低吼，一头血狼从腐木后跃出。',
+    type: GameEventType.battle,
+    weight: 10,
+    choices: [
+      EventChoice(
+        text: '正面迎击',
+        resultText: '你稳住下盘，与凶兽短兵相接。',
+        triggerBattle: true,
+        enemyId: 'blood_wolf',
+      ),
+      EventChoice(
+        text: '丢诱饵撤离',
+        resultText: '你扔出干粮引开它，趁机退到安全地带。',
+        rewardExp: 9,
+      ),
+    ],
+  ),
+  'ym_poison_miasma': const GameEventData(
+    id: 'ym_poison_miasma',
+    name: '瘴雾回潮',
+    description: '沼泽瘴气突然回卷，呼吸间胸口发闷。',
+    type: GameEventType.trap,
+    weight: 8,
+    choices: [
+      EventChoice(
+        text: '运功护体',
+        resultText: '你强行压住毒雾侵体，勉强稳住气息。',
+        hpChange: -18,
+        rewardExp: 15,
+      ),
+      EventChoice(text: '顺风绕行', resultText: '你顺着风向绕开最浓雾区，虽慢但安全。', rewardExp: 8),
+    ],
+  ),
+  'ym_lost_relic': const GameEventData(
+    id: 'ym_lost_relic',
+    name: '沉泥遗物',
+    description: '你在泥水里摸到一只密封铁匣，匣面刻着旧朝工坊印记。',
+    type: GameEventType.treasure,
+    weight: 7,
+    choices: [
+      EventChoice(
+        text: '撬开铁匣',
+        resultText: '匣中竟是一枚幽光矿晶，价值不菲。',
+        rewardItemId: 'void_crystal',
+        rewardExp: 20,
+      ),
+      EventChoice(
+        text: '带回再开',
+        resultText: '你把铁匣先收好，避免在泥地里手忙脚乱。',
+        rewardExp: 10,
+      ),
+    ],
+  ),
+  'ym_shadow_hunter': const GameEventData(
+    id: 'ym_shadow_hunter',
+    name: '沼泽猎影',
+    description: '一道黑影踩着浮木疾行而来，杀机直指你背后。',
+    type: GameEventType.battle,
+    weight: 5,
+    choices: [
+      EventChoice(
+        text: '回身破招',
+        resultText: '你听风辨位，反手一击逼出对方身形。',
+        triggerBattle: true,
+        enemyId: 'shadow_assassin',
+      ),
+      EventChoice(
+        text: '借雾隐匿',
+        resultText: '你主动压低气息融入雾中，反追对手踪迹。',
+        rewardExp: 12,
+      ),
+    ],
+  ),
+
+  // ===== 玄冰寒潭 =====
+  'xb_ice_spirit': const GameEventData(
+    id: 'xb_ice_spirit',
+    name: '寒潭幽灵',
+    description: '寒雾凝成一道人形，步履无声地逼近你。',
+    type: GameEventType.battle,
+    weight: 8,
+    choices: [
+      EventChoice(
+        text: '凝神出手',
+        resultText: '你以内劲震散寒雾，与幽灵缠斗。',
+        triggerBattle: true,
+        enemyId: 'ghost',
+      ),
+      EventChoice(
+        text: '暂避锋芒',
+        resultText: '你退到石壁旁等待雾势减弱，再行前进。',
+        rewardExp: 10,
+      ),
+    ],
+  ),
+  'xb_cold_current': const GameEventData(
+    id: 'xb_cold_current',
+    name: '寒流突袭',
+    description: '潭底寒流翻涌而上，你的经脉瞬间被冻得刺痛。',
+    type: GameEventType.trap,
+    weight: 8,
+    choices: [
+      EventChoice(
+        text: '硬抗寒流',
+        resultText: '你咬牙稳住气血，虽然受伤，却逼出一丝寒劲感悟。',
+        hpChange: -20,
+        rewardExp: 18,
+      ),
+      EventChoice(text: '退出水域', resultText: '你迅速退回岸边，调整呼吸再做打算。', rewardExp: 7),
+    ],
+  ),
+  'xb_ancient_altar': const GameEventData(
+    id: 'xb_ancient_altar',
+    name: '古阵祭坛',
+    description: '潭心石台浮现出古阵纹路，微光在纹路间流转。',
+    type: GameEventType.scenery,
+    weight: 9,
+    choices: [
+      EventChoice(
+        text: '盘坐参悟',
+        resultText: '你沿阵纹运转真气，心神前所未有地澄明。',
+        rewardItemId: 'tianxing_stone',
+        rewardExp: 26,
+      ),
+      EventChoice(
+        text: '拓下阵图',
+        resultText: '你把阵图轮廓记下，准备回去慢慢推演。',
+        rewardExp: 12,
+      ),
+    ],
+  ),
+  'xb_sword_echo': const GameEventData(
+    id: 'xb_sword_echo',
+    name: '剑痕回响',
+    description: '石壁上的旧剑痕突然共鸣，仿佛有无形剑客在你眼前演武。',
+    type: GameEventType.adventure,
+    weight: 6,
+    choices: [
+      EventChoice(
+        text: '追随剑势',
+        resultText: '你顺着剑势演练步法，竟在回响中摸到新门径。',
+        rewardExp: 24,
+      ),
+      EventChoice(
+        text: '试招切磋',
+        resultText: '你主动拔剑对招，剑意凝形后化作门中弟子虚影。',
+        triggerBattle: true,
+        enemyId: 'tianjian_disciple',
       ),
     ],
   ),
