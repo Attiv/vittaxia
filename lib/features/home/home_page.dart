@@ -37,6 +37,7 @@ import '../idle/idle_calculator.dart';
 import '../idle/idle_reward_dialog.dart';
 import '../inventory/inventory_page.dart';
 import '../inventory/inventory_provider.dart';
+import 'jianghu_order_rules.dart';
 import '../map/map_page.dart';
 import '../mine/mine_page.dart';
 import '../quest/quest_page.dart';
@@ -97,8 +98,6 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   static const _cheatUnlockPassword = 'attiv';
   static const _titleTapThreshold = 5;
-  static const _bountyStaminaBase = 8;
-  static const _escortStaminaCost = 12;
 
   bool _checkedIdleReward = false;
   bool _restoredCharacter = false;
@@ -1583,7 +1582,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '单机玩法：接悬赏、跑押镖。悬赏需先战斗，胜利后额外结算奖励。',
+                    '单机玩法：接悬赏、跑押镖、巡防缉盗。风险越高，收益越高。',
                     style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 12.5,
@@ -1731,7 +1730,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             children: [
                               _buildMiniTag(
                                 Icons.local_fire_department,
-                                '体力消耗 $_escortStaminaCost',
+                                '体力消耗 $escortStaminaCost',
                               ),
                               _buildMiniTag(Icons.attach_money, '奖励：银两/经验/矿料'),
                             ],
@@ -1749,6 +1748,58 @@ class _HomePageState extends ConsumerState<HomePage> {
                               },
                               icon: const Icon(Icons.local_shipping, size: 16),
                               label: const Text('开始押镖'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '巡防缉盗',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '按当前地点危险度巡防，可能平稳结案，也可能遭遇伏击。',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            children: [
+                              _buildMiniTag(
+                                Icons.local_fire_department,
+                                '体力消耗 $patrolStaminaCost',
+                              ),
+                              _buildMiniTag(Icons.security, '奖励：经验/银两/锻造材料'),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.of(sheetContext).pop();
+                                Future<void>.delayed(
+                                  const Duration(milliseconds: 120),
+                                  _startPatrolMission,
+                                );
+                              },
+                              icon: const Icon(Icons.shield, size: 16),
+                              label: const Text('开始巡防'),
                             ),
                           ),
                         ],
@@ -1787,7 +1838,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   List<_BountyContract> _generateBountyContracts(dynamic character) {
     final tierIndex = character.realmTierIndex as int;
-    final pools = _selectBountyEnemyPool(tierIndex);
+    final pools = selectBountyEnemyPool(tierIndex);
     final pool = List<String>.from(pools)..shuffle(_rng);
     final takeCount = min(3, pool.length);
     final selected = pool.take(takeCount).toList();
@@ -1799,13 +1850,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       if (enemy == null) continue;
 
       final tier = i + 1;
-      final staminaCost = _bountyStaminaBase + tier * 3;
-      final bonusExp = (enemy.expReward * (0.45 + tier * 0.22)).round();
-      final bonusSilver =
-          (enemy.silverReward * (0.6 + tier * 0.25)).round() + tier * 12;
-      final extraItemId = tier >= 3
-          ? (enemy.dropItemId ?? (_rng.nextBool() ? 'fine_iron' : 'mystic_ore'))
-          : null;
+      final rule = buildBountyRule(enemy: enemy, tier: tier, rng: _rng);
 
       contracts.add(
         _BountyContract(
@@ -1813,44 +1858,14 @@ class _HomePageState extends ConsumerState<HomePage> {
           title: '悬赏${enemy.name}',
           brief: '目标：${enemy.name}（威胁阶 ${enemy.atk ~/ 10 + 1}）',
           tierLabel: '令阶$tier',
-          staminaCost: staminaCost,
-          bonusExp: bonusExp,
-          bonusSilver: bonusSilver,
-          bonusItemId: extraItemId,
+          staminaCost: rule.staminaCost,
+          bonusExp: rule.bonusExp,
+          bonusSilver: rule.bonusSilver,
+          bonusItemId: rule.bonusItemId,
         ),
       );
     }
     return contracts;
-  }
-
-  List<String> _selectBountyEnemyPool(int tierIndex) {
-    if (tierIndex <= 1) {
-      return const [
-        'wild_dog',
-        'drunkard',
-        'wild_boar',
-        'mine_bat',
-        'cave_snake',
-      ];
-    }
-    if (tierIndex <= 3) {
-      return const [
-        'bandit',
-        'shadow_assassin',
-        'rogue_swordsman',
-        'mountain_hunter',
-        'corrupted_monk',
-      ];
-    }
-    if (tierIndex <= 5) {
-      return const ['ghost', 'blood_wolf', 'tomb_warrior', 'iron_golem'];
-    }
-    return const [
-      'bandit_leader',
-      'tianjian_disciple',
-      'phantom_lord',
-      'iron_golem',
-    ];
   }
 
   Future<void> _startBountyContract(_BountyContract contract) async {
@@ -1904,7 +1919,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     final consumeOk = await ref
         .read(characterNotifierProvider.notifier)
-        .consumeStamina(character.id, _escortStaminaCost);
+        .consumeStamina(character.id, escortStaminaCost);
     if (!consumeOk) {
       _showActionTip('体力不足，无法押镖');
       return;
@@ -1912,30 +1927,39 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     final speed = totalSpeed(character);
     final luck = totalLuck(character);
-    final successRate = (0.48 + speed * 0.006 + luck * 0.004).clamp(0.5, 0.92);
-    final success = _rng.nextDouble() < successRate;
+    final defense = totalDef(character);
+    final outcome = rollEscortOutcome(
+      speed: speed,
+      luck: luck,
+      defense: defense,
+      currentSilver: character.silver,
+      rng: _rng,
+    );
 
-    if (success) {
-      final silverGain = 65 + _rng.nextInt(65) + luck;
-      final expGain = 24 + _rng.nextInt(24);
-      final itemId = _rng.nextDouble() < 0.32
-          ? (_rng.nextDouble() < 0.6 ? 'fine_iron' : 'mystic_ore')
-          : null;
-      applyEventRewards(ref, exp: expGain, silver: silverGain, itemId: itemId);
+    if (outcome.success) {
+      applyEventRewards(
+        ref,
+        exp: outcome.expDelta,
+        silver: outcome.silverDelta,
+        itemId: outcome.rewardItemId,
+      );
       ref
           .read(gameLogProvider.notifier)
-          .addLog('押镖顺利抵达，商队当场结清酬金。', type: LogType.explore);
-      _showActionTip('押镖成功：经验+$expGain，银两+$silverGain');
+          .addLog(
+            '押镖顺利抵达，商队当场结清酬金。'
+            '${outcome.rewardItemId == null ? '' : ' 你还额外拿到了一份锻材。'}',
+            type: LogType.explore,
+          );
+      _showActionTip('押镖成功：经验+${outcome.expDelta}，银两+${outcome.silverDelta}');
       return;
     }
 
-    final hpLoss = 12 + _rng.nextInt(18);
-    final silverLoss = min(character.silver, 18 + _rng.nextInt(36));
+    final silverLoss = -outcome.silverDelta;
     await ref
         .read(characterNotifierProvider.notifier)
         .updateStats(
           characterId: character.id,
-          currentHp: (character.currentHp - hpLoss).clamp(
+          currentHp: (character.currentHp - outcome.hpLoss).clamp(
             1,
             totalMaxHp(character),
           ),
@@ -1944,7 +1968,114 @@ class _HomePageState extends ConsumerState<HomePage> {
     ref
         .read(gameLogProvider.notifier)
         .addLog('押镖途中遭遇伏击，虽保住性命，但损失了部分财货。', type: LogType.combat);
-    _showActionTip('押镖失利：气血-$hpLoss，银两-$silverLoss');
+    _showActionTip('押镖失利：气血-${outcome.hpLoss}，银两-$silverLoss');
+  }
+
+  Future<void> _startPatrolMission() async {
+    final character = ref.read(currentCharacterProvider).valueOrNull;
+    if (character == null) return;
+
+    final consumeOk = await ref
+        .read(characterNotifierProvider.notifier)
+        .consumeStamina(character.id, patrolStaminaCost);
+    if (!consumeOk) {
+      _showActionTip('体力不足，无法巡防');
+      return;
+    }
+
+    final location = ref.read(currentLocationProvider);
+    final dangerLevel = location?.dangerLevel ?? 3;
+    final speed = totalSpeed(character);
+    final luck = totalLuck(character);
+    final defense = totalDef(character);
+
+    final outcome = rollPatrolOutcome(
+      tierIndex: character.realmTierIndex,
+      dangerLevel: dangerLevel,
+      speed: speed,
+      luck: luck,
+      defense: defense,
+      currentSilver: character.silver,
+      rng: _rng,
+    );
+
+    if (outcome.requiresBattle && outcome.enemyId != null) {
+      final enemyName = enemies[outcome.enemyId!]?.name ?? outcome.enemyId!;
+      ref
+          .read(gameLogProvider.notifier)
+          .addLog('巡防途中发现$enemyName拦路，你当即拔兵器迎战。', type: LogType.combat);
+
+      if (!mounted) return;
+      final won = await pushSmoothPage<bool>(
+        context,
+        BattlePage(enemyId: outcome.enemyId!),
+      );
+      if (won == true) {
+        applyEventRewards(
+          ref,
+          exp: outcome.successExp,
+          silver: outcome.successSilver,
+          itemId: outcome.successItemId,
+        );
+        ref
+            .read(gameLogProvider.notifier)
+            .addLog('巡防清剿成功，地头行商纷纷送上谢礼。', type: LogType.quest);
+        _showActionTip(
+          '巡防成功：经验+${outcome.successExp}，银两+${outcome.successSilver}',
+        );
+      } else {
+        await ref
+            .read(characterNotifierProvider.notifier)
+            .updateStats(
+              characterId: character.id,
+              currentHp: (character.currentHp - outcome.failureHpLoss).clamp(
+                1,
+                totalMaxHp(character),
+              ),
+              silver: character.silver - outcome.failureSilverLoss,
+            );
+        ref
+            .read(gameLogProvider.notifier)
+            .addLog('巡防遭伏击失利，你只能先行撤回。', type: LogType.combat);
+        _showActionTip(
+          '巡防失利：气血-${outcome.failureHpLoss}，银两-${outcome.failureSilverLoss}',
+        );
+      }
+      return;
+    }
+
+    if (outcome.autoSuccess) {
+      applyEventRewards(
+        ref,
+        exp: outcome.successExp,
+        silver: outcome.successSilver,
+        itemId: outcome.successItemId,
+      );
+      ref
+          .read(gameLogProvider.notifier)
+          .addLog('巡防顺利结案，沿路商户主动上缴赏金。', type: LogType.quest);
+      _showActionTip(
+        '巡防成功：经验+${outcome.successExp}，银两+${outcome.successSilver}',
+      );
+      return;
+    }
+
+    await ref
+        .read(characterNotifierProvider.notifier)
+        .updateStats(
+          characterId: character.id,
+          currentHp: (character.currentHp - outcome.failureHpLoss).clamp(
+            1,
+            totalMaxHp(character),
+          ),
+          silver: character.silver - outcome.failureSilverLoss,
+        );
+    ref
+        .read(gameLogProvider.notifier)
+        .addLog('巡防未能拿下目标，沿途还折损了补给。', type: LogType.combat);
+    _showActionTip(
+      '巡防失利：气血-${outcome.failureHpLoss}，银两-${outcome.failureSilverLoss}',
+    );
   }
 
   Future<void> _doBatchRecover({required bool isMeditate}) async {

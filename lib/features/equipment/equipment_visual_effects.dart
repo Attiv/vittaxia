@@ -80,6 +80,24 @@ final setVisualEffects = <String, EquipmentSetVisualEffect>{
     particleColors: [Color(0xFFFFA000), Color(0xFFFFD54F), Color(0xFFF57C00)],
     specialIcon: Icons.bolt,
   ),
+  'jade_guard': const EquipmentSetVisualEffect(
+    setId: 'jade_guard',
+    primaryColor: Color(0xFF2E7D32),
+    secondaryColor: Color(0xFF558B2F),
+    glowColor: Color(0xFFA5D6A7),
+    attackEffect: '玉衡护势',
+    particleColors: [Color(0xFF2E7D32), Color(0xFFA5D6A7), Color(0xFF558B2F)],
+    specialIcon: Icons.spa,
+  ),
+  'desert_warden': const EquipmentSetVisualEffect(
+    setId: 'desert_warden',
+    primaryColor: Color(0xFF8D6E63),
+    secondaryColor: Color(0xFF6D4C41),
+    glowColor: Color(0xFFFFCC80),
+    attackEffect: '朔风突阵',
+    particleColors: [Color(0xFF8D6E63), Color(0xFFFFCC80), Color(0xFF6D4C41)],
+    specialIcon: Icons.shield,
+  ),
 };
 
 /// 装备发光效果组件

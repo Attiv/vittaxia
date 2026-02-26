@@ -178,6 +178,54 @@ final equipmentSets = <String, EquipmentSet>{
       ),
     },
   ),
+  'jade_guard': const EquipmentSet(
+    id: 'jade_guard',
+    name: '玉衡守',
+    description: '以古玉与金丝为核心的稳固套装，适合持久作战。',
+    itemIds: ['qingzhu_sword', 'golden_silk_vest', 'ancient_jade_talisman'],
+    bonuses: {
+      2: SetBonus(
+        requiredPieces: 2,
+        description: '2件套：攻击+10，防御+12，生命+40',
+        atkBonus: 10,
+        defBonus: 12,
+        hpBonus: 40,
+      ),
+      3: SetBonus(
+        requiredPieces: 3,
+        description: '3件套：生命+120，内力+35，攻+18，防+24，运+6',
+        hpBonus: 120,
+        mpBonus: 35,
+        atkBonus: 18,
+        defBonus: 24,
+        luckBonus: 6,
+      ),
+    },
+  ),
+  'desert_warden': const EquipmentSet(
+    id: 'desert_warden',
+    name: '朔风都护',
+    description: '面向机动突入的巡防套装，在高压环境下更显韧性。',
+    itemIds: ['dragon_soul_spear', 'golden_silk_vest', 'wind_shadow_boots'],
+    bonuses: {
+      2: SetBonus(
+        requiredPieces: 2,
+        description: '2件套：攻击+14，防御+8，速度+6',
+        atkBonus: 14,
+        defBonus: 8,
+        speedBonus: 6,
+      ),
+      3: SetBonus(
+        requiredPieces: 3,
+        description: '3件套：生命+90，攻+24，防+20，速+12，运+4',
+        hpBonus: 90,
+        atkBonus: 24,
+        defBonus: 20,
+        speedBonus: 12,
+        luckBonus: 4,
+      ),
+    },
+  ),
 };
 
 /// 计算当前装备的套装激活情况（同一套只取已达成的最高档位）
