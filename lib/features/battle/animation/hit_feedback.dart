@@ -19,17 +19,17 @@ class HitFeedbackConfig {
 
   // 普通命中
   static const normal = HitFeedbackConfig(
-    hitStopDuration: Duration(milliseconds: 40),
+    hitStopDuration: Duration.zero, // removed hit-stop for smoothness
     shakeAmplitude: 2.0,
   );
 
   // 暴击
   static const critical = HitFeedbackConfig(
-    hitStopDuration: Duration(milliseconds: 80),
-    shakeAmplitude: 5.0,
-    flashAlpha: 0.35,
-    timeScale: 0.3,
-    timeScaleDuration: Duration(milliseconds: 250),
+    hitStopDuration: Duration.zero, // removed hit-stop for smoothness
+    shakeAmplitude: 4.0,
+    flashAlpha: 0.0, // removed flash
+    timeScale: 1.0, // removed slow-mo for smoothness
+    timeScaleDuration: Duration.zero,
   );
 
   // 应用风格系数

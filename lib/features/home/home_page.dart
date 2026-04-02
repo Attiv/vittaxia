@@ -110,6 +110,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   double _fabBottom = 90;
   // 在线体力恢复定时器
   Timer? _staminaTimer;
+  OverlayEntry? _actionTipOverlay;
+  Timer? _actionTipTimer;
 
   @override
   void initState() {
@@ -120,6 +122,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   void dispose() {
     _staminaTimer?.cancel();
+    _removeActionTipOverlay();
     super.dispose();
   }
 
@@ -1420,11 +1423,69 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   void _showActionTip(String message) {
     if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger != null) {
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+      );
+      return;
+    }
+
+    final overlay = Overlay.maybeOf(context, rootOverlay: true);
+    if (overlay == null) return;
+
+    _removeActionTipOverlay();
+    _actionTipOverlay = OverlayEntry(
+      builder: (overlayContext) => Positioned(
+        left: 16,
+        right: 16,
+        bottom: 24 + MediaQuery.of(overlayContext).viewInsets.bottom,
+        child: IgnorePointer(
+          child: Material(
+            color: Colors.transparent,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.86),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                child: Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
+    overlay.insert(_actionTipOverlay!);
+    _actionTipTimer = Timer(
+      const Duration(seconds: 2),
+      _removeActionTipOverlay,
+    );
+  }
+
+  void _removeActionTipOverlay() {
+    _actionTipTimer?.cancel();
+    _actionTipTimer = null;
+    _actionTipOverlay?.remove();
+    _actionTipOverlay = null;
+  }
+
+  String _itemLabel(String itemId, {int count = 1}) {
+    final name = items[itemId]?.name ?? itemId;
+    return count > 1 ? '$name x$count' : name;
   }
 
   Future<bool> _doMeditate(dynamic character, {bool showTip = true}) async {
@@ -1555,6 +1616,14 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   Future<void> _openJianghuOrders(dynamic character) async {
     var contracts = _generateBountyContracts(character);
+    var chainPlan = buildChainHuntPlan(
+      tierIndex: character.realmTierIndex,
+      rng: _rng,
+    );
+    var marketOffers = generateBlackMarketOffers(
+      tierIndex: character.realmTierIndex,
+      rng: _rng,
+    );
 
     await showModalBottomSheet<void>(
       context: context,
@@ -1566,6 +1635,12 @@ class _HomePageState extends ConsumerState<HomePage> {
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
+            final luck = totalLuck(character);
+            final firstEnemyName =
+                enemies[chainPlan.firstEnemyId]?.name ?? chainPlan.firstEnemyId;
+            final secondEnemyName =
+                enemies[chainPlan.secondEnemyId]?.name ??
+                chainPlan.secondEnemyId;
             return SafeArea(
               child: ListView(
                 shrinkWrap: true,
@@ -1582,7 +1657,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '单机玩法：接悬赏、跑押镖、巡防缉盗。风险越高，收益越高。',
+                    '单机玩法：接悬赏、跑押镖、巡防缉盗、连环剿匪、黑市奇货。风险越高，收益越高。',
                     style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 12.5,
@@ -1806,6 +1881,189 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Text(
+                        '连环剿匪',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: () {
+                          setSheetState(() {
+                            chainPlan = buildChainHuntPlan(
+                              tierIndex: character.realmTierIndex,
+                              rng: _rng,
+                            );
+                          });
+                        },
+                        icon: const Icon(Icons.shuffle, size: 16),
+                        label: const Text('换目标'),
+                      ),
+                    ],
+                  ),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '连续清剿两路匪患，首战得基础赏金，终战领取重赏。',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: [
+                              _buildMiniTag(
+                                Icons.sports_martial_arts,
+                                '首战：$firstEnemyName',
+                              ),
+                              _buildMiniTag(
+                                Icons.whatshot,
+                                '终战：$secondEnemyName',
+                              ),
+                              _buildMiniTag(
+                                Icons.flash_on,
+                                '终战奖励经验 +${chainPlan.finalExp}',
+                              ),
+                              _buildMiniTag(
+                                Icons.monetization_on,
+                                '终战奖励银两 +${chainPlan.finalSilver}',
+                              ),
+                              if (chainPlan.finalItemId != null)
+                                _buildMiniTag(
+                                  Icons.inventory_2,
+                                  '终战奖励 ${_itemLabel(chainPlan.finalItemId!)}',
+                                ),
+                              _buildMiniTag(
+                                Icons.local_fire_department,
+                                '体力消耗 $chainHuntStaminaCost',
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.of(sheetContext).pop();
+                                Future<void>.delayed(
+                                  const Duration(milliseconds: 120),
+                                  () => _startChainHunt(chainPlan),
+                                );
+                              },
+                              icon: const Icon(Icons.bolt, size: 16),
+                              label: const Text('开始连环剿匪'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Text(
+                        '黑市奇货',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: () {
+                          setSheetState(() {
+                            marketOffers = generateBlackMarketOffers(
+                              tierIndex: character.realmTierIndex,
+                              rng: _rng,
+                            );
+                          });
+                        },
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: const Text('换一批'),
+                      ),
+                    ],
+                  ),
+                  ...marketOffers.map((offer) {
+                    final bonusChance =
+                        (blackMarketBonusChance(
+                                  baseRate: offer.bonusBaseRate,
+                                  luck: luck,
+                                ) *
+                                100)
+                            .round();
+                    return Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              offer.title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              offer.brief,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              children: [
+                                _buildMiniTag(
+                                  Icons.inventory_2,
+                                  '保底 ${_itemLabel(offer.rewardItemId, count: offer.rewardCount)}',
+                                ),
+                                if (offer.bonusItemId != null &&
+                                    offer.bonusCount > 0)
+                                  _buildMiniTag(
+                                    Icons.card_giftcard,
+                                    '暗格 ${_itemLabel(offer.bonusItemId!, count: offer.bonusCount)} · 概率$bonusChance%',
+                                  ),
+                                _buildMiniTag(
+                                  Icons.monetization_on,
+                                  '售价 ${offer.silverCost} 银两',
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.of(sheetContext).pop();
+                                  Future<void>.delayed(
+                                    const Duration(milliseconds: 120),
+                                    () => _buyBlackMarketOffer(offer),
+                                  );
+                                },
+                                icon: const Icon(Icons.storefront, size: 16),
+                                label: const Text('立刻购买'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
                 ],
               ),
             );
@@ -2075,6 +2333,141 @@ class _HomePageState extends ConsumerState<HomePage> {
         .addLog('巡防未能拿下目标，沿途还折损了补给。', type: LogType.combat);
     _showActionTip(
       '巡防失利：气血-${outcome.failureHpLoss}，银两-${outcome.failureSilverLoss}',
+    );
+  }
+
+  Future<void> _startChainHunt(ChainHuntPlan plan) async {
+    final character = ref.read(currentCharacterProvider).valueOrNull;
+    if (character == null) return;
+
+    final charNotifier = ref.read(characterNotifierProvider.notifier);
+    final logNotifier = ref.read(gameLogProvider.notifier);
+
+    final consumeOk = await charNotifier.consumeStamina(
+      character.id,
+      chainHuntStaminaCost,
+    );
+    if (!consumeOk) {
+      _showActionTip('体力不足，无法开启连环剿匪');
+      return;
+    }
+
+    final firstEnemyName =
+        enemies[plan.firstEnemyId]?.name ?? plan.firstEnemyId;
+    final secondEnemyName =
+        enemies[plan.secondEnemyId]?.name ?? plan.secondEnemyId;
+    logNotifier.addLog(
+      '你接下连环剿匪：先清剿$firstEnemyName，再追击$secondEnemyName。',
+      type: LogType.quest,
+    );
+
+    if (!mounted) return;
+    final firstWon = await pushSmoothPage<bool>(
+      context,
+      BattlePage(enemyId: plan.firstEnemyId),
+    );
+    if (firstWon != true) {
+      logNotifier.addLog('连环剿匪首战失利，行动被迫中断。', type: LogType.combat);
+      _showActionTip('连环剿匪中断：首战失利');
+      return;
+    }
+
+    applyEventRewards(ref, exp: plan.stageOneExp, silver: plan.stageOneSilver);
+    logNotifier.addLog(
+      '首战告捷，先行领取赏金：经验+${plan.stageOneExp}，银两+${plan.stageOneSilver}。',
+      type: LogType.quest,
+    );
+
+    if (!mounted) return;
+    final secondWon = await pushSmoothPage<bool>(
+      context,
+      BattlePage(enemyId: plan.secondEnemyId),
+    );
+    if (secondWon != true) {
+      final latestCharacter = ref.read(currentCharacterProvider).valueOrNull;
+      var silverPenalty = 0;
+      if (latestCharacter != null) {
+        silverPenalty = min(
+          latestCharacter.silver,
+          max(12, plan.finalSilver ~/ 4),
+        );
+        if (silverPenalty > 0) {
+          await charNotifier.updateStats(
+            characterId: latestCharacter.id,
+            silver: latestCharacter.silver - silverPenalty,
+          );
+        }
+      }
+      logNotifier.addLog(
+        '终战失利，剿匪队伍折损补给${silverPenalty > 0 ? '（银两-$silverPenalty）' : ''}。',
+        type: LogType.combat,
+      );
+      _showActionTip(
+        '终战失利：损失补给${silverPenalty > 0 ? '（银两-$silverPenalty）' : ''}',
+      );
+      return;
+    }
+
+    applyEventRewards(
+      ref,
+      exp: plan.finalExp,
+      silver: plan.finalSilver,
+      itemId: plan.finalItemId,
+    );
+    logNotifier.addLog(
+      '连环剿匪完成：经验+${plan.finalExp}，银两+${plan.finalSilver}'
+      '${plan.finalItemId == null ? '' : '，缴获${_itemLabel(plan.finalItemId!)}'}。',
+      type: LogType.quest,
+    );
+    _showActionTip('连环剿匪完成：经验+${plan.finalExp}，银两+${plan.finalSilver}');
+  }
+
+  Future<void> _buyBlackMarketOffer(BlackMarketOffer offer) async {
+    final character = ref.read(currentCharacterProvider).valueOrNull;
+    if (character == null) return;
+
+    if (character.silver < offer.silverCost) {
+      _showActionTip('银两不足，无法购买${offer.title}');
+      return;
+    }
+
+    final charNotifier = ref.read(characterNotifierProvider.notifier);
+    final invNotifier = ref.read(inventoryNotifierProvider.notifier);
+    final logNotifier = ref.read(gameLogProvider.notifier);
+
+    await charNotifier.updateStats(
+      characterId: character.id,
+      silver: character.silver - offer.silverCost,
+    );
+    await invNotifier.addItem(
+      character.id,
+      offer.rewardItemId,
+      count: offer.rewardCount,
+    );
+
+    final luck = totalLuck(character);
+    final gotBonus = rollBlackMarketBonus(offer: offer, luck: luck, rng: _rng);
+    if (gotBonus && offer.bonusItemId != null && offer.bonusCount > 0) {
+      await invNotifier.addItem(
+        character.id,
+        offer.bonusItemId!,
+        count: offer.bonusCount,
+      );
+    }
+
+    final guaranteedText = _itemLabel(
+      offer.rewardItemId,
+      count: offer.rewardCount,
+    );
+    final bonusText = gotBonus && offer.bonusItemId != null
+        ? '，暗格额外拿到${_itemLabel(offer.bonusItemId!, count: offer.bonusCount)}'
+        : '';
+    logNotifier.addLog(
+      '黑市成交：${offer.title}（银两-${offer.silverCost}），获得$guaranteedText$bonusText。',
+      type: LogType.item,
+    );
+    _showActionTip(
+      '黑市成交：$guaranteedText${gotBonus && offer.bonusItemId != null ? ' + 暗格奖励' : ''}',
     );
   }
 

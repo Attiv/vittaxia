@@ -89,7 +89,7 @@ class ArenaPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    _drawBackdrop(canvas, size);
+    // _drawBackdrop(canvas, size); // Removed to use WuxiaBattleStage background
     _drawGround(canvas, size);
 
     if (trailT > 0 && (!_isMinimalStyle || trailT > 0.2)) {
@@ -175,13 +175,6 @@ class ArenaPainter extends CustomPainter {
       _drawBadge(canvas, size, '闪避', x, tagT, const Color(0xFF8ED6FF));
     }
 
-    // 闪白效果（最顶层）
-    if (flashAlpha > 0) {
-      canvas.drawRect(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        Paint()..color = Colors.white.withValues(alpha: flashAlpha),
-      );
-    }
   }
 
   // ── 背景 ──
@@ -286,13 +279,13 @@ class ArenaPainter extends CustomPainter {
     }
 
     const torsoLen = 20.0;
-    const neckLen = 2.0;
-    const headR = 6.8;
+    const neckLen = 4.0;
+    const headR = 7.0; // Smaller head for thin body
     const upperArm = 10.0;
     const foreArm = 9.2;
     const thigh = 12.8;
     const shin = 11.2;
-    const shoulderHalf = 5.4;
+    const shoulderHalf = 6.4;
 
     Offset limb(Offset from, double d, double len) {
       final angle = d * deg;
@@ -350,12 +343,15 @@ class ArenaPainter extends CustomPainter {
       ..color = lineColor
       ..strokeCap = StrokeCap.round
       ..isAntiAlias = true
-      ..strokeWidth = 2.5 * scale;
+      ..strokeJoin = StrokeJoin.round
+      ..strokeWidth = 6.0 * scale; // Thinner body
+
     final thinPaint = Paint()
       ..color = lineColor.withValues(alpha: 0.9)
       ..strokeCap = StrokeCap.round
       ..isAntiAlias = true
-      ..strokeWidth = 2.1 * scale;
+      ..strokeJoin = StrokeJoin.round
+      ..strokeWidth = 4.0 * scale; // Thinner limbs
 
     void bone(Offset a, Offset b, Paint p) => canvas.drawLine(a, b, p);
 
@@ -373,28 +369,23 @@ class ArenaPainter extends CustomPainter {
     final footPaint = Paint()
       ..color = lineColor.withValues(alpha: 0.82)
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = 1.6 * scale;
+      ..strokeWidth = 2.0 * scale; // Thinner foot
     canvas.drawLine(
-      lFoot.translate(-1.2 * scale, 0.5 * scale),
-      lFoot.translate(2.3 * scale, 0.5 * scale),
+      lFoot.translate(-1.5 * scale, 0.6 * scale),
+      lFoot.translate(2.0 * scale, 0.6 * scale),
       footPaint,
     );
     canvas.drawLine(
-      rFoot.translate(-1.2 * scale, 0.5 * scale),
-      rFoot.translate(2.3 * scale, 0.5 * scale),
+      rFoot.translate(-1.5 * scale, 0.6 * scale),
+      rFoot.translate(2.0 * scale, 0.6 * scale),
       footPaint,
     );
 
     canvas.drawCircle(
-      head, (headR + 0.6) * scale,
+      head, (headR + 1.0) * scale,
       Paint()..color = Colors.black.withValues(alpha: 0.28),
     );
     canvas.drawCircle(head, headR * scale, Paint()..color = lineColor);
-    final bun = head.translate(-1.5 * scale, -4.8 * scale);
-    canvas.drawCircle(
-      bun, 1.7 * scale,
-      Paint()..color = const Color(0xFF1E1E1E).withValues(alpha: 0.9),
-    );
 
     if (effectT > 0.12) {
       final swing = math.sin(effectT * math.pi) * 2.0 * (facingRight ? 1 : -1);
@@ -447,13 +438,13 @@ class ArenaPainter extends CustomPainter {
       ..color = lineColor
       ..strokeCap = StrokeCap.round
       ..isAntiAlias = true
-      ..strokeWidth = 2.2 * scale;
+      ..strokeWidth = 6.0 * scale; // Thinner fallen body
+
     final thinPaint = Paint()
-      ..color = lineColor.withValues(alpha: 0.88)
+      ..color = lineColor.withValues(alpha: 0.9)
       ..strokeCap = StrokeCap.round
       ..isAntiAlias = true
-      ..strokeWidth = 1.9 * scale;
-
+      ..strokeWidth = 4.0 * scale; // Thinner fallen limbs
     void segment(Offset a, Offset b, Paint p) {
       canvas.drawLine(a, b, p);
     }
@@ -481,32 +472,27 @@ class ArenaPainter extends CustomPainter {
     segment(rKnee, rFoot, thinPaint);
 
     canvas.drawLine(
-      lFoot.translate(-1.0 * scale, 0.4 * scale),
-      lFoot.translate(2.0 * scale, 0.4 * scale),
+      lFoot.translate(-1.5 * scale, 0.6 * scale),
+      lFoot.translate(2.0 * scale, 0.6 * scale),
       Paint()
         ..color = lineColor.withValues(alpha: 0.82)
         ..strokeCap = StrokeCap.round
-        ..strokeWidth = 1.4 * scale,
+        ..strokeWidth = 2.0 * scale,
     );
     canvas.drawLine(
-      rFoot.translate(-1.0 * scale, 0.4 * scale),
-      rFoot.translate(2.0 * scale, 0.4 * scale),
+      rFoot.translate(-1.5 * scale, 0.6 * scale),
+      rFoot.translate(2.0 * scale, 0.6 * scale),
       Paint()
         ..color = lineColor.withValues(alpha: 0.82)
         ..strokeCap = StrokeCap.round
-        ..strokeWidth = 1.4 * scale,
+        ..strokeWidth = 2.0 * scale,
     );
 
     canvas.drawCircle(
-      head, 7.2 * scale,
+      head, 8.0 * scale,
       Paint()..color = Colors.black.withValues(alpha: 0.28),
     );
-    canvas.drawCircle(head, 6.4 * scale, Paint()..color = lineColor);
-    canvas.drawCircle(
-      head.translate(-1.4 * scale, -4.6 * scale),
-      1.6 * scale,
-      Paint()..color = const Color(0xFF1B1B1B).withValues(alpha: 0.86),
-    );
+    canvas.drawCircle(head, 7.0 * scale, Paint()..color = lineColor);
 
     if (weapon == BattleActionType.sword || weapon == BattleActionType.blade) {
       final wStart = lHand + Offset(4.2 * scale, 1.3 * scale);
@@ -514,8 +500,8 @@ class ArenaPainter extends CustomPainter {
       canvas.drawLine(
         wStart, wEnd,
         Paint()
-          ..color = const Color(0xFFEBF4FF).withValues(alpha: 0.85)
-          ..strokeWidth = 2.6 * scale
+          ..color = const Color(0xFFC0D4EB)
+          ..strokeWidth = 6.0 * scale
           ..strokeCap = StrokeCap.round,
       );
     }
@@ -537,7 +523,7 @@ class ArenaPainter extends CustomPainter {
 
     if (weapon == BattleActionType.sword || weapon == BattleActionType.blade) {
       final bladeColor = actionColor(weapon);
-      final length = weapon == BattleActionType.sword ? 34.0 : 30.0;
+      final length = weapon == BattleActionType.sword ? 45.0 : 38.0; // Increased length
       final angle = pose.rElbow + (weapon == BattleActionType.sword ? -8 : 12);
       final rad = angle * deg;
       final end = Offset(
@@ -552,27 +538,27 @@ class ArenaPainter extends CustomPainter {
             ..color = bladeColor.withValues(
               alpha: (0.16 + glow * 0.22 * fx).clamp(0.0, 0.55),
             )
-            ..strokeWidth = (6.0 + glow * 4.5 * fx) * scale
+            ..strokeWidth = (14.0 + glow * 10.0 * fx) * scale
             ..strokeCap = StrokeCap.round,
         );
       }
 
       final handle = Offset(
-        hand.dx - 6 * scale * math.sin(rad),
-        hand.dy - 6 * scale * math.cos(rad),
+        hand.dx - 8 * scale * math.sin(rad),
+        hand.dy - 8 * scale * math.cos(rad),
       );
       canvas.drawLine(
         hand, handle,
         Paint()
           ..color = const Color(0xFF6F5948)
-          ..strokeWidth = 2.8 * scale
+          ..strokeWidth = 4.0 * scale
           ..strokeCap = StrokeCap.round,
       );
       canvas.drawLine(
         hand, end,
         Paint()
-          ..color = const Color(0xFFEAF2FF)
-          ..strokeWidth = 2.2 * scale
+          ..color = const Color(0xFFC0D4EB) // Brighter metal color
+          ..strokeWidth = (weapon == BattleActionType.blade ? 6.0 : 4.0) * scale // Thicker
           ..strokeCap = StrokeCap.round,
       );
       return;

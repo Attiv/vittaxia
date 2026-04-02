@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vittaxia/data/enemy_data.dart';
+import 'package:vittaxia/data/item_data.dart';
 import 'package:vittaxia/data/skill_data.dart';
 import 'package:vittaxia/features/battle/battle_engine.dart';
 import 'package:vittaxia/features/home/jianghu_order_rules.dart';
@@ -63,6 +64,69 @@ void main() {
       expect(lowDangerSuccess, greaterThan(highDangerSuccess));
       expect(patrolAmbushRate(8), greaterThan(patrolAmbushRate(2)));
     });
+
+    test(
+      'chain hunt should generate valid staged rewards with bounded efficiency',
+      () {
+        final plan = buildChainHuntPlan(tierIndex: 3, rng: Random(9));
+
+        expect(enemies.containsKey(plan.firstEnemyId), isTrue);
+        expect(enemies.containsKey(plan.secondEnemyId), isTrue);
+        expect(plan.firstEnemyId, isNot(plan.secondEnemyId));
+        expect(plan.finalExp, greaterThan(plan.stageOneExp));
+        expect(plan.finalSilver, greaterThan(plan.stageOneSilver));
+
+        final score =
+            plan.stageOneExp +
+            plan.finalExp +
+            (plan.stageOneSilver + plan.finalSilver) * 0.35 +
+            (plan.finalItemId == null ? 0 : 52);
+        final perStamina = score / chainHuntStaminaCost;
+        expect(perStamina, inInclusiveRange(1.0, 7.4));
+      },
+    );
+
+    test(
+      'black market offers should be valid and luck should improve bonus chance',
+      () {
+        final offers = generateBlackMarketOffers(tierIndex: 3, rng: Random(21));
+        expect(offers, hasLength(3));
+
+        for (final offer in offers) {
+          expect(offer.silverCost, greaterThan(0));
+          expect(items.containsKey(offer.rewardItemId), isTrue);
+          final guaranteedValue =
+              (items[offer.rewardItemId]?.buyPrice ?? 0) * offer.rewardCount;
+          expect(guaranteedValue, greaterThan(0));
+          expect(
+            guaranteedValue / offer.silverCost,
+            inInclusiveRange(0.34, 1.42),
+          );
+        }
+
+        final offerWithBonus = offers.firstWhere(
+          (offer) => offer.bonusItemId != null && offer.bonusCount > 0,
+        );
+        final lowLuckChance = blackMarketBonusChance(
+          baseRate: offerWithBonus.bonusBaseRate,
+          luck: 0,
+        );
+        final highLuckChance = blackMarketBonusChance(
+          baseRate: offerWithBonus.bonusBaseRate,
+          luck: 45,
+        );
+        expect(highLuckChance, greaterThan(lowLuckChance));
+        expect(highLuckChance, lessThanOrEqualTo(0.72));
+
+        final lowLuckValue = _expectedOfferValue(offerWithBonus, 0);
+        final highLuckValue = _expectedOfferValue(offerWithBonus, 45);
+        expect(highLuckValue, greaterThan(lowLuckValue));
+        expect(
+          highLuckValue / offerWithBonus.silverCost,
+          inInclusiveRange(0.45, 1.65),
+        );
+      },
+    );
 
     test('escort and patrol expected value per stamina should not runaway', () {
       final rng = Random(42);
@@ -241,6 +305,21 @@ BattleFighter _buildPlayer({
     luck: luck,
     skills: availableSkills,
   );
+}
+
+double _expectedOfferValue(BlackMarketOffer offer, int luck) {
+  final guaranteedValue =
+      (items[offer.rewardItemId]?.buyPrice ?? 0) * offer.rewardCount;
+  if (offer.bonusItemId == null || offer.bonusCount <= 0) {
+    return guaranteedValue.toDouble();
+  }
+  final bonusValue =
+      (items[offer.bonusItemId!]?.buyPrice ?? 0) * offer.bonusCount;
+  final chance = blackMarketBonusChance(
+    baseRate: offer.bonusBaseRate,
+    luck: luck,
+  );
+  return guaranteedValue + bonusValue * chance;
 }
 
 double _simulateWinRate({

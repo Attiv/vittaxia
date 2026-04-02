@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +21,7 @@ import '../inventory/inventory_provider.dart';
 import '../skill/skill_provider.dart';
 import 'battle_animation.dart';
 import 'battle_engine.dart';
+import 'presentation/wuxia_battle_stage.dart';
 import '../quest/quest_provider.dart';
 import '../sect/sect_provider.dart';
 
@@ -38,6 +41,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
   bool _isAnimating = false;
   bool _isAutoBattle = false; // 自动战斗开关
   bool _battleResolved = false;
+  Timer? _autoReturnTimer;
   String? _battleInitSnapshot;
   ProviderSubscription<AsyncValue<dynamic>>? _characterSub;
   ProviderSubscription<AsyncValue<dynamic>>? _learnedSkillsSub;
@@ -63,6 +67,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
     _characterSub?.close();
     _learnedSkillsSub?.close();
     _scrollController.dispose();
+    _autoReturnTimer?.cancel();
     super.dispose();
   }
 
@@ -434,7 +439,7 @@ class _BattlePageState extends ConsumerState<BattlePage> {
     }
 
     if (BattleSpeedSettings.autoEnabled) {
-      Future<void>.delayed(const Duration(seconds: 2), () {
+      _autoReturnTimer = Timer(const Duration(seconds: 2), () {
         if (!mounted) return;
         Navigator.of(context).pop(engine.playerWon);
       });
@@ -461,17 +466,21 @@ class _BattlePageState extends ConsumerState<BattlePage> {
               color: _isAutoBattle ? AppColors.success : AppColors.accent,
             ),
             tooltip: _isAutoBattle ? '停止自动' : '自动战斗',
-            onPressed: engine.isOver
-                ? null
-                : () {
-                    setState(() {
-                      _isAutoBattle = !_isAutoBattle;
-                    });
-                    BattleSpeedSettings.autoEnabled = _isAutoBattle;
-                    if (_isAutoBattle && !_isAnimating) {
-                      _autoSelectAndUseSkill();
-                    }
-                  },
+            onPressed: () {
+              setState(() {
+                _isAutoBattle = !_isAutoBattle;
+              });
+              BattleSpeedSettings.autoEnabled = _isAutoBattle;
+              if (!_isAutoBattle) {
+                _autoReturnTimer?.cancel();
+              } else if (engine.isOver) {
+                _autoReturnTimer = Timer(const Duration(seconds: 1), () {
+                  if (mounted) Navigator.of(context).pop(engine.playerWon);
+                });
+              } else if (!_isAnimating) {
+                _autoSelectAndUseSkill();
+              }
+            },
           ),
           PopupMenuButton<BattleAnimationStyle>(
             icon: Icon(Icons.animation, color: AppColors.accent),
@@ -558,46 +567,19 @@ class _BattlePageState extends ConsumerState<BattlePage> {
       ),
       body: Column(
         children: [
-          // 双方状态条
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Expanded(child: _fighterStatus(engine.player, true)),
-                const SizedBox(width: 12),
-                Text(
-                  'VS',
-                  style: TextStyle(
-                    color: AppColors.accent,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(child: _fighterStatus(engine.enemy, false)),
-              ],
-            ),
-          ),
-          // 战斗动画区
-          Container(
-            margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-            padding: const EdgeInsets.fromLTRB(4, 4, 4, 6),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.primaryLight.withValues(alpha: 0.5),
-              ),
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFF201C18), Color(0xFF151312)],
-              ),
-            ),
-            child: BattleArenaWidget(
-              controller: _arenaController,
-              idlePlayerWeaponType: _resolveEquippedWeaponType(),
-              height: 182,
-            ),
+          WuxiaBattleStage(
+            controller: _arenaController,
+            idlePlayerWeaponType: _resolveEquippedWeaponType(),
+            playerName: engine.player.name,
+            enemyName: engine.enemy.name,
+            playerMaxHp: engine.player.maxHp,
+            playerMaxMp: engine.player.maxMp,
+            playerCurrentHp: engine.player.hp,
+            playerCurrentMp: engine.player.mp,
+            enemyMaxHp: engine.enemy.maxHp,
+            enemyMaxMp: engine.enemy.maxMp,
+            enemyCurrentHp: engine.enemy.hp,
+            enemyCurrentMp: engine.enemy.mp,
           ),
           // 战斗日志
           Expanded(
@@ -733,55 +715,5 @@ class _BattlePageState extends ConsumerState<BattlePage> {
       ),
     );
   }
-
-  Widget _fighterStatus(BattleFighter fighter, bool isPlayer) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              fighter.name,
-              style: TextStyle(
-                color: isPlayer ? AppColors.accent : AppColors.hp,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 6),
-            _miniBar('HP', fighter.hp, fighter.maxHp, AppColors.hp),
-            const SizedBox(height: 4),
-            _miniBar('MP', fighter.mp, fighter.maxMp, AppColors.mp),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _miniBar(String label, int current, int max, Color color) {
-    final ratio = max > 0 ? current / max : 0.0;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label, style: TextStyle(color: color, fontSize: 10)),
-            Text('$current/$max', style: TextStyle(color: color, fontSize: 10)),
-          ],
-        ),
-        const SizedBox(height: 2),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(2),
-          child: LinearProgressIndicator(
-            value: ratio.clamp(0.0, 1.0),
-            backgroundColor: AppColors.progressTrack,
-            color: color,
-            minHeight: 4,
-          ),
-        ),
-      ],
-    );
-  }
 }
+

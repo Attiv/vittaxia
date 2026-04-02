@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
-import '../../models/enemy.dart';
+import '../../data/enemy_data.dart';
 import '../../models/skill.dart';
 import '../character/character_provider.dart';
 
@@ -26,7 +26,7 @@ enum BattleActionType {
 
 /// 交互式战斗页面
 class InteractiveBattlePage extends ConsumerStatefulWidget {
-  final Enemy enemy;
+  final EnemyTemplate enemy;
 
   const InteractiveBattlePage({
     super.key,
@@ -238,7 +238,7 @@ class _InteractiveBattlePageState extends ConsumerState<InteractiveBattlePage>
       final damage = (widget.enemy.atk * (isDefending ? 0.5 : 1.0)).toInt();
 
       setState(() {
-        playerHp = (playerHp - damage).clamp(0, playerMaxHp);
+        playerHp = (playerHp - damage).clamp(0, playerMaxHp).toInt();
         _addLog('${widget.enemy.name} 对你造成了 $damage 点伤害！');
         isDefending = false;
       });
