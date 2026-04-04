@@ -9,20 +9,55 @@ import '../../models/dungeon.dart';
 import '../character/character_provider.dart';
 
 /// 当前角色的洞府进度
-final dungeonProgressProvider = StreamProvider<List<DungeonProgressData>>((ref) {
+final dungeonProgressProvider = StreamProvider<List<DungeonProgressData>>((
+  ref,
+) {
   final id = ref.watch(currentCharacterIdProvider);
   if (id == null) return Stream.value([]);
   final db = ref.watch(databaseProvider);
   return db.watchDungeonProgress(id);
 });
 
+bool isDungeonUnlocked(
+  DungeonTemplate dungeon,
+  List<DungeonProgressData> progressList,
+) {
+  final requiredDungeonId = dungeon.requiredDungeonId;
+  if (requiredDungeonId == null) return true;
+
+  return progressList.any(
+    (progress) =>
+        progress.dungeonId == requiredDungeonId && progress.status == 2,
+  );
+}
+
 /// 当前地点可用的洞府
 final availableDungeonsProvider = Provider<List<DungeonTemplate>>((ref) {
   final character = ref.watch(currentCharacterProvider).valueOrNull;
   if (character == null) return [];
-  return dungeonTemplates.values
+  final progressList = ref.watch(dungeonProgressProvider).valueOrNull ?? [];
+
+  final dungeons = dungeonTemplates.values
       .where((d) => d.locationId == character.locationId)
       .toList();
+
+  dungeons.sort((a, b) {
+    final orderCompare = (a.storyOrder ?? 9999).compareTo(b.storyOrder ?? 9999);
+    if (orderCompare != 0) return orderCompare;
+
+    final unlockA = isDungeonUnlocked(a, progressList);
+    final unlockB = isDungeonUnlocked(b, progressList);
+    if (unlockA != unlockB) return unlockA ? -1 : 1;
+
+    final dangerCompare = a.requiredDangerLevel.compareTo(
+      b.requiredDangerLevel,
+    );
+    if (dangerCompare != 0) return dangerCompare;
+
+    return a.name.compareTo(b.name);
+  });
+
+  return dungeons;
 });
 
 class DungeonNotifier extends StateNotifier<AsyncValue<void>> {
@@ -33,12 +68,16 @@ class DungeonNotifier extends StateNotifier<AsyncValue<void>> {
 
   /// 获取或创建洞府进度
   Future<DungeonProgressData> _getOrCreateProgress(
-      String characterId, String dungeonId) async {
-    final existing = await (_db.select(_db.dungeonProgress)
-          ..where((t) =>
-              t.characterId.equals(characterId) &
-              t.dungeonId.equals(dungeonId)))
-        .getSingleOrNull();
+    String characterId,
+    String dungeonId,
+  ) async {
+    final existing =
+        await (_db.select(_db.dungeonProgress)..where(
+              (t) =>
+                  t.characterId.equals(characterId) &
+                  t.dungeonId.equals(dungeonId),
+            ))
+            .getSingleOrNull();
     if (existing != null) return existing;
 
     final id = const Uuid().v4();
@@ -48,16 +87,16 @@ class DungeonNotifier extends StateNotifier<AsyncValue<void>> {
       dungeonId: dungeonId,
     );
     await _db.upsertDungeonProgress(companion);
-    return (await (_db.select(_db.dungeonProgress)
-              ..where((t) => t.id.equals(id)))
-            .getSingle());
+    return (await (_db.select(
+      _db.dungeonProgress,
+    )..where((t) => t.id.equals(id))).getSingle());
   }
 
   /// 进入下一层，返回当前层数据；null 表示体力不足或已通关
-  Future<DungeonFloor?> enterFloor(
-      String characterId, String dungeonId) async {
+  Future<DungeonFloor?> enterFloor(String characterId, String dungeonId) async {
     final template = dungeonTemplates[dungeonId];
     if (template == null) return null;
+    if (!await _isDungeonUnlocked(characterId, template)) return null;
 
     final progress = await _getOrCreateProgress(characterId, dungeonId);
     if (progress.currentFloor >= template.totalFloors) return null;
@@ -74,18 +113,34 @@ class DungeonNotifier extends StateNotifier<AsyncValue<void>> {
     if (progress.status == 0) {
       await (_db.update(_db.dungeonProgress)
             ..where((t) => t.id.equals(progress.id)))
-          .write(const DungeonProgressCompanion(
-        status: Value(1),
-      ));
+          .write(const DungeonProgressCompanion(status: Value(1)));
     }
 
-    await (_db.update(_db.dungeonProgress)
-          ..where((t) => t.id.equals(progress.id)))
-        .write(DungeonProgressCompanion(
-      lastAttemptTime: Value(DateTime.now()),
-    ));
+    await (_db.update(
+      _db.dungeonProgress,
+    )..where((t) => t.id.equals(progress.id))).write(
+      DungeonProgressCompanion(lastAttemptTime: Value(DateTime.now())),
+    );
 
     return floor;
+  }
+
+  Future<bool> _isDungeonUnlocked(
+    String characterId,
+    DungeonTemplate template,
+  ) async {
+    final requiredDungeonId = template.requiredDungeonId;
+    if (requiredDungeonId == null) return true;
+
+    final requiredProgress =
+        await (_db.select(_db.dungeonProgress)..where(
+              (t) =>
+                  t.characterId.equals(characterId) &
+                  t.dungeonId.equals(requiredDungeonId),
+            ))
+            .getSingleOrNull();
+
+    return requiredProgress?.status == 2;
   }
 
   /// 完成当前层
@@ -95,33 +150,35 @@ class DungeonNotifier extends StateNotifier<AsyncValue<void>> {
 
     final progress = await _getOrCreateProgress(characterId, dungeonId);
     final nextFloor = progress.currentFloor + 1;
-    final newBest =
-        nextFloor > progress.bestFloor ? nextFloor : progress.bestFloor;
+    final newBest = nextFloor > progress.bestFloor
+        ? nextFloor
+        : progress.bestFloor;
     final done = nextFloor >= template.totalFloors;
 
-    await (_db.update(_db.dungeonProgress)
-          ..where((t) => t.id.equals(progress.id)))
-        .write(DungeonProgressCompanion(
-      currentFloor: Value(nextFloor),
-      bestFloor: Value(newBest),
-      status: Value(done ? 2 : 1),
-    ));
+    await (_db.update(
+      _db.dungeonProgress,
+    )..where((t) => t.id.equals(progress.id))).write(
+      DungeonProgressCompanion(
+        currentFloor: Value(nextFloor),
+        bestFloor: Value(newBest),
+        status: Value(done ? 2 : 1),
+      ),
+    );
   }
 
   /// 重置洞府进度
   Future<void> resetDungeon(String characterId, String dungeonId) async {
     final progress = await _getOrCreateProgress(characterId, dungeonId);
-    await (_db.update(_db.dungeonProgress)
-          ..where((t) => t.id.equals(progress.id)))
-        .write(const DungeonProgressCompanion(
-      currentFloor: Value(0),
-      status: Value(0),
-    ));
+    await (_db.update(
+      _db.dungeonProgress,
+    )..where((t) => t.id.equals(progress.id))).write(
+      const DungeonProgressCompanion(currentFloor: Value(0), status: Value(0)),
+    );
   }
 }
 
 final dungeonNotifierProvider =
     StateNotifierProvider<DungeonNotifier, AsyncValue<void>>((ref) {
-  final db = ref.watch(databaseProvider);
-  return DungeonNotifier(db, ref);
-});
+      final db = ref.watch(databaseProvider);
+      return DungeonNotifier(db, ref);
+    });

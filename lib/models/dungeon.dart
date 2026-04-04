@@ -42,6 +42,14 @@ class DungeonTemplate {
   final int totalFloors;
   final int requiredDangerLevel;
   final String locationId;
+  final int? storyOrder;
+  final String? chapterLabel;
+  final String? subtitle;
+  final String? storyLead;
+  final String? storyIntro;
+  final String? storyOutro;
+  final String? requiredDungeonId;
+  final String? collectibleItemId;
   final List<DungeonFloor> floors;
 
   const DungeonTemplate({
@@ -51,6 +59,14 @@ class DungeonTemplate {
     required this.totalFloors,
     required this.requiredDangerLevel,
     required this.locationId,
+    this.storyOrder,
+    this.chapterLabel,
+    this.subtitle,
+    this.storyLead,
+    this.storyIntro,
+    this.storyOutro,
+    this.requiredDungeonId,
+    this.collectibleItemId,
     required this.floors,
   });
 }

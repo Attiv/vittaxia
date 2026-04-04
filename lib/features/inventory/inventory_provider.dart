@@ -59,6 +59,22 @@ class InventoryNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  Future<bool> hasItem(String characterId, String itemId) async {
+    final existing =
+        await (_db.select(_db.inventoryItems)..where(
+              (t) =>
+                  t.characterId.equals(characterId) & t.itemId.equals(itemId),
+            ))
+            .getSingleOrNull();
+    return existing != null && existing.quantity > 0;
+  }
+
+  Future<bool> addUniqueItem(String characterId, String itemId) async {
+    if (await hasItem(characterId, itemId)) return false;
+    await addItem(characterId, itemId);
+    return true;
+  }
+
   /// 移除物品
   Future<void> removeItem(String inventoryId, {int count = 1}) async {
     final existing = await (_db.select(

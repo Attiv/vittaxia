@@ -56,7 +56,7 @@ class _DungeonExplorePageState extends ConsumerState<DungeonExplorePage> {
     if (floor == null && mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('体力不足或已通关')));
+      ).showSnackBar(const SnackBar(content: Text('未解锁、体力不足或已通关')));
       Navigator.of(context).pop();
     }
   }
@@ -202,6 +202,8 @@ class _DungeonExplorePageState extends ConsumerState<DungeonExplorePage> {
   Future<void> _completeAndContinue() async {
     final character = ref.read(currentCharacterProvider).valueOrNull;
     if (character == null) return;
+    final currentFloorData = _currentFloor;
+    final inventoryNotifier = ref.read(inventoryNotifierProvider.notifier);
 
     await ref
         .read(dungeonNotifierProvider.notifier)
@@ -215,9 +217,40 @@ class _DungeonExplorePageState extends ConsumerState<DungeonExplorePage> {
     final curFloor = progress != null ? progress.currentFloor + 1 : 1;
 
     if (template != null && curFloor >= template.totalFloors) {
+      var collectibleNewlyCollected = false;
+      final collectibleItemId = template.collectibleItemId;
+      if (collectibleItemId != null) {
+        collectibleNewlyCollected = await inventoryNotifier.addUniqueItem(
+          character.id,
+          collectibleItemId,
+        );
+        final collectibleName =
+            items[collectibleItemId]?.name ?? collectibleItemId;
+        ref
+            .read(gameLogProvider.notifier)
+            .addLog(
+              collectibleNewlyCollected
+                  ? '收录章节藏品：$collectibleName'
+                  : '章节藏品已收录：$collectibleName',
+              type: LogType.item,
+            );
+      }
       ref
           .read(gameLogProvider.notifier)
           .addLog('通关 ${template.name}！', type: LogType.explore);
+      final shouldShowChapterDialog =
+          currentFloorData != null &&
+          (template.chapterLabel != null ||
+              template.subtitle != null ||
+              template.storyOutro != null ||
+              template.collectibleItemId != null);
+      if (mounted && shouldShowChapterDialog) {
+        await _showChapterCompletionDialog(
+          template,
+          currentFloorData,
+          collectibleNewlyCollected: collectibleNewlyCollected,
+        );
+      }
       if (mounted) Navigator.of(context).pop();
       return;
     }
@@ -253,10 +286,7 @@ class _DungeonExplorePageState extends ConsumerState<DungeonExplorePage> {
               child: Center(
                 child: Text(
                   '体力 ${character.stamina}/${totalMaxStamina(character)}',
-                  style: TextStyle(
-                    color: AppColors.warning,
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: AppColors.warning, fontSize: 13),
                 ),
               ),
             ),
@@ -272,12 +302,77 @@ class _DungeonExplorePageState extends ConsumerState<DungeonExplorePage> {
 
   Widget _buildFloorContent(DungeonTemplate template) {
     final floor = _currentFloor!;
+    final isFinalFloor = floor.floor >= template.totalFloors;
 
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (template.chapterLabel != null || template.storyIntro != null) ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.accent.withValues(alpha: 0.18),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (template.chapterLabel != null ||
+                      template.subtitle != null)
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (template.chapterLabel != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent.withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              template.chapterLabel!,
+                              style: TextStyle(
+                                color: AppColors.accent,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        if (template.subtitle != null)
+                          Text(
+                            template.subtitle!,
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                      ],
+                    ),
+                  if (template.storyIntro != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      template.storyIntro!,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 13,
+                        height: 1.55,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -325,10 +420,7 @@ class _DungeonExplorePageState extends ConsumerState<DungeonExplorePage> {
               ),
               child: Text(
                 _message!,
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
               ),
             ),
           if (_message != null) const SizedBox(height: 16),
@@ -336,6 +428,41 @@ class _DungeonExplorePageState extends ConsumerState<DungeonExplorePage> {
           if (_floorResolved) ...[
             _rewardPreview(floor),
             const SizedBox(height: 16),
+            if (isFinalFloor && template.storyOutro != null) ...[
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.accent.withValues(alpha: 0.16),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '章节结语',
+                      style: TextStyle(
+                        color: AppColors.accent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      template.storyOutro!,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 13,
+                        height: 1.55,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
           ],
           const Spacer(),
           if (!_floorResolved) _actionButton(floor),
@@ -407,7 +534,235 @@ class _DungeonExplorePageState extends ConsumerState<DungeonExplorePage> {
     }
   }
 
-  Widget _rewardPreview(DungeonFloor floor) {
+  Future<void> _showChapterCompletionDialog(
+    DungeonTemplate template,
+    DungeonFloor floor, {
+    required bool collectibleNewlyCollected,
+  }) async {
+    final rewards = _rewardLines(floor);
+    final collectible = template.collectibleItemId == null
+        ? null
+        : items[template.collectibleItemId!];
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (template.chapterLabel != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.accent.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          template.chapterLabel!,
+                          style: TextStyle(
+                            color: AppColors.accent,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        '章节完成',
+                        style: TextStyle(
+                          color: AppColors.success,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  template.name,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (template.subtitle != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    template.subtitle!,
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+                if (template.storyOutro != null) ...[
+                  const SizedBox(height: 14),
+                  Text(
+                    template.storyOutro!,
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 13,
+                      height: 1.6,
+                    ),
+                  ),
+                ],
+                if (collectible != null) ...[
+                  const SizedBox(height: 18),
+                  Text(
+                    '本章藏品',
+                    style: TextStyle(
+                      color: AppColors.warning,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: AppColors.warning.withValues(alpha: 0.18),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.auto_awesome,
+                              size: 16,
+                              color: AppColors.warning,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                collectible.name,
+                                style: TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: collectibleNewlyCollected
+                                    ? AppColors.success.withValues(alpha: 0.16)
+                                    : AppColors.textSecondary.withValues(
+                                        alpha: 0.16,
+                                      ),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                collectibleNewlyCollected ? '首次收录' : '已收录',
+                                style: TextStyle(
+                                  color: collectibleNewlyCollected
+                                      ? AppColors.success
+                                      : AppColors.textSecondary,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          collectible.description,
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                            height: 1.45,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                if (rewards.isNotEmpty) ...[
+                  const SizedBox(height: 18),
+                  Text(
+                    '本章收获',
+                    style: TextStyle(
+                      color: AppColors.accent,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ...rewards.map(
+                    (reward) => Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        reward,
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    child: const Text('收下成果'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  List<String> _rewardLines(DungeonFloor floor) {
     final parts = <String>[];
     if (floor.rewardExp > 0) parts.add('经验 +${floor.rewardExp}');
     if (floor.rewardSilver > 0) parts.add('银两 +${floor.rewardSilver}');
@@ -419,15 +774,18 @@ class _DungeonExplorePageState extends ConsumerState<DungeonExplorePage> {
       final name = skills[floor.rewardSkillId]?.name ?? floor.rewardSkillId!;
       parts.add('习得 $name');
     }
+    return parts;
+  }
+
+  Widget _rewardPreview(DungeonFloor floor) {
+    final parts = _rewardLines(floor);
     if (parts.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: parts
           .map(
-            (p) => Text(
-              p,
-              style: TextStyle(color: AppColors.exp, fontSize: 13),
-            ),
+            (p) =>
+                Text(p, style: TextStyle(color: AppColors.exp, fontSize: 13)),
           )
           .toList(),
     );

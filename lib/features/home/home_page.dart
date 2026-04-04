@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vittaxia/core/theme/app_theme.dart';
 import 'package:vittaxia/core/theme/theme_settings.dart';
 
@@ -98,6 +99,7 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   static const _cheatUnlockPassword = 'attiv';
   static const _titleTapThreshold = 5;
+  static const _jianghuOrderProgressKeyPrefix = 'jianghu_order_progress_v1_';
 
   bool _checkedIdleReward = false;
   bool _restoredCharacter = false;
@@ -140,6 +142,70 @@ class _HomePageState extends ConsumerState<HomePage> {
             lastStaminaRegenTime: DateTime.now(),
           );
     });
+  }
+
+  String _jianghuOrderProgressKey(String characterId) {
+    return '$_jianghuOrderProgressKeyPrefix$characterId';
+  }
+
+  Future<JianghuOrderProgress> _loadJianghuOrderProgress(
+    String characterId,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_jianghuOrderProgressKey(characterId));
+    if (raw == null || raw.isEmpty) return const JianghuOrderProgress();
+
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) {
+        return JianghuOrderProgress.fromJson(decoded);
+      }
+      if (decoded is Map) {
+        return JianghuOrderProgress.fromJson(
+          decoded.map((key, value) => MapEntry(key.toString(), value)),
+        );
+      }
+    } catch (_) {}
+
+    return const JianghuOrderProgress();
+  }
+
+  Future<void> _saveJianghuOrderProgress(
+    String characterId,
+    JianghuOrderProgress progress,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _jianghuOrderProgressKey(characterId),
+      jsonEncode(progress.toJson()),
+    );
+  }
+
+  Future<JianghuOrderTierState?> _recordJianghuOrderActivity(
+    String characterId,
+    JianghuOrderActivityType type,
+  ) async {
+    final before = await _loadJianghuOrderProgress(characterId);
+    final after = before.record(type);
+    await _saveJianghuOrderProgress(characterId, after);
+
+    final beforeTier = buildJianghuOrderTierState(before.totalPoints);
+    final afterTier = buildJianghuOrderTierState(after.totalPoints);
+    if (afterTier.tier > beforeTier.tier) {
+      ref
+          .read(gameLogProvider.notifier)
+          .addLog(
+            '江湖令晋升：令阶${afterTier.tier}·${afterTier.title}',
+            type: LogType.quest,
+          );
+      return afterTier;
+    }
+    return null;
+  }
+
+  String _appendTierUpTip(String base, JianghuOrderTierState? tierUp) {
+    if (tierUp == null) return base;
+    return '$base · 晋升令阶${tierUp.tier}';
   }
 
   @override
@@ -1615,6 +1681,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Future<void> _openJianghuOrders(dynamic character) async {
+    final currentLocation = ref.read(currentLocationProvider);
+    var progress = await _loadJianghuOrderProgress(character.id);
     var contracts = _generateBountyContracts(character);
     var chainPlan = buildChainHuntPlan(
       tierIndex: character.realmTierIndex,
@@ -1624,7 +1692,13 @@ class _HomePageState extends ConsumerState<HomePage> {
       tierIndex: character.realmTierIndex,
       rng: _rng,
     );
+    var rumors = buildJianghuRumors(
+      tierIndex: character.realmTierIndex,
+      locationId: currentLocation?.id,
+      rng: _rng,
+    );
 
+    if (!mounted) return;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -1636,440 +1710,723 @@ class _HomePageState extends ConsumerState<HomePage> {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             final luck = totalLuck(character);
+            final tierState = buildJianghuOrderTierState(progress.totalPoints);
             final firstEnemyName =
                 enemies[chainPlan.firstEnemyId]?.name ?? chainPlan.firstEnemyId;
             final secondEnemyName =
                 enemies[chainPlan.secondEnemyId]?.name ??
                 chainPlan.secondEnemyId;
             return SafeArea(
-              child: ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
-                children: [
-                  Text(
-                    '江湖令',
-                    style: TextStyle(
-                      color: AppColors.accent,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '单机玩法：接悬赏、跑押镖、巡防缉盗、连环剿匪、黑市奇货。风险越高，收益越高。',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12.5,
-                      height: 1.4,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Text(
-                        '悬赏榜（随机）',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.88,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.textSecondary.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(999),
                       ),
-                      const Spacer(),
-                      TextButton.icon(
-                        onPressed: () {
-                          setSheetState(() {
-                            contracts = _generateBountyContracts(character);
-                          });
-                        },
-                        icon: const Icon(Icons.refresh, size: 16),
-                        label: const Text('刷新'),
-                      ),
-                    ],
-                  ),
-                  ...contracts.map(
-                    (contract) => Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            onPressed: () => Navigator.of(sheetContext).pop(),
+                            icon: const Icon(Icons.arrow_downward_rounded),
+                            tooltip: '收起',
+                          ),
+                          Expanded(
+                            child: Column(
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    contract.title,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                                Text(
+                                  '江湖令',
+                                  style: TextStyle(
+                                    color: AppColors.accent,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
                                   ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
+                                const SizedBox(height: 4),
+                                Text(
+                                  '悬赏、押镖、巡防、剿匪都记入令阶活跃度。',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 12,
+                                    height: 1.35,
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.warning.withValues(
-                                      alpha: 0.16,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () {
+                              setSheetState(() {
+                                rumors = buildJianghuRumors(
+                                  tierIndex: character.realmTierIndex,
+                                  locationId: currentLocation?.id,
+                                  rng: _rng,
+                                );
+                              });
+                            },
+                            icon: const Icon(Icons.refresh, size: 16),
+                            label: const Text('换见闻'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+                        children: [
+                          _buildJianghuOrderProgressCard(progress, tierState),
+                          const SizedBox(height: 12),
+                          _buildJianghuRumorsCard(rumors),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Text(
+                                '悬赏榜（随机）',
+                                style: TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const Spacer(),
+                              TextButton.icon(
+                                onPressed: () {
+                                  setSheetState(() {
+                                    contracts = _generateBountyContracts(
+                                      character,
+                                    );
+                                  });
+                                },
+                                icon: const Icon(Icons.refresh, size: 16),
+                                label: const Text('刷新'),
+                              ),
+                            ],
+                          ),
+                          ...contracts.map(
+                            (contract) => Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            contract.title,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 3,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.warning.withValues(
+                                              alpha: 0.16,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              999,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            contract.tierLabel,
+                                            style: TextStyle(
+                                              color: AppColors.warning,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                  child: Text(
-                                    contract.tierLabel,
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      contract.brief,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 4,
+                                      children: [
+                                        _buildMiniTag(
+                                          Icons.flash_on,
+                                          '奖励经验 +${contract.bonusExp}',
+                                        ),
+                                        _buildMiniTag(
+                                          Icons.monetization_on,
+                                          '奖励银两 +${contract.bonusSilver}',
+                                        ),
+                                        if (contract.bonusItemId != null)
+                                          _buildMiniTag(
+                                            Icons.inventory_2,
+                                            '奖励 ${items[contract.bonusItemId]?.name ?? contract.bonusItemId}',
+                                          ),
+                                        _buildMiniTag(
+                                          Icons.local_fire_department,
+                                          '体力消耗 ${contract.staminaCost}',
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: ElevatedButton.icon(
+                                        onPressed: () {
+                                          Navigator.of(sheetContext).pop();
+                                          Future<void>.delayed(
+                                            const Duration(milliseconds: 120),
+                                            () =>
+                                                _startBountyContract(contract),
+                                          );
+                                        },
+                                        icon: const Icon(Icons.gavel, size: 16),
+                                        label: const Text('接取悬赏'),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '跑镖委托',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '护送商队穿越险路，按速度和运气判定成败。',
                                     style: TextStyle(
-                                      color: AppColors.warning,
-                                      fontSize: 11,
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              contract.brief,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 4,
-                              children: [
-                                _buildMiniTag(
-                                  Icons.flash_on,
-                                  '奖励经验 +${contract.bonusExp}',
-                                ),
-                                _buildMiniTag(
-                                  Icons.monetization_on,
-                                  '奖励银两 +${contract.bonusSilver}',
-                                ),
-                                if (contract.bonusItemId != null)
-                                  _buildMiniTag(
-                                    Icons.inventory_2,
-                                    '奖励 ${items[contract.bonusItemId]?.name ?? contract.bonusItemId}',
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    children: [
+                                      _buildMiniTag(
+                                        Icons.local_fire_department,
+                                        '体力消耗 $escortStaminaCost',
+                                      ),
+                                      _buildMiniTag(
+                                        Icons.attach_money,
+                                        '奖励：银两/经验/矿料',
+                                      ),
+                                    ],
                                   ),
-                                _buildMiniTag(
-                                  Icons.local_fire_department,
-                                  '体力消耗 ${contract.staminaCost}',
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: ElevatedButton.icon(
-                                onPressed: () {
-                                  Navigator.of(sheetContext).pop();
-                                  Future<void>.delayed(
-                                    const Duration(milliseconds: 120),
-                                    () => _startBountyContract(contract),
-                                  );
-                                },
-                                icon: const Icon(Icons.gavel, size: 16),
-                                label: const Text('接取悬赏'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '跑镖委托',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '护送商队穿越险路，按速度和运气判定成败。',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            children: [
-                              _buildMiniTag(
-                                Icons.local_fire_department,
-                                '体力消耗 $escortStaminaCost',
-                              ),
-                              _buildMiniTag(Icons.attach_money, '奖励：银两/经验/矿料'),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.of(sheetContext).pop();
-                                Future<void>.delayed(
-                                  const Duration(milliseconds: 120),
-                                  _startEscortMission,
-                                );
-                              },
-                              icon: const Icon(Icons.local_shipping, size: 16),
-                              label: const Text('开始押镖'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '巡防缉盗',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '按当前地点危险度巡防，可能平稳结案，也可能遭遇伏击。',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            children: [
-                              _buildMiniTag(
-                                Icons.local_fire_department,
-                                '体力消耗 $patrolStaminaCost',
-                              ),
-                              _buildMiniTag(Icons.security, '奖励：经验/银两/锻造材料'),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.of(sheetContext).pop();
-                                Future<void>.delayed(
-                                  const Duration(milliseconds: 120),
-                                  _startPatrolMission,
-                                );
-                              },
-                              icon: const Icon(Icons.shield, size: 16),
-                              label: const Text('开始巡防'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Text(
-                        '连环剿匪',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Spacer(),
-                      TextButton.icon(
-                        onPressed: () {
-                          setSheetState(() {
-                            chainPlan = buildChainHuntPlan(
-                              tierIndex: character.realmTierIndex,
-                              rng: _rng,
-                            );
-                          });
-                        },
-                        icon: const Icon(Icons.shuffle, size: 16),
-                        label: const Text('换目标'),
-                      ),
-                    ],
-                  ),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '连续清剿两路匪患，首战得基础赏金，终战领取重赏。',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
-                            children: [
-                              _buildMiniTag(
-                                Icons.sports_martial_arts,
-                                '首战：$firstEnemyName',
-                              ),
-                              _buildMiniTag(
-                                Icons.whatshot,
-                                '终战：$secondEnemyName',
-                              ),
-                              _buildMiniTag(
-                                Icons.flash_on,
-                                '终战奖励经验 +${chainPlan.finalExp}',
-                              ),
-                              _buildMiniTag(
-                                Icons.monetization_on,
-                                '终战奖励银两 +${chainPlan.finalSilver}',
-                              ),
-                              if (chainPlan.finalItemId != null)
-                                _buildMiniTag(
-                                  Icons.inventory_2,
-                                  '终战奖励 ${_itemLabel(chainPlan.finalItemId!)}',
-                                ),
-                              _buildMiniTag(
-                                Icons.local_fire_department,
-                                '体力消耗 $chainHuntStaminaCost',
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.of(sheetContext).pop();
-                                Future<void>.delayed(
-                                  const Duration(milliseconds: 120),
-                                  () => _startChainHunt(chainPlan),
-                                );
-                              },
-                              icon: const Icon(Icons.bolt, size: 16),
-                              label: const Text('开始连环剿匪'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Text(
-                        '黑市奇货',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Spacer(),
-                      TextButton.icon(
-                        onPressed: () {
-                          setSheetState(() {
-                            marketOffers = generateBlackMarketOffers(
-                              tierIndex: character.realmTierIndex,
-                              rng: _rng,
-                            );
-                          });
-                        },
-                        icon: const Icon(Icons.refresh, size: 16),
-                        label: const Text('换一批'),
-                      ),
-                    ],
-                  ),
-                  ...marketOffers.map((offer) {
-                    final bonusChance =
-                        (blackMarketBonusChance(
-                                  baseRate: offer.bonusBaseRate,
-                                  luck: luck,
-                                ) *
-                                100)
-                            .round();
-                    return Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              offer.title,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              offer.brief,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 4,
-                              children: [
-                                _buildMiniTag(
-                                  Icons.inventory_2,
-                                  '保底 ${_itemLabel(offer.rewardItemId, count: offer.rewardCount)}',
-                                ),
-                                if (offer.bonusItemId != null &&
-                                    offer.bonusCount > 0)
-                                  _buildMiniTag(
-                                    Icons.card_giftcard,
-                                    '暗格 ${_itemLabel(offer.bonusItemId!, count: offer.bonusCount)} · 概率$bonusChance%',
+                                  const SizedBox(height: 10),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: ElevatedButton.icon(
+                                      onPressed: () {
+                                        Navigator.of(sheetContext).pop();
+                                        Future<void>.delayed(
+                                          const Duration(milliseconds: 120),
+                                          _startEscortMission,
+                                        );
+                                      },
+                                      icon: const Icon(
+                                        Icons.local_shipping,
+                                        size: 16,
+                                      ),
+                                      label: const Text('开始押镖'),
+                                    ),
                                   ),
-                                _buildMiniTag(
-                                  Icons.monetization_on,
-                                  '售价 ${offer.silverCost} 银两',
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: ElevatedButton.icon(
-                                onPressed: () {
-                                  Navigator.of(sheetContext).pop();
-                                  Future<void>.delayed(
-                                    const Duration(milliseconds: 120),
-                                    () => _buyBlackMarketOffer(offer),
-                                  );
-                                },
-                                icon: const Icon(Icons.storefront, size: 16),
-                                label: const Text('立刻购买'),
+                                ],
                               ),
                             ),
-                          ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '巡防缉盗',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '按当前地点危险度巡防，可能平稳结案，也可能遭遇伏击。',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    children: [
+                                      _buildMiniTag(
+                                        Icons.local_fire_department,
+                                        '体力消耗 $patrolStaminaCost',
+                                      ),
+                                      _buildMiniTag(
+                                        Icons.security,
+                                        '奖励：经验/银两/锻造材料',
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: ElevatedButton.icon(
+                                      onPressed: () {
+                                        Navigator.of(sheetContext).pop();
+                                        Future<void>.delayed(
+                                          const Duration(milliseconds: 120),
+                                          _startPatrolMission,
+                                        );
+                                      },
+                                      icon: const Icon(Icons.shield, size: 16),
+                                      label: const Text('开始巡防'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Text(
+                                '连环剿匪',
+                                style: TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const Spacer(),
+                              TextButton.icon(
+                                onPressed: () {
+                                  setSheetState(() {
+                                    chainPlan = buildChainHuntPlan(
+                                      tierIndex: character.realmTierIndex,
+                                      rng: _rng,
+                                    );
+                                  });
+                                },
+                                icon: const Icon(Icons.shuffle, size: 16),
+                                label: const Text('换目标'),
+                              ),
+                            ],
+                          ),
+                          Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '连续清剿两路匪患，首战得基础赏金，终战领取重赏。',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 4,
+                                    children: [
+                                      _buildMiniTag(
+                                        Icons.sports_martial_arts,
+                                        '首战：$firstEnemyName',
+                                      ),
+                                      _buildMiniTag(
+                                        Icons.whatshot,
+                                        '终战：$secondEnemyName',
+                                      ),
+                                      _buildMiniTag(
+                                        Icons.flash_on,
+                                        '终战奖励经验 +${chainPlan.finalExp}',
+                                      ),
+                                      _buildMiniTag(
+                                        Icons.monetization_on,
+                                        '终战奖励银两 +${chainPlan.finalSilver}',
+                                      ),
+                                      if (chainPlan.finalItemId != null)
+                                        _buildMiniTag(
+                                          Icons.inventory_2,
+                                          '终战奖励 ${_itemLabel(chainPlan.finalItemId!)}',
+                                        ),
+                                      _buildMiniTag(
+                                        Icons.local_fire_department,
+                                        '体力消耗 $chainHuntStaminaCost',
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: ElevatedButton.icon(
+                                      onPressed: () {
+                                        Navigator.of(sheetContext).pop();
+                                        Future<void>.delayed(
+                                          const Duration(milliseconds: 120),
+                                          () => _startChainHunt(chainPlan),
+                                        );
+                                      },
+                                      icon: const Icon(Icons.bolt, size: 16),
+                                      label: const Text('开始连环剿匪'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Text(
+                                '黑市奇货',
+                                style: TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const Spacer(),
+                              TextButton.icon(
+                                onPressed: () {
+                                  setSheetState(() {
+                                    marketOffers = generateBlackMarketOffers(
+                                      tierIndex: character.realmTierIndex,
+                                      rng: _rng,
+                                    );
+                                  });
+                                },
+                                icon: const Icon(Icons.refresh, size: 16),
+                                label: const Text('换一批'),
+                              ),
+                            ],
+                          ),
+                          ...marketOffers.map((offer) {
+                            final bonusChance =
+                                (blackMarketBonusChance(
+                                          baseRate: offer.bonusBaseRate,
+                                          luck: luck,
+                                        ) *
+                                        100)
+                                    .round();
+                            return Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      offer.title,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      offer.brief,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 4,
+                                      children: [
+                                        _buildMiniTag(
+                                          Icons.inventory_2,
+                                          '保底 ${_itemLabel(offer.rewardItemId, count: offer.rewardCount)}',
+                                        ),
+                                        if (offer.bonusItemId != null &&
+                                            offer.bonusCount > 0)
+                                          _buildMiniTag(
+                                            Icons.card_giftcard,
+                                            '暗格 ${_itemLabel(offer.bonusItemId!, count: offer.bonusCount)} · 概率$bonusChance%',
+                                          ),
+                                        _buildMiniTag(
+                                          Icons.monetization_on,
+                                          '售价 ${offer.silverCost} 银两',
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: ElevatedButton.icon(
+                                        onPressed: () {
+                                          Navigator.of(sheetContext).pop();
+                                          Future<void>.delayed(
+                                            const Duration(milliseconds: 120),
+                                            () => _buyBlackMarketOffer(offer),
+                                          );
+                                        },
+                                        icon: const Icon(
+                                          Icons.storefront,
+                                          size: 16,
+                                        ),
+                                        label: const Text('立刻购买'),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => Navigator.of(sheetContext).pop(),
+                          icon: const Icon(Icons.keyboard_arrow_down),
+                          label: const Text('收起江湖令'),
                         ),
                       ),
-                    );
-                  }),
-                ],
+                    ),
+                  ],
+                ),
               ),
             );
           },
         );
       },
+    );
+  }
+
+  Widget _buildJianghuOrderProgressCard(
+    JianghuOrderProgress progress,
+    JianghuOrderTierState tierState,
+  ) {
+    final nextText = tierState.nextFloor == null
+        ? '已到当前令阶上限，江湖上已经有人主动记住你的名号。'
+        : '距离令阶${tierState.tier + 1}还差 ${tierState.pointsNeededForNext} 活跃度';
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.assignment_late, color: AppColors.accent),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '令阶进度',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '令阶${tierState.tier}',
+                    style: TextStyle(
+                      color: AppColors.warning,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              tierState.title,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '活跃度 ${progress.totalPoints} · 已完成 ${progress.totalCompletions} 次江湖令',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12.5),
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: tierState.progress,
+                minHeight: 9,
+                backgroundColor: AppColors.background,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.accent),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              nextText,
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                _buildMiniTag(Icons.gavel, '悬赏 ${progress.bountyCount}'),
+                _buildMiniTag(
+                  Icons.local_shipping,
+                  '押镖 ${progress.escortCount}',
+                ),
+                _buildMiniTag(Icons.shield, '巡防 ${progress.patrolCount}'),
+                _buildMiniTag(Icons.bolt, '剿匪 ${progress.chainHuntCount}'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildJianghuRumorsCard(List<JianghuRumor> rumors) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.campaign, color: AppColors.warning),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '江湖见闻',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '茶棚、驿站和黑市里流出来的消息，未必都是真的，但往往都不是空穴来风。',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...rumors.map(_buildJianghuRumorTile),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildJianghuRumorTile(JianghuRumor rumor) {
+    final color = switch (rumor.tag) {
+      '风闻' => AppColors.accent,
+      '悬情' => AppColors.warning,
+      '异兆' => AppColors.hp,
+      _ => AppColors.textSecondary,
+    };
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.14)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  rumor.tag,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  rumor.headline,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            rumor.detail,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+              height: 1.45,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -2161,6 +2518,10 @@ class _HomePageState extends ConsumerState<HomePage> {
       silver: contract.bonusSilver,
       itemId: contract.bonusItemId,
     );
+    final tierUp = await _recordJianghuOrderActivity(
+      character.id,
+      JianghuOrderActivityType.bounty,
+    );
     ref
         .read(gameLogProvider.notifier)
         .addLog(
@@ -2168,7 +2529,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           '${contract.bonusItemId == null ? '' : '，额外物资已入袋'}。',
           type: LogType.quest,
         );
-    _showActionTip('悬赏完成，奖励已结算');
+    _showActionTip(_appendTierUpTip('悬赏完成，奖励已结算', tierUp));
   }
 
   Future<void> _startEscortMission() async {
@@ -2201,6 +2562,10 @@ class _HomePageState extends ConsumerState<HomePage> {
         silver: outcome.silverDelta,
         itemId: outcome.rewardItemId,
       );
+      final tierUp = await _recordJianghuOrderActivity(
+        character.id,
+        JianghuOrderActivityType.escort,
+      );
       ref
           .read(gameLogProvider.notifier)
           .addLog(
@@ -2208,7 +2573,12 @@ class _HomePageState extends ConsumerState<HomePage> {
             '${outcome.rewardItemId == null ? '' : ' 你还额外拿到了一份锻材。'}',
             type: LogType.explore,
           );
-      _showActionTip('押镖成功：经验+${outcome.expDelta}，银两+${outcome.silverDelta}');
+      _showActionTip(
+        _appendTierUpTip(
+          '押镖成功：经验+${outcome.expDelta}，银两+${outcome.silverDelta}',
+          tierUp,
+        ),
+      );
       return;
     }
 
@@ -2275,11 +2645,18 @@ class _HomePageState extends ConsumerState<HomePage> {
           silver: outcome.successSilver,
           itemId: outcome.successItemId,
         );
+        final tierUp = await _recordJianghuOrderActivity(
+          character.id,
+          JianghuOrderActivityType.patrol,
+        );
         ref
             .read(gameLogProvider.notifier)
             .addLog('巡防清剿成功，地头行商纷纷送上谢礼。', type: LogType.quest);
         _showActionTip(
-          '巡防成功：经验+${outcome.successExp}，银两+${outcome.successSilver}',
+          _appendTierUpTip(
+            '巡防成功：经验+${outcome.successExp}，银两+${outcome.successSilver}',
+            tierUp,
+          ),
         );
       } else {
         await ref
@@ -2309,11 +2686,18 @@ class _HomePageState extends ConsumerState<HomePage> {
         silver: outcome.successSilver,
         itemId: outcome.successItemId,
       );
+      final tierUp = await _recordJianghuOrderActivity(
+        character.id,
+        JianghuOrderActivityType.patrol,
+      );
       ref
           .read(gameLogProvider.notifier)
           .addLog('巡防顺利结案，沿路商户主动上缴赏金。', type: LogType.quest);
       _showActionTip(
-        '巡防成功：经验+${outcome.successExp}，银两+${outcome.successSilver}',
+        _appendTierUpTip(
+          '巡防成功：经验+${outcome.successExp}，银两+${outcome.successSilver}',
+          tierUp,
+        ),
       );
       return;
     }
@@ -2414,12 +2798,21 @@ class _HomePageState extends ConsumerState<HomePage> {
       silver: plan.finalSilver,
       itemId: plan.finalItemId,
     );
+    final tierUp = await _recordJianghuOrderActivity(
+      character.id,
+      JianghuOrderActivityType.chainHunt,
+    );
     logNotifier.addLog(
       '连环剿匪完成：经验+${plan.finalExp}，银两+${plan.finalSilver}'
       '${plan.finalItemId == null ? '' : '，缴获${_itemLabel(plan.finalItemId!)}'}。',
       type: LogType.quest,
     );
-    _showActionTip('连环剿匪完成：经验+${plan.finalExp}，银两+${plan.finalSilver}');
+    _showActionTip(
+      _appendTierUpTip(
+        '连环剿匪完成：经验+${plan.finalExp}，银两+${plan.finalSilver}',
+        tierUp,
+      ),
+    );
   }
 
   Future<void> _buyBlackMarketOffer(BlackMarketOffer offer) async {
